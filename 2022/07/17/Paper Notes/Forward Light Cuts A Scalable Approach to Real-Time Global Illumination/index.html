@@ -32,7 +32,7 @@
 <meta property="og:image" content="http://example.com/images/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013853277.png">
 <meta property="og:image" content="http://example.com/images/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013914497.png">
 <meta property="article:published_time" content="2022-07-16T17:34:35.261Z">
-<meta property="article:modified_time" content="2022-07-16T18:00:00.974Z">
+<meta property="article:modified_time" content="2022-07-16T18:06:43.451Z">
 <meta property="article:author" content="wsyOverflow">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="http://example.com/images/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013637705.png">
@@ -179,7 +179,7 @@
               <span class="post-meta-item-text">Posted on</span>
               
 
-              <time title="Created: 2022-07-17 01:34:35 / Modified: 02:00:00" itemprop="dateCreated datePublished" datetime="2022-07-17T01:34:35+08:00">2022-07-17</time>
+              <time title="Created: 2022-07-17 01:34:35 / Modified: 02:06:43" itemprop="dateCreated datePublished" datetime="2022-07-17T01:34:35+08:00">2022-07-17</time>
             </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -312,7 +312,7 @@ irradiance，由于 <span class="math inline">\(&lt;\vec{n_i},\bar{y_ix}&gt;^+\)
 \begin{align}H(t_i,x,\vec{n_x})&amp;=\rho_iE(t_i)\frac{3}{2\pi}&lt;\vec{n_i},\bar{y_ix}&gt;^+\frac{\rho_x}{\pi}\frac{&lt;\vec{n_x},\bar{xy_i}&gt;^+&lt;\vec{n_i},\bar{y_ix}&gt;^+}{d_i^2}\\
 &amp;=
 \frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{&lt;\vec{n_x},\bar{xy_i}&gt;(&lt;\vec{n_i},\bar{y_ix}&gt;)^2}{d_i^2}
-\nonumber\end{align}\tag{2} \label{received radiance}
+\end{align}\tag{2} \label{received radiance}
 \]</span></p>
 </blockquote>
 <h5 id="多尺度划分下的-vpls-lighting-的近似">2.2 多尺度划分下的 VPLs
@@ -376,12 +376,12 @@ radiance 贡献较为显著的区域，这个显著程度由 <span class="math i
 \mathcal{B}_h(t_i)=\{x\in\mathbb{R}^3\space s.t. \space
 \frac{||x-y_i||}{&lt;\vec{n_i},\bar{xy_I}&gt;^+}\leq D(h)\} \tag{5}
 \label{nested ball}
-\]</span> 其中 <span class="math inline">\((h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span></p>
+\]</span> 其中 <span class="math inline">\(D(h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span></p>
 <blockquote>
 <p><code>推导见</code>：<a href="#附录5">附录 5.
 整体划分选取推导</a></p>
 </blockquote>
-<p><span class="math inline">\(\D(h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span>
+<p><span class="math inline">\(D(h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span>
 与 <span class="math inline">\(\large x\)</span> 着色点无关，因此 <span class="math inline">\(\mathcal{B}_h(t_i)\)</span> 是一个 nest
 ball，其边界上有点 <span class="math inline">\(y_i\)</span>，其中心位于直线 <span class="math inline">\((y_i,\vec{n_i})\)</span> 上。如下图所示</p>
 <p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013806858.png" alt="image-20220717013806858" style="zoom:67%;"></p>
@@ -585,7 +585,7 @@ H(t_i,x,\vec{n_x})&amp;=\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{(&lt;\vec{n_i},\
 \geq \frac{2h\pi^2}{3\rho_i\rho_xE(t_i)}\]</span></p>
 <p><span class="math display">\[\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}
 \geq \pi \sqrt{\frac{2h}{3\rho_i\rho_xE(t_i)}}\]</span></p>
-<p><span class="math display">\[frac{||x-y_i||}{&lt;\vec{n_i},\bar{y_ix}&gt;}
+<p><span class="math display">\[\frac{||x-y_i||}{&lt;\vec{n_i},\bar{y_ix}&gt;}
 \leq \frac{1}{\pi} \sqrt{\frac{3\rho_i\rho_xE(t_i)}{2h}}\]</span></p>
 <h3 id="模拟传统层级的几何级下降的理解">6.
 <a name="附录6">模拟传统层级的几何级下降的理解</a></h3>
