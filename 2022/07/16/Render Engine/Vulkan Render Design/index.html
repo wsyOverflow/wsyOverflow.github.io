@@ -1,291 +1,648 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-  <meta charset="utf-8">
-  
-  
-  <title>Vulkan Render Design | wsyOverflow</title>
-  <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
-  <meta name="description" content="Summary本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。 Vulkan 管线管理策略Vulkan 包含三种管线 graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提 OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API 调用来进行切换的，属于 high-level 的 API 设">
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="Summary 本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。 Vulkan 管线管理策略 Vulkan 包含三种管线 graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提 OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API 调用来进行切换的，属于 high-level">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Vulkan Render Design">
 <meta property="og:url" content="http://example.com/2022/07/16/Render%20Engine/Vulkan%20Render%20Design/index.html">
 <meta property="og:site_name" content="wsyOverflow">
-<meta property="og:description" content="Summary本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。 Vulkan 管线管理策略Vulkan 包含三种管线 graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提 OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API 调用来进行切换的，属于 high-level 的 API 设">
+<meta property="og:description" content="Summary 本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。 Vulkan 管线管理策略 Vulkan 包含三种管线 graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提 OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API 调用来进行切换的，属于 high-level">
 <meta property="og:locale" content="en_US">
 <meta property="article:published_time" content="2022-07-16T15:07:59.418Z">
 <meta property="article:modified_time" content="2022-07-16T16:01:43.258Z">
 <meta property="article:author" content="wsyOverflow">
 <meta name="twitter:card" content="summary">
-  
-    <link rel="alternate" href="/atom.xml" title="wsyOverflow" type="application/atom+xml">
-  
-  
-    <link rel="shortcut icon" href="/favicon.png">
-  
-  
-    
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/typeface-source-code-pro@0.0.71/index.min.css">
 
-  
-  
-<link rel="stylesheet" href="/css/style.css">
+<link rel="canonical" href="http://example.com/2022/07/16/Render%20Engine/Vulkan%20Render%20Design/">
 
-  
-    
-<link rel="stylesheet" href="/fancybox/jquery.fancybox.min.css">
 
-  
-<meta name="generator" content="Hexo 6.2.0"></head>
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
 
-<body>
-  <div id="container">
-    <div id="wrap">
-      <header id="header">
-  <div id="banner"></div>
-  <div id="header-outer" class="outer">
-    <div id="header-title" class="inner">
-      <h1 id="logo-wrap">
-        <a href="/" id="logo">wsyOverflow</a>
-      </h1>
-      
+  <title>Vulkan Render Design | wsyOverflow</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
     </div>
-    <div id="header-inner" class="inner">
-      <nav id="main-nav">
-        <a id="main-nav-toggle" class="nav-icon"></a>
-        
-          <a class="main-nav-link" href="/">Home</a>
-        
-          <a class="main-nav-link" href="/archives">Archives</a>
-        
-      </nav>
-      <nav id="sub-nav">
-        
-          <a id="nav-rss-link" class="nav-icon" href="/atom.xml" title="RSS Feed"></a>
-        
-        <a id="nav-search-btn" class="nav-icon" title="Search"></a>
-      </nav>
-      <div id="search-form-wrap">
-        <form action="//google.com/search" method="get" accept-charset="UTF-8" class="search-form"><input type="search" name="q" class="search-form-input" placeholder="Search"><button type="submit" class="search-form-submit">&#xF002;</button><input type="hidden" name="sitesearch" value="http://example.com"></form>
-      </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">wsyOverflow</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
     </div>
   </div>
-</header>
+</div>
 
-      <div class="outer">
-        <section id="main"><article id="post-Render Engine/Vulkan Render Design" class="h-entry article article-type-post" itemprop="blogPost" itemscope itemtype="https://schema.org/BlogPosting">
-  <div class="article-meta">
-    <a href="/2022/07/16/Render%20Engine/Vulkan%20Render%20Design/" class="article-date">
-  <time class="dt-published" datetime="2022-07-16T15:07:59.418Z" itemprop="datePublished">2022-07-16</time>
-</a>
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
     
-  <div class="article-category">
-    <a class="article-category-link" href="/categories/Render-Engine/">Render Engine</a>
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
   </div>
 
-  </div>
-  <div class="article-inner">
-    
-    
-      <header class="article-header">
-        
-  
-    <h1 class="p-name article-title" itemprop="headline name">
-      Vulkan Render Design
-    </h1>
-  
 
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/07/16/Render%20Engine/Vulkan%20Render%20Design/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="wsyOverflow">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wsyOverflow">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Vulkan Render Design
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2022-07-16 23:07:59" itemprop="dateCreated datePublished" datetime="2022-07-16T23:07:59+08:00">2022-07-16</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2022-07-17 00:01:43" itemprop="dateModified" datetime="2022-07-17T00:01:43+08:00">2022-07-17</time>
+              </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Render-Engine/" itemprop="url" rel="index"><span itemprop="name">Render Engine</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
       </header>
+
     
-    <div class="e-content article-entry" itemprop="articleBody">
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
       
-        <h3 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h3><p>本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。</p>
-<h3 id="Vulkan-管线管理策略"><a href="#Vulkan-管线管理策略" class="headerlink" title="Vulkan 管线管理策略"></a>Vulkan 管线管理策略</h3><p>Vulkan 包含三种管线 graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提 OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API 调用来进行切换的，属于 high-level 的 API 设计。而Vulkan 使用 <strong>PSO(pipeline state object)</strong> 来描述管线状态，类型为 <code>VkPipeline</code>，这个类型的对象需要用户自己创建。</p>
-<p>PSO 只是描述管线的各种状态，状态相同的管线可以使用同一个 PSO，不相容的状态则需要创建新的 PSO。因此对于 PSO 的管理采用将当前状态进行 hash 处理，如果存在当前状态 hash 的 PSO 则直接使用，否则创建新的 PSO 并记录到 unordered_map 中。这部分工作由类 <code>VulkanPipelineStateManager</code> 完成，目前的 hash 算法只是简单的移位与异或，留待之后更改。</p>
-<p>创建 PSO 的 API 有三个，<a target="_blank" rel="noopener" href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateGraphicsPipelines.html"><code>vkCreateGraphicsPipelines</code></a> 创建 graphics PSO，<a target="_blank" rel="noopener" href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateComputePipelines.html"><code>vkCreateComputePipelines</code></a> 创建 compute PSO， <a target="_blank" rel="noopener" href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateRayTracingPipelinesKHR.html"><code>vkCreateRayTracingPipelinesKHR</code></a> 创建 raytracing PSO。创建 PSO 需要传入描述管线状态的结构体，管线状态的 hash 也主要对这些结构体中的字段进行。另一个 cache 参数，是允许用户将执行过程中创建的 PSO 保存到文件，然后下次启动加载到 cache 参数中，Vulkan 可以通过 cache 来减少创建过程中需要的底层开销，可以提高运行时帧数的稳定性。</p>
-<p>对于 PSO 的封装有类 <code>VulkanPipeline</code> 及其三个子类 <code>VulkanGraphicsPipelineState</code>、<code>VulkanComputePipeline</code> 以及 <code>VulkanRayTracingPipeline</code>。下面以 graphics PSO 为例，介绍管线的创建流程。</p>
-<h3 id="Graphics-PSO-的创建"><a href="#Graphics-PSO-的创建" class="headerlink" title="Graphics PSO 的创建"></a>Graphics PSO 的创建</h3><h4 id="1-Vulkan-Graphics-Pipeline-介绍"><a href="#1-Vulkan-Graphics-Pipeline-介绍" class="headerlink" title="1. Vulkan Graphics Pipeline 介绍"></a>1. Vulkan Graphics Pipeline 介绍</h4><p>创建 Vulkan Graphics PSO 的描述封装在结构体 <a target="_blank" rel="noopener" href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkGraphicsPipelineCreateInfo.html"><code>VkGraphicsPipelineCreateInfo </code></a> 中，下面简要介绍它的成员：</p>
+        <h3 id="summary">Summary</h3>
+<p>本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。</p>
+<h3 id="vulkan-管线管理策略">Vulkan 管线管理策略</h3>
+<p>Vulkan 包含三种管线
+graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提
+OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API
+调用来进行切换的，属于 high-level 的 API 设计。而Vulkan 使用
+<strong>PSO(pipeline state object)</strong> 来描述管线状态，类型为
+<code>VkPipeline</code>，这个类型的对象需要用户自己创建。</p>
+<p>PSO 只是描述管线的各种状态，状态相同的管线可以使用同一个
+PSO，不相容的状态则需要创建新的 PSO。因此对于 PSO
+的管理采用将当前状态进行 hash 处理，如果存在当前状态 hash 的 PSO
+则直接使用，否则创建新的 PSO 并记录到 unordered_map 中。这部分工作由类
+<code>VulkanPipelineStateManager</code> 完成，目前的 hash
+算法只是简单的移位与异或，留待之后更改。</p>
+<p>创建 PSO 的 API 有三个，<a target="_blank" rel="noopener" href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateGraphicsPipelines.html"><code>vkCreateGraphicsPipelines</code></a>
+创建 graphics PSO，<a target="_blank" rel="noopener" href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateComputePipelines.html"><code>vkCreateComputePipelines</code></a>
+创建 compute PSO， <a target="_blank" rel="noopener" href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateRayTracingPipelinesKHR.html"><code>vkCreateRayTracingPipelinesKHR</code></a>
+创建 raytracing PSO。创建 PSO 需要传入描述管线状态的结构体，管线状态的
+hash 也主要对这些结构体中的字段进行。另一个 cache
+参数，是允许用户将执行过程中创建的 PSO 保存到文件，然后下次启动加载到
+cache 参数中，Vulkan 可以通过 cache
+来减少创建过程中需要的底层开销，可以提高运行时帧数的稳定性。</p>
+<p>对于 PSO 的封装有类 <code>VulkanPipeline</code> 及其三个子类
+<code>VulkanGraphicsPipelineState</code>、<code>VulkanComputePipeline</code>
+以及 <code>VulkanRayTracingPipeline</code>。下面以 graphics PSO
+为例，介绍管线的创建流程。</p>
+<h3 id="graphics-pso-的创建">Graphics PSO 的创建</h3>
+<h4 id="vulkan-graphics-pipeline-介绍">1. Vulkan Graphics Pipeline
+介绍</h4>
+<p>创建 Vulkan Graphics PSO 的描述封装在结构体 <a target="_blank" rel="noopener" href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkGraphicsPipelineCreateInfo.html"><code>VkGraphicsPipelineCreateInfo</code></a>
+中，下面简要介绍它的成员：</p>
 <ul>
-<li><code>VkPipelineShaderStageCreateInfo*</code> ：管线使用的 shader 信息数组，每个元素包含使用的 shader 对象(VkShaderModule)、入口函数、shader 阶段(vertex&#x2F;fragment …)等。</li>
-<li><code>VkPipelineVertexInputStateCreateInfo*</code>：每个元素描述顶点包含的输入属性(vertex shader)，即 location、binding、数据格式以及相对于顶点起始位置的偏移量。</li>
-<li><code>VkPipelineInputAssemblyStateCreateInfo</code>：描述图元数据的拓扑结构(VkPrimitiveTopology)，如<br> POINT_LIST、TRIANGLE_LIST 等。</li>
+<li><code>VkPipelineShaderStageCreateInfo*</code> ：管线使用的 shader
+信息数组，每个元素包含使用的 shader
+对象(VkShaderModule)、入口函数、shader 阶段(vertex/fragment
+...)等。</li>
+<li><code>VkPipelineVertexInputStateCreateInfo*</code>：每个元素描述顶点包含的输入属性(vertex
+shader)，即
+location、binding、数据格式以及相对于顶点起始位置的偏移量。</li>
+<li><code>VkPipelineInputAssemblyStateCreateInfo</code>：描述图元数据的拓扑结构(VkPrimitiveTopology)，如<br>
+POINT_LIST、TRIANGLE_LIST 等。</li>
 <li><code>VkPipelineTessellationStateCreateInfo</code>：曲面细分阶段的配置参数，例如控制点数量</li>
-<li><code>VkPipelineViewportStateCreateInfo</code>：用来描述当前渲染的 viewport 和 scissor 的区域，视口和裁剪可能变化较频繁，可以设置为 dynamic state，创建管线时不设置，在渲染前使用 command 动态设置。</li>
-<li><code>VkPipelineRasterizationStateCreateInfo</code>：描述光栅化阶段的配置参数，几何绘制模式(填充&#x2F;线框)，正面的顶点环绕方向，剔除面(正面剔除还是背面剔除)。是否开启 depth bias，对 depth buffer 中的深度加上一个偏移量，可以在避免自遮挡时使用</li>
-<li><code>VkPipelineMultisampleStateCreateInfo</code>：描述光栅化阶段的采样数，1 表示无超采样。</li>
+<li><code>VkPipelineViewportStateCreateInfo</code>：用来描述当前渲染的
+viewport 和 scissor 的区域，视口和裁剪可能变化较频繁，可以设置为 dynamic
+state，创建管线时不设置，在渲染前使用 command 动态设置。</li>
+<li><code>VkPipelineRasterizationStateCreateInfo</code>：描述光栅化阶段的配置参数，几何绘制模式(填充/线框)，正面的顶点环绕方向，剔除面(正面剔除还是背面剔除)。是否开启
+depth bias，对 depth buffer
+中的深度加上一个偏移量，可以在避免自遮挡时使用</li>
+<li><code>VkPipelineMultisampleStateCreateInfo</code>：描述光栅化阶段的采样数，1
+表示无超采样。</li>
 <li><code>VkPipelineDepthStencilStateCreateInfo</code>：描述是否开启深度测试、模板测试，以及深度测试的操作、模板测试的操作。</li>
-<li><code>VkPipelineColorBlendStateCreateInfo</code>：描述 frame buffer 中每个 render target 的 blend 操作，包含 blend 参数、blend 计算方式等。</li>
-<li><code>VkPipelineDynamicStateCreateInfo</code>：描述管线状态中哪些是可以使用 command 指定的动态状态，其他则是创建管线时就确定的。</li>
+<li><code>VkPipelineColorBlendStateCreateInfo</code>：描述 frame buffer
+中每个 render target 的 blend 操作，包含 blend 参数、blend
+计算方式等。</li>
+<li><code>VkPipelineDynamicStateCreateInfo</code>：描述管线状态中哪些是可以使用
+command 指定的动态状态，其他则是创建管线时就确定的。</li>
 <li><code>VkPipelineLayout</code>：包含管线中着色器的输入资源描述</li>
-<li><code>VkRenderPass</code>：管线所使用的 render pass，包含了 render pass 的 render target 的描述。</li>
+<li><code>VkRenderPass</code>：管线所使用的 render pass，包含了 render
+pass 的 render target 的描述。</li>
 </ul>
-<h5 id="1-1-Vulkan-Render-Pass"><a href="#1-1-Vulkan-Render-Pass" class="headerlink" title="1.1 Vulkan Render Pass"></a>1.1 Vulkan Render Pass</h5><p>Vulkan Render Pass 也是一种描述，因此同样使用 hash 方式进行自动创建，主要包含三部分：</p>
+<h5 id="vulkan-render-pass">1.1 Vulkan Render Pass</h5>
+<p>Vulkan Render Pass 也是一种描述，因此同样使用 hash
+方式进行自动创建，主要包含三部分：</p>
 <ul>
-<li>描述其使用到的所有 attachment 的描述 <code>VkAttachmentDescription</code>，一个 attachment 即为一个 image view，用于访问 vulkan texture。进入 renderpass 之前、renderpass 之内、renderpass 结束时的 image layout；加载与存储时的操作；attachment 格式，采样数。</li>
-<li>描述其内部的 subpass，并且至少包含一个 subpass。每个 subpass 描述包含其 color&#x2F;resolve&#x2F;depth attachment 的引用描述，即 framebuffer 中 attachment index、image layout</li>
+<li>描述其使用到的所有 attachment 的描述
+<code>VkAttachmentDescription</code>，一个 attachment 即为一个 image
+view，用于访问 vulkan texture。进入 renderpass 之前、renderpass
+之内、renderpass 结束时的 image layout；加载与存储时的操作；attachment
+格式，采样数。</li>
+<li>描述其内部的 subpass，并且至少包含一个 subpass。每个 subpass
+描述包含其 color/resolve/depth attachment 的引用描述，即 framebuffer 中
+attachment index、image layout</li>
 <li>subpass 之间的依赖</li>
 </ul>
-<p>Vulkan Render Pass 特殊之处在于其是由 subpass 来描述内部多个子阶段的，绘制指令也会被记录在一个当前激活的 subpass 中。subpass 的设计是为了能够高效利用某些 tile-based 架构的移动端 GPU，即 fragment shader 的执行是以 tile 为单位的，因此之后的 subpass 可以直接读到上一个 subpass 写入 attachment 的数据，而不需要等到整个 render pass 执行完。</p>
-<p><a href="#%5B1%5D">[1]</a> 以由两个 pass 组成的 deferred shading 为例，第一个 pass 为了绘制 G-Buffer，第二个 pass 基于 G-Buffer 进行光照计算，得到最终绘制结果。可以设置 render pass 包含两个 subpass，第一个 subpass 绘制 G-Buffer，第二个 subpass 将第一个 subpass 的 G-Buffer 作为 <code>input attachment</code>，执行光照计算。流程如下述伪代码：</p>
+<p>Vulkan Render Pass 特殊之处在于其是由 subpass
+来描述内部多个子阶段的，绘制指令也会被记录在一个当前激活的 subpass
+中。subpass 的设计是为了能够高效利用某些 tile-based 架构的移动端 GPU，即
+fragment shader 的执行是以 tile 为单位的，因此之后的 subpass
+可以直接读到上一个 subpass 写入 attachment 的数据，而不需要等到整个
+render pass 执行完。</p>
+<p><a href="#%5B1%5D">[1]</a> 以由两个 pass 组成的 deferred shading
+为例，第一个 pass 为了绘制 G-Buffer，第二个 pass 基于 G-Buffer
+进行光照计算，得到最终绘制结果。可以设置 render pass 包含两个
+subpass，第一个 subpass 绘制 G-Buffer，第二个 subpass 将第一个 subpass
+的 G-Buffer 作为
+<code>input attachment</code>，执行光照计算。流程如下述伪代码：</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line"><span class="function">cmdBeginRenderPass</span></span><br><span class="line"><span class="function">	<span class="title">cmdBindPipeline</span><span class="params">(pipeline0)</span></span></span><br><span class="line"><span class="function">	... <span class="comment">// bind vertex/index buffer or descriptor set of shader resource</span></span></span><br><span class="line"><span class="function">	cmdDraw</span></span><br><span class="line"><span class="function">	cmdNextSubpass</span></span><br><span class="line"><span class="function">	<span class="title">cmdBindPipeline</span><span class="params">(pipeline1)</span></span></span><br><span class="line"><span class="function">	... <span class="comment">// bind vertex/index buffer or descriptor set of shader resource</span></span></span><br><span class="line"><span class="function">	cmdDraw</span></span><br><span class="line"><span class="function">cmdEndRenderPass</span></span><br></pre></td></tr></table></figure>
-
-<p>注意两个 subpass 使用的是两个 PSO，因为 geometry pass 的 shader 与 deferred shading 的 shader，以及其 shader 输入肯定不同。在第二个 subpass 使用到的 pipeline1 的 shader 则可以使用如下方式来声明 input attachment，</p>
+<p>注意两个 subpass 使用的是两个 PSO，因为 geometry pass 的 shader 与
+deferred shading 的 shader，以及其 shader 输入肯定不同。在第二个 subpass
+使用到的 pipeline1 的 shader 则可以使用如下方式来声明 input
+attachment，</p>
 <figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">layout</span> (input_attachment_index = <span class="number">0</span>, set = <span class="number">0</span>, <span class="keyword">binding</span> = <span class="number">0</span>) <span class="keyword">uniform</span> subpassInput inputColor;</span><br><span class="line"><span class="keyword">layout</span> (input_attachment_index = <span class="number">1</span>, set = <span class="number">1</span>, <span class="keyword">binding</span> = <span class="number">1</span>) <span class="keyword">uniform</span> subpassInput inputDepth;</span><br></pre></td></tr></table></figure>
-
-<p><code>subpassLoad(inputColor)</code> 则会读取上个 subpass 在 inputColor 同样区域写入的数据。</p>
-<h5 id="1-2-Vulkan-Pipeline-Layout"><a href="#1-2-Vulkan-Pipeline-Layout" class="headerlink" title="1.2 Vulkan Pipeline Layout"></a>1.2 Vulkan Pipeline Layout</h5><p>shader 中的输入参数需要对应描述符 <code>VkDescriptorSetLayout</code> 对其描述，而 vulkan pipeline layout 则包含了整个管线的所有 shader 输入参数的描述符。上述 set&#x3D;0、set&#x3D;1 则分别表示了索引 0、1 的 VkDescriptorSetLayout 对象，相当于整个管线的描述符分到了两个描述符堆上。一个输入资源的描述符 <code>VkDescriptorSetLayoutBinding</code>，包含了 binding、资源类型(如上例中的 <code>VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT</code>)、当为数组时的数组长度以及被哪些 shader 阶段使用。</p>
-<p>Vulkan Pipeline Layout 只是对管线 shader 输入的描述，相当于函数签名中形参，真正使用的数据资源，如 sampler、texture、buffer 等，需要使用 command 在 draw call 之前指定。因此 Vulkan Pipeline Layout 同样使用 hash 自动创建。</p>
-<p>特别注意，描述符堆是从 descriptorPool 中使用 VkDescriptorSetLayout 创建得到的，每个描述符堆 <code>VkDescriptorSet</code> 同时只能由一个 command buffer 使用，因此描述符堆的申请使用与停止使用应该由 command buffer 完成。类 <code>VulkanDescriptorPoolManager</code> 维护已经创建的描述符堆以及其使用状态，command buffer 在更新描述符资源之前请求使用，如果没有可用的 descriptorSet 则新创建。command buffer 具有自己执行是否完成的 fence，类 <code>VulkanCommandBufferManager</code> 更新 command buffer 状态时，如果 command buffer 中的指令已经完成，则归还其使用的描述符堆。</p>
-<h4 id="2-从上层到渲染层的管线创建"><a href="#2-从上层到渲染层的管线创建" class="headerlink" title="2. 从上层到渲染层的管线创建"></a>2. 从上层到渲染层的管线创建</h4><p>本渲染器的最初设计是面向多平台的，设置了平台无关层，只是目前只有 Vulkan 的渲染层，因此平台无关层更偏向于 Vulkan。下面介绍与管线创建相关的平台无关层的类。</p>
+<p><code>subpassLoad(inputColor)</code> 则会读取上个 subpass 在
+inputColor 同样区域写入的数据。</p>
+<h5 id="vulkan-pipeline-layout">1.2 Vulkan Pipeline Layout</h5>
+<p>shader 中的输入参数需要对应描述符 <code>VkDescriptorSetLayout</code>
+对其描述，而 vulkan pipeline layout 则包含了整个管线的所有 shader
+输入参数的描述符。上述 set=0、set=1 则分别表示了索引 0、1 的
+VkDescriptorSetLayout
+对象，相当于整个管线的描述符分到了两个描述符堆上。一个输入资源的描述符
+<code>VkDescriptorSetLayoutBinding</code>，包含了
+binding、资源类型(如上例中的
+<code>VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT</code>)、当为数组时的数组长度以及被哪些
+shader 阶段使用。</p>
+<p>Vulkan Pipeline Layout 只是对管线 shader
+输入的描述，相当于函数签名中形参，真正使用的数据资源，如
+sampler、texture、buffer 等，需要使用 command 在 draw call
+之前指定。因此 Vulkan Pipeline Layout 同样使用 hash 自动创建。</p>
+<p>特别注意，描述符堆是从 descriptorPool 中使用 VkDescriptorSetLayout
+创建得到的，每个描述符堆 <code>VkDescriptorSet</code> 同时只能由一个
+command buffer 使用，因此描述符堆的申请使用与停止使用应该由 command
+buffer 完成。类 <code>VulkanDescriptorPoolManager</code>
+维护已经创建的描述符堆以及其使用状态，command buffer
+在更新描述符资源之前请求使用，如果没有可用的 descriptorSet
+则新创建。command buffer 具有自己执行是否完成的 fence，类
+<code>VulkanCommandBufferManager</code> 更新 command buffer 状态时，如果
+command buffer 中的指令已经完成，则归还其使用的描述符堆。</p>
+<h4 id="从上层到渲染层的管线创建">2. 从上层到渲染层的管线创建</h4>
+<p>本渲染器的最初设计是面向多平台的，设置了平台无关层，只是目前只有
+Vulkan 的渲染层，因此平台无关层更偏向于
+Vulkan。下面介绍与管线创建相关的平台无关层的类。</p>
 <ul>
-<li><code>GPIRenderPassInfo</code>：对标 vulkan render pass 的描述，但不仅仅包含了对 render pass 的描述，还包含 render pass 中使用到的 render target ，因此 render pass 对应的 frame buffer 的创建所需参数也是从该类型中获取。</li>
-<li><code>GPIGfxPipelineStateInitializer</code>：对标 Graphics PSO 的配置参数。</li>
+<li><code>GPIRenderPassInfo</code>：对标 vulkan render pass
+的描述，但不仅仅包含了对 render pass 的描述，还包含 render pass
+中使用到的 render target ，因此 render pass 对应的 frame buffer
+的创建所需参数也是从该类型中获取。</li>
+<li><code>GPIGfxPipelineStateInitializer</code>：对标 Graphics PSO
+的配置参数。</li>
 </ul>
-<p>抽象类 <code>GraphicsBridge</code> 定义了一系列到渲染层的接口，不同的平台实现其接口。例如，设置 render pass 以及管线的接口 <code>GPIBeginRenderPass</code> 、<code>GPISetGfxPipelineState</code>。下面是管线创建的上层逻辑的伪代码：</p>
+<p>抽象类 <code>GraphicsBridge</code>
+定义了一系列到渲染层的接口，不同的平台实现其接口。例如，设置 render pass
+以及管线的接口 <code>GPIBeginRenderPass</code>
+、<code>GPISetGfxPipelineState</code>。下面是管线创建的上层逻辑的伪代码：</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line">GPIRenderPassInfo basePassInfo;</span><br><span class="line"><span class="comment">// ... // config basePass info</span></span><br><span class="line">gGfxBridge-&gt;<span class="built_in">GPIBeginRenderPass</span>(basePassInfo);</span><br><span class="line">&#123;</span><br><span class="line">    GPIGfxPipelineStateInitializer PSOInitializer;</span><br><span class="line">    <span class="comment">// ... // config PSOInitializer</span></span><br><span class="line">    gGfxBridge-&gt;<span class="built_in">GPISetGfxPipelineState</span>(PSOInitializer, basePassInfo);</span><br><span class="line">    <span class="comment">// ... // config the resources of descriptor set</span></span><br><span class="line">    gGfxBridge-&gt;<span class="built_in">GPIDrawPrimitive</span>();</span><br><span class="line">&#125;</span><br><span class="line">gGfxBridge-&gt;<span class="built_in">GPIEndRenderPass</span>();</span><br></pre></td></tr></table></figure>
-
-<p><code>GPIBeginRenderPass</code> 会根据参数 basePassInfo 来生成 vulkan render pass 的配置，以及 frame buffer 的资源参数，通过 hash 的方式查找是否存在对应配置的 render pass 与 frame buffer，不存在则创建。同理 <code>GPISetGfxPipelineState</code> 根据 PSOInitializer 与 basePassInfo 参数以 hash 方式查找 PSO，并绑定到当前 command buffer。</p>
-<p>同时 <code>GPIBeginRenderPass</code> 还做了一些开始管线前的准备工作，比如向 <code>VulkanCommandBufferManager</code> 申请 command buffer，以及将 render pass 需要的 render target 调整到其所指定的输入 layout 等。</p>
-<h3 id="Shader-的管理与配置"><a href="#Shader-的管理与配置" class="headerlink" title="Shader 的管理与配置"></a>Shader 的管理与配置</h3><p>上述管线创建过程中，还需要 shader 的配置。<code>UltraShader</code> 基类定义了 shader 相关描述，如 shader 源码文件路径、shader 编译相关配置、shader 输入参数描述等。不同 shader 继承自此基类，声明自己的参数，其中输入参数会被用于管线创建 <code>VkPipelineLayout</code> 资源描述。而编译相关配置则包括一些全局编译配置，如平台、优化参数等，以及一些宏定义，用以开启或关闭某些代码。</p>
-<h5 id="1-Shader-源码编译与加载"><a href="#1-Shader-源码编译与加载" class="headerlink" title="1. Shader 源码编译与加载"></a>1. Shader 源码编译与加载</h5><p>本渲染器的 shader 编译与加载由类 <code>ShaderCompilerManager</code> 完成。该类基于 shaderc，但为了在 renderdoc 能够源码级调试 shader，在 debug 时使用 glslangValidator 编译。目前编译触发条件，有两种：</p>
+<p><code>GPIBeginRenderPass</code> 会根据参数 basePassInfo 来生成 vulkan
+render pass 的配置，以及 frame buffer 的资源参数，通过 hash
+的方式查找是否存在对应配置的 render pass 与 frame
+buffer，不存在则创建。同理 <code>GPISetGfxPipelineState</code> 根据
+PSOInitializer 与 basePassInfo 参数以 hash 方式查找 PSO，并绑定到当前
+command buffer。</p>
+<p>同时 <code>GPIBeginRenderPass</code>
+还做了一些开始管线前的准备工作，比如向
+<code>VulkanCommandBufferManager</code> 申请 command buffer，以及将
+render pass 需要的 render target 调整到其所指定的输入 layout 等。</p>
+<h3 id="shader-的管理与配置">Shader 的管理与配置</h3>
+<p>上述管线创建过程中，还需要 shader 的配置。<code>UltraShader</code>
+基类定义了 shader 相关描述，如 shader 源码文件路径、shader
+编译相关配置、shader 输入参数描述等。不同 shader
+继承自此基类，声明自己的参数，其中输入参数会被用于管线创建
+<code>VkPipelineLayout</code>
+资源描述。而编译相关配置则包括一些全局编译配置，如平台、优化参数等，以及一些宏定义，用以开启或关闭某些代码。</p>
+<h5 id="shader-源码编译与加载">1. Shader 源码编译与加载</h5>
+<p>本渲染器的 shader 编译与加载由类 <code>ShaderCompilerManager</code>
+完成。该类基于 shaderc，但为了在 renderdoc 能够源码级调试 shader，在
+debug 时使用 glslangValidator 编译。目前编译触发条件，有两种：</p>
 <ul>
-<li>加载过程中，shader 文件及其 include 文件的时间戳要比记录文件中的更新。或者 shader 的一些配置发生改变。</li>
-<li>运行过程中，shader 的一些配置(如宏定义)发生改变。[TODO] 运行过程中文件的改动主动触发编译</li>
+<li>加载过程中，shader 文件及其 include
+文件的时间戳要比记录文件中的更新。或者 shader 的一些配置发生改变。</li>
+<li>运行过程中，shader 的一些配置(如宏定义)发生改变。<a href="#todo">TODO</a> 运行过程中文件的改动主动触发编译</li>
 </ul>
-<p>Shader 文件的后缀分为作为头文件的 .glsl 以及表示不同阶段的源码文件如 .ver、.frag、.comp 等。编译过程中会记录源码文件以及其 include 文件的时间戳，用以辨别是否有更改。同时将 shader 编译配置进行 hash，作为编译输出文件的文件名一部分，用以辨别当前 shader 编译配置是否已经编译过。这些信息都会记录在 “intermediate&#x2F;Shaders&#x2F; ShaderFileCache.json” 文件中，该文件在启动时加载。</p>
-<p>由于 include 文件会有多级 include，因此只有加载了 shader 源码将所有层级的 include 文件进行时间戳比对才能确定是否需要编译此 shader，因此这一模式只能在加载过程中应用。在运行时需要采用主动触发编译，目前主动触发编译只有实现了 shader 的编译配置发生改变，文件发生改变主动触发编译留待之后实现。</p>
-<h5 id="2-Shader-输入参数描述"><a href="#2-Shader-输入参数描述" class="headerlink" title="2. Shader 输入参数描述"></a>2. Shader 输入参数描述</h5><p>模板类 <code>TShaderResourceParameter</code> 可以容纳各种类型的 shader 参数描述，同时可以绑定实际的资源。但这些目前都需要大量的手写代码完成，手动与 shader 代码里的声明对齐，手动绑定资源。更合理的做法应该是，</p>
+<p>Shader 文件的后缀分为作为头文件的 .glsl 以及表示不同阶段的源码文件如
+.ver、.frag、.comp 等。编译过程中会记录源码文件以及其 include
+文件的时间戳，用以辨别是否有更改。同时将 shader 编译配置进行
+hash，作为编译输出文件的文件名一部分，用以辨别当前 shader
+编译配置是否已经编译过。这些信息都会记录在 "intermediate/Shaders/
+ShaderFileCache.json" 文件中，该文件在启动时加载。</p>
+<p>由于 include 文件会有多级 include，因此只有加载了 shader
+源码将所有层级的 include 文件进行时间戳比对才能确定是否需要编译此
+shader，因此这一模式只能在加载过程中应用。在运行时需要采用主动触发编译，目前主动触发编译只有实现了
+shader 的编译配置发生改变，文件发生改变主动触发编译留待之后实现。</p>
+<h5 id="shader-输入参数描述">2. Shader 输入参数描述</h5>
+<p>模板类 <code>TShaderResourceParameter</code> 可以容纳各种类型的
+shader
+参数描述，同时可以绑定实际的资源。但这些目前都需要大量的手写代码完成，手动与
+shader 代码里的声明对齐，手动绑定资源。更合理的做法应该是，</p>
 <ul>
 <li>实现 C++ 反射宏，使用宏能够更快速声明 shader 参数描述</li>
-<li>shader 编译过程应该利用 shader 反射生成包含输入资源描述的头信息。shader 参数在 C++ 中使用相同的名称，使用头信息中的名称进行自动配置参数描述(layout信息等)，并进行验证。</li>
+<li>shader 编译过程应该利用 shader
+反射生成包含输入资源描述的头信息。shader 参数在 C++
+中使用相同的名称，使用头信息中的名称进行自动配置参数描述(layout信息等)，并进行验证。</li>
 </ul>
 <p>这些留待之后实现。</p>
-<h3 id="TODO"><a href="#TODO" class="headerlink" title="TODO"></a>TODO</h3><p>由于时间有限，有很多搁置的策略未实现。</p>
+<h3 id="todo">TODO</h3>
+<p>由于时间有限，有很多搁置的策略未实现。</p>
 <ul>
 <li>描述符堆目前未实现同时多个堆策略</li>
 <li>shader 编译流程生成 layout 头信息，使用 C++ 反射宏进行绑定</li>
 <li>多线程渲染</li>
 </ul>
-<h3 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h3><p><a name="[1]">[1]</a> <a target="_blank" rel="noopener" href="https://www.saschawillems.de/blog/2018/07/19/vulkan-input-attachments-and-sub-passes/">https://www.saschawillems.de/blog/2018/07/19/vulkan-input-attachments-and-sub-passes/</a></p>
+<h3 id="reference">Reference</h3>
+<p><a name="[1]">[1]</a>
+https://www.saschawillems.de/blog/2018/07/19/vulkan-input-attachments-and-sub-passes/</p>
 
-      
     </div>
-    <footer class="article-footer">
-      <a data-url="http://example.com/2022/07/16/Render%20Engine/Vulkan%20Render%20Design/" data-id="cl5o1o93q000468tg9dpu2cg4" data-title="Vulkan Render Design" class="article-share-link">Share</a>
-      
-      
-      
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item"></div>
+      <div class="post-nav-item">
+    <a href="/2022/07/16/Render%20Engine/Scene%20Graph%20and%20Draw%20Call%20Grouping%20Strategy/" rel="next" title="Scene Graph and Draw Call Grouping Strategy">
+      Scene Graph and Draw Call Grouping Strategy <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#summary"><span class="nav-number">1.</span> <span class="nav-text">Summary</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vulkan-%E7%AE%A1%E7%BA%BF%E7%AE%A1%E7%90%86%E7%AD%96%E7%95%A5"><span class="nav-number">2.</span> <span class="nav-text">Vulkan 管线管理策略</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#graphics-pso-%E7%9A%84%E5%88%9B%E5%BB%BA"><span class="nav-number">3.</span> <span class="nav-text">Graphics PSO 的创建</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#vulkan-graphics-pipeline-%E4%BB%8B%E7%BB%8D"><span class="nav-number">3.1.</span> <span class="nav-text">1. Vulkan Graphics Pipeline
+介绍</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#vulkan-render-pass"><span class="nav-number">3.1.1.</span> <span class="nav-text">1.1 Vulkan Render Pass</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#vulkan-pipeline-layout"><span class="nav-number">3.1.2.</span> <span class="nav-text">1.2 Vulkan Pipeline Layout</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%BB%8E%E4%B8%8A%E5%B1%82%E5%88%B0%E6%B8%B2%E6%9F%93%E5%B1%82%E7%9A%84%E7%AE%A1%E7%BA%BF%E5%88%9B%E5%BB%BA"><span class="nav-number">3.2.</span> <span class="nav-text">2. 从上层到渲染层的管线创建</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#shader-%E7%9A%84%E7%AE%A1%E7%90%86%E4%B8%8E%E9%85%8D%E7%BD%AE"><span class="nav-number">4.</span> <span class="nav-text">Shader 的管理与配置</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#shader-%E6%BA%90%E7%A0%81%E7%BC%96%E8%AF%91%E4%B8%8E%E5%8A%A0%E8%BD%BD"><span class="nav-number">4.0.1.</span> <span class="nav-text">1. Shader 源码编译与加载</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#shader-%E8%BE%93%E5%85%A5%E5%8F%82%E6%95%B0%E6%8F%8F%E8%BF%B0"><span class="nav-number">4.0.2.</span> <span class="nav-text">2. Shader 输入参数描述</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#todo"><span class="nav-number">5.</span> <span class="nav-text">TODO</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#reference"><span class="nav-number">6.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">wsyOverflow</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">categories</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wsyOverflow</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
     </footer>
   </div>
-  
-    
-<nav id="article-nav">
-  
-    <a href="/2022/07/16/Render%20Engine/Scene%20Graph%20and%20Draw%20Call%20Grouping%20Strategy/" id="article-nav-newer" class="article-nav-link-wrap">
-      <strong class="article-nav-caption">Newer</strong>
-      <div class="article-nav-title">
-        
-          Scene Graph and Draw Call Grouping Strategy
-        
-      </div>
-    </a>
-  
-  
-</nav>
 
   
-</article>
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
 
 
-</section>
-        
-          <aside id="sidebar">
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
   
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">Categories</h3>
-    <div class="widget">
-      <ul class="category-list"><li class="category-list-item"><a class="category-list-link" href="/categories/Render-Engine/">Render Engine</a></li></ul>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
     </div>
-  </div>
-
-
-  
-    
-
-  
-    
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">Archives</h3>
-    <div class="widget">
-      <ul class="archive-list"><li class="archive-list-item"><a class="archive-list-link" href="/archives/2022/07/">July 2022</a></li></ul>
-    </div>
-  </div>
-
-
-  
-    
-  <div class="widget-wrap">
-    <h3 class="widget-title">Recent Posts</h3>
-    <div class="widget">
-      <ul>
-        
-          <li>
-            <a href="/2022/07/16/Render%20Engine/Scene%20Graph%20and%20Draw%20Call%20Grouping%20Strategy/">Scene Graph and Draw Call Grouping Strategy</a>
-          </li>
-        
-          <li>
-            <a href="/2022/07/16/Render%20Engine/Vulkan%20Render%20Design/">Vulkan Render Design</a>
-          </li>
-        
-      </ul>
-    </div>
-  </div>
-
-  
-</aside>
-        
-      </div>
-      <footer id="footer">
-  
-  <div class="outer">
-    <div id="footer-info" class="inner">
-      
-      &copy; 2022 wsyOverflow<br>
-      Powered by <a href="https://hexo.io/" target="_blank">Hexo</a>
-    </div>
-  </div>
-</footer>
-
-    </div>
-    <nav id="mobile-nav">
-  
-    <a href="/" class="mobile-nav-link">Home</a>
-  
-    <a href="/archives" class="mobile-nav-link">Archives</a>
-  
-</nav>
-    
-
-
-<script src="/js/jquery-3.4.1.min.js"></script>
-
-
-
-  
-<script src="/fancybox/jquery.fancybox.min.js"></script>
-
-
-
-
-<script src="/js/script.js"></script>
-
-
-
-
-
-  </div>
 </body>
 </html>

@@ -1,0 +1,712 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
+<meta name="theme-color" content="#222">
+<meta name="generator" content="Hexo 6.2.0">
+  <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
+  <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
+  <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
+  <link rel="mask-icon" href="/images/logo.svg" color="#222">
+
+<link rel="stylesheet" href="/css/main.css">
+
+
+<link rel="stylesheet" href="/lib/font-awesome/css/all.min.css">
+
+<script id="hexo-configurations">
+    var NexT = window.NexT || {};
+    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":false,"show_result":false,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":null,"storage":true,"lazyload":false,"nav":null},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":false,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}}};
+  </script>
+
+  <meta name="description" content="基础概念 1. GPU 中的概念 1.1 处理器核心的层级概念 GPU 具有非常多的处理器核心，在 Nvidia 中称为 Streaming Multiprocessor(SM)，AMD 称为 Compute Unit(CU)，以下使用 SM。在 SM 内部包含最基本的处理单元 lane，lane 可以近似理解为一个线程。SM 进行调度执行任务时，最小单位并不是 lane，而是 War">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Compute Shader 基础">
+<meta property="og:url" content="http://example.com/2022/07/17/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/index.html">
+<meta property="og:site_name" content="wsyOverflow">
+<meta property="og:description" content="基础概念 1. GPU 中的概念 1.1 处理器核心的层级概念 GPU 具有非常多的处理器核心，在 Nvidia 中称为 Streaming Multiprocessor(SM)，AMD 称为 Compute Unit(CU)，以下使用 SM。在 SM 内部包含最基本的处理单元 lane，lane 可以近似理解为一个线程。SM 进行调度执行任务时，最小单位并不是 lane，而是 War">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2022-07-16T16:31:30.797Z">
+<meta property="article:modified_time" content="2022-07-16T16:33:11.525Z">
+<meta property="article:author" content="wsyOverflow">
+<meta name="twitter:card" content="summary">
+
+<link rel="canonical" href="http://example.com/2022/07/17/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/">
+
+
+<script id="page-configurations">
+  // https://hexo.io/docs/variables.html
+  CONFIG.page = {
+    sidebar: "",
+    isHome : false,
+    isPost : true,
+    lang   : 'en'
+  };
+</script>
+
+  <title>Compute Shader 基础 | wsyOverflow</title>
+  
+
+
+
+
+
+
+  <noscript>
+  <style>
+  .use-motion .brand,
+  .use-motion .menu-item,
+  .sidebar-inner,
+  .use-motion .post-block,
+  .use-motion .pagination,
+  .use-motion .comments,
+  .use-motion .post-header,
+  .use-motion .post-body,
+  .use-motion .collection-header { opacity: initial; }
+
+  .use-motion .site-title,
+  .use-motion .site-subtitle {
+    opacity: initial;
+    top: initial;
+  }
+
+  .use-motion .logo-line-before i { left: initial; }
+  .use-motion .logo-line-after i { right: initial; }
+  </style>
+</noscript>
+
+</head>
+
+<body itemscope itemtype="http://schema.org/WebPage">
+  <div class="container use-motion">
+    <div class="headband"></div>
+
+    <header class="header" itemscope itemtype="http://schema.org/WPHeader">
+      <div class="header-inner"><div class="site-brand-container">
+  <div class="site-nav-toggle">
+    <div class="toggle" aria-label="Toggle navigation bar">
+      <span class="toggle-line toggle-line-first"></span>
+      <span class="toggle-line toggle-line-middle"></span>
+      <span class="toggle-line toggle-line-last"></span>
+    </div>
+  </div>
+
+  <div class="site-meta">
+
+    <a href="/" class="brand" rel="start">
+      <span class="logo-line-before"><i></i></span>
+      <h1 class="site-title">wsyOverflow</h1>
+      <span class="logo-line-after"><i></i></span>
+    </a>
+  </div>
+
+  <div class="site-nav-right">
+    <div class="toggle popup-trigger">
+    </div>
+  </div>
+</div>
+
+
+
+
+<nav class="site-nav">
+  <ul id="menu" class="main-menu menu">
+        <li class="menu-item menu-item-home">
+
+    <a href="/" rel="section"><i class="fa fa-home fa-fw"></i>Home</a>
+
+  </li>
+        <li class="menu-item menu-item-archives">
+
+    <a href="/archives/" rel="section"><i class="fa fa-archive fa-fw"></i>Archives</a>
+
+  </li>
+  </ul>
+</nav>
+
+
+
+
+</div>
+    </header>
+
+    
+  <div class="back-to-top">
+    <i class="fa fa-arrow-up"></i>
+    <span>0%</span>
+  </div>
+
+
+    <main class="main">
+      <div class="main-inner">
+        <div class="content-wrap">
+          
+
+          <div class="content post posts-expand">
+            
+
+    
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="http://example.com/2022/07/17/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="wsyOverflow">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wsyOverflow">
+    </span>
+      <header class="post-header">
+        <h1 class="post-title" itemprop="name headline">
+          Compute Shader 基础
+        </h1>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+              
+
+              <time title="Created: 2022-07-17 00:31:30 / Modified: 00:33:11" itemprop="dateCreated datePublished" datetime="2022-07-17T00:31:30+08:00">2022-07-17</time>
+            </span>
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-folder"></i>
+              </span>
+              <span class="post-meta-item-text">In</span>
+                <span itemprop="about" itemscope itemtype="http://schema.org/Thing">
+                  <a href="/categories/Vulkan-Basics/" itemprop="url" rel="index"><span itemprop="name">Vulkan Basics</span></a>
+                </span>
+            </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+        <h3 id="基础概念">基础概念</h3>
+<h4 id="gpu-中的概念">1. GPU 中的概念</h4>
+<h5 id="处理器核心的层级概念">1.1 处理器核心的层级概念</h5>
+<p>GPU 具有非常多的处理器核心，在 Nvidia 中称为 Streaming
+Multiprocessor(SM)，AMD 称为 Compute Unit(CU)，以下使用 SM。在 SM
+内部包含最基本的处理单元 lane，lane 可以近似理解为一个线程。SM
+进行调度执行任务时，最小单位并不是 lane，而是 Warp(Nvidia 中的称呼，AMD
+称为 wavefront)。一个 Warp 包含一定数量的 lane，在 Nvidia 中是 32，AMD
+是 64。不同的架构，一个 SM 中包含的 warp 数量不同，目前的 Nvidia GPU
+中一个 SM 包含 4 个 warp，即 128 个 lane(shader core、cuda core等)。GPU
+显卡型号不同，GPU 包含的 SM 数量也不同，3080Ti 包含 80 个 SM。</p>
+<p>在同一个 Warp 中的所有 lane
+执行相同的指令，但可以处理不同的数据，这样就构成了现代 GPU 的 SIMD
+机制。但一个 Warp 中的所有 lane 并不总是同时处于运行状态，即 active
+lane；也并不总是同时处于非运行状态，即 inactive lane。例如：</p>
+<ul>
+<li><p>下发的任务组包含的任务数量较少或者不是 warp
+大小的整数倍，不足以填满整个 warp 的 lane，那么未分配任务的 lane 则处于
+inactive 状态。下发的任务组在 vulkan 中称为 local workgroup(D3D 中的
+thread group) 大小。</p></li>
+<li><p>Dynamic Branching 会导致 lane
+的执行路径不止一条，即不止一套指令，这一定程度上破坏了 SIMD
+机制。例如，代码中包含 if-else 语句，不满足 if 条件的 lane 由于 lockstep
+运行方式需要等待其它所有满足 if 条件的 lane 执行 if 部分，等待中的 lane
+则处于 inactive 状态。反之，满足 if 条件的 lane 也会等待不满足 if 条件的
+lane 执行 else 部分。 但 if-else 并不总是导致这种指令分歧，对于非常简单
+if-else，GPU 能够使用同一套指令实现，例如如下代码</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">uint</span> d = buff_array[...]; </span><br><span class="line"><span class="type">uint</span> c;</span><br><span class="line"><span class="keyword">if</span>(d &lt; some_value)&#123;</span><br><span class="line">   c = <span class="number">0</span>;</span><br><span class="line">&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">   c = <span class="number">1</span>; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可能会被转换为下述伪代码描述的指令，注意
+<code>cmp_and_choose</code></p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><span class="line">register_a = 0;</span><br><span class="line">register_b = 1; </span><br><span class="line">register_d = load_from(buff_ptr_offset);</span><br><span class="line">register_some_value = ... ;</span><br><span class="line">register_c = cmp_and_choose(register_d, register_some_value, register_a, register_b);</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p>因此，在执行之前，先将每个 local workgroup 中的线程划分为以 warp
+为单位的子组，之后 GPU 以 warp 为单位进行调度执行。</p>
+<h5 id="存储类型与数据同步">1.2 存储类型与数据同步</h5>
+<p>以上描述的 SM、warp、lane
+具有不同类型的存储，下面根据速度由快到慢依次说明，这里的参数数据以
+3080Ti (Ampere-GA102架构)为例 <a href="#%5B1%5D">[1]</a></p>
+<ul>
+<li><p>register：每个 SM 具有256KB 大小的寄存器区。</p></li>
+<li><p>shared memory/L1 cache：一个 SM 中的所有线程可以访问该 SM
+具有有限大小的 shared memory。shared memory
+本质上是一个较小的读写缓存区，GA102 架构中为
+128KB，但其中只有一部分可被程序员使用，其他用作缓存或其他用途，例如 48KB
+用作 shared memory。</p></li>
+<li><p>global memory(VRAM)：global memory 即 GPU
+显存。如果寄存器存储或者shared memory
+的使用大小溢出，则会将其中的数据写入显存中，这一点和 CPU
+的高速缓存-内存机制类似。</p></li>
+</ul>
+<p>这三种类型的存储除了存取速度差距大之外，还有工作机制上的区别：</p>
+<ul>
+<li>首先，一个 SM 的 shared memory 对另一个 SM 上的线程是不可见的，即
+shared memory 只用于同一 SM 的线程的数据同步与共享。</li>
+<li>其次，shared memory 与 register 虽然都属于 SM，但只有 shared memory
+中的数据可以在 SM 中的 lane 之间共享。register
+一般用于暂存指令执行过程的输入输出，lane/线程执行中用到的 register
+相当于是私有的，对于其他线程是不可见的。因此，一般情况下，同一 SM
+中的线程共享数据需要额外花费 register 到缓存(shared memory)
+的传输时间，以及占用了带宽。</li>
+<li>最后，对于同一 SM 中正在执行的线程之间，GPU
+提供了直接通过寄存器共享数据的机制。缓存与寄存器的存取速度相差很多，因此这会带来更高效的数据同步。各大图形
+SDK 也对此实现了相应 API，如后续描述的 vulkan 中的 subgroup 概念。</li>
+</ul>
+<h4 id="vulkan-中的概念">2. Vulkan 中的概念</h4>
+<p>以上讲述了，一些硬件层面的概念，包括
+SM(处理器核心)、Warp(处理器核心中同时执行的线程组)、Lane(相当于线程)。在图形
+SDK 中，有相应的软件层面的概念。</p>
+<ul>
+<li><p>invocation：一个下发的并行任务，对应一个线程。</p></li>
+<li><p>local workgroup：在同一 SM 上执行的 invocation 组，面向一个
+SM。声明在 compute shader 中，如</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">layout</span>(<span class="keyword">local_size_x</span> = X, <span class="keyword">local_size_y</span> = Y, <span class="keyword">local_size_z</span> = Z) <span class="keyword">in</span>;</span><br></pre></td></tr></table></figure>
+<p>上述声明表示，当前 compute shader 描述的 invocation 的 local
+workgroup 大小为 <span class="math inline">\(X\cross Y \cross
+Z\)</span></p></li>
+<li><p>subgroup：local workgroup 中同时并行执行的 invocation
+组，对应一个 Warp。如上述 Warp，subgroup 中的 invocation 同样有 active
+和 inactive 两种状态，且具有相同的机制。</p></li>
+<li><p>global workgroup：一次下发并行任务的 API 调用生成的所有
+invocation，面向整个 GPU。通过 <code>vkCmdDispatch</code> 指定 local
+workgroup 的维度与对应维度大小，如下 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">vkCmdDispatch</span><span class="params">(VkCommandBuffer cmdBuf, <span class="type">uint32_t</span> groupCountX, <span class="type">uint32_t</span> groupCountY, <span class="type">uint32_t</span> groupCountZ)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>上述调用表面 global workgroup 中具有 (groupCountX x groupCountY x
+groupCountZ) 个 local workgroup，因此共有 (groupCountX x groupCountY x
+groupCountZ) x <span class="math inline">\(X\cross Y \cross Z\)</span>
+个 invocation/线程。</p></li>
+</ul>
+<p>Compute shader 的执行过程可以简要描述为：<code>vkCmdDispatch</code>
+命令生成了一批 local workgroup，GPU 会将这批 local workgroup 划分到某些
+SM 上执行，GPU 上的所有 SM 以并行形式执行。在 local workgroup
+执行期间，一般不会离开其执行于的 SM。local workgroup 包含多个
+invocation，GPU 的最小调度单位是 Warp，因此一个 local workgroup
+会先被划分为一组 subgroup，每个 subgroup 的 invocation
+可以并行执行。</p>
+<p>global workgroup 中 local workgroup 的数量可以超过 GPU 中 SM
+的数量，因此会有多个 local workgroup 被分配到同一个 SM 上执行。同一 SM
+上的 subgroup 会在执行过程中发生切换，例如，在一个 subgroup
+等待比较耗时内存访问操作完成时，为了隐藏延迟，会切换执行另一个
+subgroup，这种切换也可能会发生在同一 SM 上的不同 local workgroup 的
+subgroup 之间。假设 invocation 使用寄存器资源或 shared memory
+过多，不足以满足切换的 subgroup，那么会有寄存器数据备份至缓存或 shared
+memory 备份至显存的操作，这样会带来性能上的影响。同样，local workgroup
+的 subgroup 数量也可以超过一个 SM 中的 Warp 数量。</p>
+<h4 id="compute-shader-中的内置变量">3. Compute Shader 中的内置变量</h4>
+<p>Compute Shader 没有 in/out 参数，只能使用 SSBO/Texture
+资源进行读写。对于 Texture，compute shader 只能使用 image
+类型，不支持采样且一个 image 类型参数只能使用一个 level。在访问 image
+时，只能使用整数索引。</p>
+<p>Compute Shader
+经常用于处理高维数据，如贴图。有一些内置变量可以作为高维数据的索引，</p>
+<ul>
+<li><p><code>uvec3 gl_NumWorkGroups</code>：传递给 dispatch 函数的 group
+数量，即 (groupCountX, groupCountY, groupCountZ)</p></li>
+<li><p><code>uvec3 gl_WorkGroupID</code>：当前 invocation 所属的 local
+workgroup 的编号，范围 [0, gl_NumWorkGroups.XYZ)</p></li>
+<li><p><code>uvec3 gl_LocalInvocationID</code>：当前 invocation 在其
+local workgroup 内的编号，范围是 [0, gl_WorkGroupSize.XYZ)，其中
+gl_WorkGroupSize=(local_size_x, local_size_y, local_size_z)</p></li>
+<li><p><code>uvec3 gl_GlobalInvocationID</code>：当前 invocation 在
+global workgroup 中的编号，等于</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">gl_WorkGroupID</span> * <span class="built_in">gl_WorkGroupSize</span> + <span class="built_in">gl_LocalInvocationID</span></span><br></pre></td></tr></table></figure></li>
+<li><p><code>uint gl_LocalInvocationIndex</code>：相当于
+gl_LocalInvocationID 的一维形式，等于</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">gl_LocalInvocationIndex</span> =</span><br><span class="line">          <span class="built_in">gl_LocalInvocationID</span>.z * <span class="built_in">gl_WorkGroupSize</span>.x * <span class="built_in">gl_WorkGroupSize</span>.y +</span><br><span class="line">          <span class="built_in">gl_LocalInvocationID</span>.y * <span class="built_in">gl_WorkGroupSize</span>.x + </span><br><span class="line">          <span class="built_in">gl_LocalInvocationID</span>.x;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p>与 subgroup 相关的内置变量：</p>
+<ul>
+<li><code>gl_NumSubgroups</code>：local workgroup 包含的 subgroup
+的数量</li>
+<li><code>gl_SubgroupID</code>：当前 subgroup 在 local workgroup
+中的编号，范围是 [0, gl_NumSubgroups)</li>
+<li><code>gl_SubgroupSize</code>：subgroup 的大小</li>
+<li><code>gl_SubgroupInvocationID</code>：当前 invocation 在 subgroup 中
+ID，范围是 [0, gl_SubgroupSize)</li>
+<li><code>gl_SubgroupEqMask</code>, <code>gl_SubgroupGeMask</code>,
+<code>gl_SubgroupGtMask</code>, <code>gl_SubgroupLeMask</code>,<br>
+<code>gl_SubgroupLtMask</code>：subgroupBallot 相关</li>
+</ul>
+<p>有关 gl_LocalInvocationID 与 gl_SubgroupInvocationID
+的关系，没有找到有文档说明，但我相信应该与
+gl_GlobalInvocationID、gl_LocalInvocationID之间的关系类似。因为 GPU
+的最小调度单位是 subgroup/Warp 而不是 invocation/线程。在调度之前 local
+workgroup 就应该已经被划分为 subgroup。此时，subgroup 中的所有
+invocation 都对于 GPU 而言是相同的指令序列。subgroup
+内的分歧应该发生在实际执行过程中。因此，gl_LocalInvocationID 和
+gl_SubgroupInvocationID
+之间具有事先确定的关系应该不会对后续调度产生任何影响。但是如果没有确定的关系，那么subgroup
+功能的使用将会受到很大的限制。经过在 RTX 3080ti
+上测试，gl_LocalInvocationID 与 gl_SubgroupInvocationID
+有如下数值关系，</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">gl_SubgroupID * gl_SubgroupSize + gl_SubgroupInvocationID == <span class="built_in">gl_LocalInvocationIndex</span> </span><br></pre></td></tr></table></figure>
+<p>或者</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="built_in">gl_LocalInvocationIndex</span> % gl_SubgroupSize == gl_SubgroupInvocationID </span><br></pre></td></tr></table></figure>
+<h3 id="内存模型术语">内存模型术语</h3>
+<h4 id="coherent-or-incoherent-memory-access-2">1. Coherent or
+Incoherent Memory Access <a href="#%5B2%5D">[2]</a></h4>
+<ul>
+<li>Coherent 内存访问</li>
+</ul>
+<p>以最简单的例子——单处理器系统来说，对于同一内存区域同时只会有一个线程访问。因此，当一个处理元件对某一内存区域写，然后另一处理元件对同一内存区域读时，总能读到更新后的值。这是我们想要的结果，但得到这一正确结果并不只是多线程读写同步。因为，在硬件层有高速缓存-内存机制，处理器的读写往往不直接针对内存，而是针对缓存。缓存中的数据是内存中数据的拷贝或者是写操作得到的更新数据，因此需要确保写操作之后的读操作能够读到新数据，而非旧数据，这就是
+<strong>Coherent
+内存访问</strong>。单处理器系统的内存操作工作于同一套高速缓存-内存机制中，保证
+Coherent 内存访问较容易。</p>
+<ul>
+<li>Incoherent 内存访问</li>
+</ul>
+<p>但对于多处理器系统，每个处理器都有其本地缓存，当多个处理器同时访问同一内存区域时，同一内存区域的数据在这些处理器的缓存中都有一个备份。此时可能存在处理器读到的时本地缓存中的旧数据，而不是其他处理器写操作生成的新数据，即出现
+<strong>Incoherent
+内存访问</strong>。为了避免这种情况，多处理器系统的设计需要采用存储器一致性协议，粗略地说，当一个处理器对某一内存区域更新时，对该内存区域存在缓存备份的其他处理器也要对其本地缓存的相应位置进行更新。</p>
+<h4 id="visibility-3">2. Visibility <a href="#%5B3%5D">[3]</a></h4>
+<p>GPU 的核心数量远高于 CPU，在 GPU
+的执行过程中，不同处理器同时读写同一内存区域时，也会出现上述 Incoherent
+内存访问情况。而 <strong>Visibility</strong> 术语就是指一个 shader
+invocation 可以安全地读其他 shader invocation 的 Incoherent
+写数据，也就是说，不会读取到缓存中旧的备份，或者其他 invocation
+写数据对其是可见的。</p>
+<p>对于多个 shader invocation 同时读写不同的区域，不会出现上述
+incoherent 访问情况。此外，对于在同一处理器执行的 shader
+invocation，不会出现 incoherent
+情况，因为使用的是同一套缓存-内存机制，例如 compute shader 中的同一
+local workgroup 中的 invocation。特别注意，这里不会出现 incoherent
+访问问题，并不是指读写同步问题，读写同步同样需要额外处理。当不同处理器上的
+shader invocation 对同一内存区域进行读写时，则会出现 incoherent
+内存访问。</p>
+<p><a href="#%5B5%5D">[5]</a> 提到 incoherent 的内存访问操作有：</p>
+<ul>
+<li>对 image 变量的 imageLoad/imageStore</li>
+<li>对 buffer 变量的读写操作</li>
+<li><a target="_blank" rel="noopener" href="https://www.khronos.org/opengl/wiki/Atomic_Counter">Atomic
+Counters</a></li>
+<li>对 compute shader 中的 shared 变量的读写操作。这个无法理解，shared
+变量存储在缓存中，不应该会有多个备份的情况，为什么还是 incoherent？</li>
+</ul>
+<p>这时需要考虑如何避免 incoherent 内存访问，即确保 visibility
+性质。这里有两种情况：</p>
+<h5 id="internal-visibility一个绘制指令执行内部一部分写而另一部分读">2.1
+Internal Visibility：一个绘制指令执行内部，一部分写、而另一部分读。</h5>
+<ul>
+<li>读写次序控制、内存控制</li>
+</ul>
+<p>想要使得一个 shader invocation 能够读取另一 shader invocation
+写数据，要先保证写操作在读操作之前确实发生，也就是读写同步问题。例如
+compute shader 中 <code>barrier</code> 函数，可以确保 local
+workgroup(执行在同一处理器) 中的所有 invocation 都执行到 barrier
+同步点后，才开始执行之后的代码。注意 barrier 函数只是对 local workgroup
+中的 invocation
+的执行过程进行了控制，这种控制只发生在同一个处理器上。对于 shared memory
+缓存只会在同一个处理器上共享，因此 barrier 同时也能够做到 shared memory
+的读写次序控制。在 compute shader 中 shared 变量即位于 shared memory
+中，由于本身就是缓存，不会出现多个备份情况，因此 shared 变量是隐含的
+coherent 访问。</p>
+<ul>
+<li>内存访问控制 <a href="#%5B4%5D">[4]</a></li>
+</ul>
+<p>确保读写次序，相当于确保了在读操作之前，写操作一定已经发生。对于
+coherent 内存访问而言，这已经确保了写数据的可见性；但对于 incoherent
+内存访问，写操作发生不代表写数据对其他 invocation 可见，这会导致一个
+invocation 的内存读写操作的相对次序对于另一个 invocation
+而言是不确定的状态，换句话说，写操作的数据对其他 invocation
+可见的次序不确定。例如一个 invocation 中执行两次写操作，而另一个
+invocation 可能会先看到第二次写的数据，后看到第一次写的数据。</p>
+<p>这时需要使用到 memory barrier 来控制读写操作，使得其他 invocation
+看到写数据的次序与写操作执行的次序一致。先对可能被多个处理器访问到的
+image 或 buffer 类型变量进行 <code>coherent</code> 修饰，声明该变量为
+coherent 访问机制。该访问机制使得相应的 memoryBarrier
+可以控制对被修饰变量的读写操作。调用 memoryBarrier 等函数的 invocation
+会等待之前的所有读写操作完成，当该函数返回后，写数据对之后的访问处于可见状态。例如一个
+invocation 执行两次写操作，每次写操作后都加上一个 memory
+barrier，那么其他 invocation
+就不可能先看到第二次写的数据，而后看到第一次写的数据。memory barrier
+有多种类型：</p>
+<ul>
+<li><code>memoryBarrier</code>：控制所有类型变量的内存访问，render
+command 内作用于全局。</li>
+<li><code>memoryBarrierAtomicCounter</code>：控制 atomic-counter
+变量的访问，render command 内作用于全局。</li>
+<li><code>memoryBarrierBuffer</code>：控制 buffer 变量的内存访问，render
+command 内作用于全局。</li>
+<li><code>memoryBarrierImage</code>：控制 image 变量的内存访问，render
+command 内作用于全局。</li>
+<li><code>memoryBarrierShared</code>：控制 shared
+变量的内存访问，作用于同一 workgroup。</li>
+<li><code>groupMemoryBarrier</code>：控制所有类型变量的内存访问，作用于同一
+workgroup。</li>
+</ul>
+<h5 id="external-visibility">2.2 External Visibility</h5>
+<p>一个 render command 内部的 visibility 是 shader invocation
+之间的读写操作。对于 render command 之间的 visibility 使用 barrier
+命令进行同步。例如 vulkan 中的 buffer barrier、image layout 等</p>
+<h3 id="reference">Reference</h3>
+<p><a name="[1]">[1]</a>
+https://images.nvidia.com/aem-dam/en-zz/Solutions/geforce/ampere/pdf/NVIDIA-ampere-GA102-GPU-Architecture-Whitepaper-V1.pdf</p>
+<p><a name="[2]">[2]</a>
+https://en.wikipedia.org/wiki/Memory_coherence</p>
+<p><a name="[3]">[3]</a>
+https://www.khronos.org/opengl/wiki/Memory_Model#Ensuring_visibility</p>
+<p><a name="[4]">[4]</a>https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.4.60.html#shader-memory-control-functions</p>
+<p><a name="[5]">[5]</a>
+https://www.khronos.org/opengl/wiki/Memory_Model#Incoherent_memory_access</p>
+
+    </div>
+
+    
+    
+    
+
+      <footer class="post-footer">
+
+        
+
+
+        
+    <div class="post-nav">
+      <div class="post-nav-item">
+    <a href="/2022/07/17/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/" rel="prev" title="Compute Shader 实现 Pyramid Algorithm">
+      <i class="fa fa-chevron-left"></i> Compute Shader 实现 Pyramid Algorithm
+    </a></div>
+      <div class="post-nav-item">
+    <a href="/2022/07/17/Paper%20Notes/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination/" rel="next" title="Forward Light Cuts A Scalable Approach to Real-Time Global Illumination">
+      Forward Light Cuts A Scalable Approach to Real-Time Global Illumination <i class="fa fa-chevron-right"></i>
+    </a></div>
+    </div>
+      </footer>
+    
+  </article>
+  
+  
+  
+
+
+
+          </div>
+          
+
+<script>
+  window.addEventListener('tabs:register', () => {
+    let { activeClass } = CONFIG.comments;
+    if (CONFIG.comments.storage) {
+      activeClass = localStorage.getItem('comments_active') || activeClass;
+    }
+    if (activeClass) {
+      let activeTab = document.querySelector(`a[href="#comment-${activeClass}"]`);
+      if (activeTab) {
+        activeTab.click();
+      }
+    }
+  });
+  if (CONFIG.comments.storage) {
+    window.addEventListener('tabs:click', event => {
+      if (!event.target.matches('.tabs-comment .tab-content .tab-pane')) return;
+      let commentClass = event.target.classList[1];
+      localStorage.setItem('comments_active', commentClass);
+    });
+  }
+</script>
+
+        </div>
+          
+  
+  <div class="toggle sidebar-toggle">
+    <span class="toggle-line toggle-line-first"></span>
+    <span class="toggle-line toggle-line-middle"></span>
+    <span class="toggle-line toggle-line-last"></span>
+  </div>
+
+  <aside class="sidebar">
+    <div class="sidebar-inner">
+
+      <ul class="sidebar-nav motion-element">
+        <li class="sidebar-nav-toc">
+          Table of Contents
+        </li>
+        <li class="sidebar-nav-overview">
+          Overview
+        </li>
+      </ul>
+
+      <!--noindex-->
+      <div class="post-toc-wrap sidebar-panel">
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%9F%BA%E7%A1%80%E6%A6%82%E5%BF%B5"><span class="nav-number">1.</span> <span class="nav-text">基础概念</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#gpu-%E4%B8%AD%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="nav-number">1.1.</span> <span class="nav-text">1. GPU 中的概念</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%A4%84%E7%90%86%E5%99%A8%E6%A0%B8%E5%BF%83%E7%9A%84%E5%B1%82%E7%BA%A7%E6%A6%82%E5%BF%B5"><span class="nav-number">1.1.1.</span> <span class="nav-text">1.1 处理器核心的层级概念</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%AD%98%E5%82%A8%E7%B1%BB%E5%9E%8B%E4%B8%8E%E6%95%B0%E6%8D%AE%E5%90%8C%E6%AD%A5"><span class="nav-number">1.1.2.</span> <span class="nav-text">1.2 存储类型与数据同步</span></a></li></ol></li><li class="nav-item nav-level-4"><a class="nav-link" href="#vulkan-%E4%B8%AD%E7%9A%84%E6%A6%82%E5%BF%B5"><span class="nav-number">1.2.</span> <span class="nav-text">2. Vulkan 中的概念</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#compute-shader-%E4%B8%AD%E7%9A%84%E5%86%85%E7%BD%AE%E5%8F%98%E9%87%8F"><span class="nav-number">1.3.</span> <span class="nav-text">3. Compute Shader 中的内置变量</span></a></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%86%85%E5%AD%98%E6%A8%A1%E5%9E%8B%E6%9C%AF%E8%AF%AD"><span class="nav-number">2.</span> <span class="nav-text">内存模型术语</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#coherent-or-incoherent-memory-access-2"><span class="nav-number">2.1.</span> <span class="nav-text">1. Coherent or
+Incoherent Memory Access [2]</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#visibility-3"><span class="nav-number">2.2.</span> <span class="nav-text">2. Visibility [3]</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#internal-visibility%E4%B8%80%E4%B8%AA%E7%BB%98%E5%88%B6%E6%8C%87%E4%BB%A4%E6%89%A7%E8%A1%8C%E5%86%85%E9%83%A8%E4%B8%80%E9%83%A8%E5%88%86%E5%86%99%E8%80%8C%E5%8F%A6%E4%B8%80%E9%83%A8%E5%88%86%E8%AF%BB"><span class="nav-number">2.2.1.</span> <span class="nav-text">2.1
+Internal Visibility：一个绘制指令执行内部，一部分写、而另一部分读。</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#external-visibility"><span class="nav-number">2.2.2.</span> <span class="nav-text">2.2 External Visibility</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#reference"><span class="nav-number">3.</span> <span class="nav-text">Reference</span></a></li></ol></div>
+      </div>
+      <!--/noindex-->
+
+      <div class="site-overview-wrap sidebar-panel">
+        <div class="site-author motion-element" itemprop="author" itemscope itemtype="http://schema.org/Person">
+  <p class="site-author-name" itemprop="name">wsyOverflow</p>
+  <div class="site-description" itemprop="description"></div>
+</div>
+<div class="site-state-wrap motion-element">
+  <nav class="site-state">
+      <div class="site-state-item site-state-posts">
+          <a href="/archives/">
+        
+          <span class="site-state-item-count">5</span>
+          <span class="site-state-item-name">posts</span>
+        </a>
+      </div>
+      <div class="site-state-item site-state-categories">
+        <span class="site-state-item-count">3</span>
+        <span class="site-state-item-name">categories</span>
+      </div>
+  </nav>
+</div>
+
+
+
+      </div>
+
+    </div>
+  </aside>
+  <div id="sidebar-dimmer"></div>
+
+
+      </div>
+    </main>
+
+    <footer class="footer">
+      <div class="footer-inner">
+        
+
+        
+
+<div class="copyright">
+  
+  &copy; 
+  <span itemprop="copyrightYear">2022</span>
+  <span class="with-love">
+    <i class="fa fa-heart"></i>
+  </span>
+  <span class="author" itemprop="copyrightHolder">wsyOverflow</span>
+</div>
+  <div class="powered-by">Powered by <a href="https://hexo.io/" class="theme-link" rel="noopener" target="_blank">Hexo</a> & <a href="https://muse.theme-next.org/" class="theme-link" rel="noopener" target="_blank">NexT.Muse</a>
+  </div>
+
+        
+
+
+
+
+
+
+
+
+      </div>
+    </footer>
+  </div>
+
+  
+  <script src="/lib/anime.min.js"></script>
+  <script src="/lib/pjax/pjax.min.js"></script>
+  <script src="/lib/velocity/velocity.min.js"></script>
+  <script src="/lib/velocity/velocity.ui.min.js"></script>
+
+<script src="/js/utils.js"></script>
+
+<script src="/js/motion.js"></script>
+
+
+<script src="/js/schemes/muse.js"></script>
+
+
+<script src="/js/next-boot.js"></script>
+
+  <script>
+var pjax = new Pjax({
+  selectors: [
+    'head title',
+    '#page-configurations',
+    '.content-wrap',
+    '.post-toc-wrap',
+    '.languages',
+    '#pjax'
+  ],
+  switches: {
+    '.post-toc-wrap': Pjax.switches.innerHTML
+  },
+  analytics: false,
+  cacheBust: false,
+  scrollTo : !CONFIG.bookmark.enable
+});
+
+window.addEventListener('pjax:success', () => {
+  document.querySelectorAll('script[data-pjax], script#page-configurations, #pjax script').forEach(element => {
+    var code = element.text || element.textContent || element.innerHTML || '';
+    var parent = element.parentNode;
+    parent.removeChild(element);
+    var script = document.createElement('script');
+    if (element.id) {
+      script.id = element.id;
+    }
+    if (element.className) {
+      script.className = element.className;
+    }
+    if (element.type) {
+      script.type = element.type;
+    }
+    if (element.src) {
+      script.src = element.src;
+      // Force synchronous loading of peripheral JS.
+      script.async = false;
+    }
+    if (element.dataset.pjax !== undefined) {
+      script.dataset.pjax = '';
+    }
+    if (code !== '') {
+      script.appendChild(document.createTextNode(code));
+    }
+    parent.appendChild(script);
+  });
+  NexT.boot.refresh();
+  // Define Motion Sequence & Bootstrap Motion.
+  if (CONFIG.motion.enable) {
+    NexT.motion.integrator
+      .init()
+      .add(NexT.motion.middleWares.subMenu)
+      .add(NexT.motion.middleWares.postList)
+      .bootstrap();
+  }
+  NexT.utils.updateSidebarPosition();
+});
+</script>
+
+
+
+
+  
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+    <div id="pjax">
+  
+
+  
+
+  
+
+    </div>
+</body>
+</html>
