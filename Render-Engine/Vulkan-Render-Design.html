@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=2">
 <meta name="theme-color" content="#222">
 <meta name="generator" content="Hexo 6.2.0">
+<meta name="google-site-verification" content="Gv70gCGJnwlrTBdWFPL38UZ_NuDFqcz0oCrpwl9gPcA" />
   <link rel="apple-touch-icon" sizes="180x180" href="/images/apple-touch-icon-next.png">
   <link rel="icon" type="image/png" sizes="32x32" href="/images/favicon-32x32-next.png">
   <link rel="icon" type="image/png" sizes="16x16" href="/images/favicon-16x16-next.png">
@@ -17,13 +18,13 @@
 
 <script id="hexo-configurations">
     var NexT = window.NexT || {};
-    var CONFIG = {"hostname":"example.com","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":null,"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
+    var CONFIG = {"hostname":"wsyoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":null,"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
   <meta name="description" content="Summary 本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。 Vulkan 管线管理策略 Vulkan 包含三种管线 graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提 OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API 调用来进行切换的，属于 high-level">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Vulkan Render Design">
-<meta property="og:url" content="http://example.com/2022/07/16/Render-Engine/Vulkan-Render-Design/index.html">
+<meta property="og:url" content="https://wsyoverflow.github.io/Render-Engine/Vulkan-Render-Design.html">
 <meta property="og:site_name" content="wsyOverflow">
 <meta property="og:description" content="Summary 本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。 Vulkan 管线管理策略 Vulkan 包含三种管线 graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提 OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API 调用来进行切换的，属于 high-level">
 <meta property="og:locale" content="en_US">
@@ -32,7 +33,7 @@
 <meta property="article:author" content="wsyOverflow">
 <meta name="twitter:card" content="summary">
 
-<link rel="canonical" href="http://example.com/2022/07/16/Render-Engine/Vulkan-Render-Design/">
+<link rel="canonical" href="https://wsyoverflow.github.io/Render-Engine/Vulkan-Render-Design.html">
 
 
 <script id="page-configurations">
@@ -44,7 +45,20 @@
     lang   : 'en'
   };
 </script>
-
+<link rel="stylesheet" href="//cdn.jsdelivr.net/gh/theme-next/theme-next-needmoreshare2@1/needsharebutton.min.css"><style>
+#needsharebutton-postbottom {
+  cursor: pointer;
+  height: 26px;
+  margin-top: 10px;
+  position: relative;
+}
+#needsharebutton-postbottom .btn {
+  border: 1px solid $btn-default-border-color;
+  border-radius: 3px;
+  display: initial;
+  padding: 1px 4px;
+}
+</style>
   <title>Vulkan Render Design | wsyOverflow</title>
   
 
@@ -178,7 +192,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="http://example.com/2022/07/16/Render-Engine/Vulkan-Render-Design/">
+    <link itemprop="mainEntityOfPage" href="https://wsyoverflow.github.io/Render-Engine/Vulkan-Render-Design.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -429,7 +443,13 @@ https://www.saschawillems.de/blog/2018/07/19/vulkan-input-attachments-and-sub-pa
 
     
     
-    
+    <div class="post-widgets">
+      <div id="needsharebutton-postbottom">
+        <span class="btn">
+          <i class="fa fa-share-alt" aria-hidden="true"></i>
+        </span>
+      </div>
+    </div>
 
       <footer class="post-footer">
 
@@ -440,7 +460,7 @@ https://www.saschawillems.de/blog/2018/07/19/vulkan-input-attachments-and-sub-pa
     <div class="post-nav">
       <div class="post-nav-item"></div>
       <div class="post-nav-item">
-    <a href="/2022/07/16/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy/" rel="next" title="Scene Graph and Draw Call Grouping Strategy">
+    <a href="/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy.html" rel="next" title="Scene Graph and Draw Call Grouping Strategy">
       Scene Graph and Draw Call Grouping Strategy <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
@@ -676,6 +696,15 @@ window.addEventListener('pjax:success', () => {
 
   
 
+  <script src="//cdn.jsdelivr.net/gh/theme-next/theme-next-needmoreshare2@1/needsharebutton.min.js"></script>
+  <script>
+      pbOptions = {};
+        pbOptions.iconStyle = "box";
+        pbOptions.boxForm = "horizontal";
+        pbOptions.position = "bottomCenter";
+        pbOptions.networks = "Weibo,Wechat";
+      new needShareButton('#needsharebutton-postbottom', pbOptions);
+  </script>
 <link rel="stylesheet" href="//cdn.jsdelivr.net/npm/gitalk@1/dist/gitalk.min.css">
 
 <script>
@@ -687,7 +716,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'wsyOverflow.github.io',
       owner       : 'wsyOverflow',
       admin       : ['wsyOverflow'],
-      id          : 'd87793451bba3873628cfa2e766f4591',
+      id          : '3d76075e98c8eaf999811690a7ebfb10',
         language: '',
       distractionFreeMode: false
     });

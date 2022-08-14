@@ -2,7 +2,7 @@
 <search>
   <entry>
     <title>Glossy Probe Reprojection for Interactive Global Illumination</title>
-    <url>/2022/07/17/Paper-Notes/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination/</url>
+    <url>/Paper-Notes/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination.html</url>
     <content><![CDATA[<h2 id="summary">Summary</h2>
 <p><code>Glossy Probe Reprojection for Interactive Global Illumination</code>
 <a href="#%5B8%5D">[8]</a></p>
@@ -529,7 +529,7 @@ DOI:https://doi.org/10.1145/3414685.3417823</em></p>
   </entry>
   <entry>
     <title>Forward Light Cuts A Scalable Approach to Real-Time Global Illumination</title>
-    <url>/2022/07/17/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination/</url>
+    <url>/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html</url>
     <content><![CDATA[<h2 id="summary">Summary</h2>
 <p><code>Forward Light Cuts: A Scalable Approach to Real-Time Global Illumination</code>
 <a href="#%5B1%5D">[1]</a></p>
@@ -928,7 +928,7 @@ H(t_i,x,\vec{n_x})&amp;=\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{(&lt;\vec{n_i},\
   </entry>
   <entry>
     <title>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting</title>
-    <url>/2022/07/17/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting/</url>
+    <url>/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting.html</url>
     <content><![CDATA[<h2 id="summary">Summary</h2>
 <p><code>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting</code>
 <a href="#%5B1%5D">[1]</a></p>
@@ -1423,7 +1423,7 @@ Z(y)}\left(\frac{p_i(x_i)}{\hat{p}(x_i)}\frac{\textup{w}_i(x_i)}{M}\right)
   </entry>
   <entry>
     <title>Scene Graph and Draw Call Grouping Strategy</title>
-    <url>/2022/07/16/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy/</url>
+    <url>/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy.html</url>
     <content><![CDATA[<h3 id="summary">Summary</h3>
 <p>本文介绍了表示场景的 Scene Graph ，以及场景加载过程。基于 Scene Graph
 组织 draw call 的策略。</p>
@@ -1664,7 +1664,7 @@ https://developer.nvidia.com/content/how-modern-opengl-can-radically-reduce-driv
   </entry>
   <entry>
     <title>Compute Shader 基础</title>
-    <url>/2022/07/17/Vulkan-Basics/Compute-Shader-%E5%9F%BA%E7%A1%80/</url>
+    <url>/Vulkan-Basics/Compute-Shader-%E5%9F%BA%E7%A1%80.html</url>
     <content><![CDATA[<h3 id="基础概念">基础概念</h3>
 <h4 id="gpu-中的概念">1. GPU 中的概念</h4>
 <h5 id="处理器核心的层级概念">1.1 处理器核心的层级概念</h5>
@@ -1931,7 +1931,7 @@ https://www.khronos.org/opengl/wiki/Memory_Model#Incoherent_memory_access</p>
   </entry>
   <entry>
     <title>Vulkan Render Design</title>
-    <url>/2022/07/16/Render-Engine/Vulkan-Render-Design/</url>
+    <url>/Render-Engine/Vulkan-Render-Design.html</url>
     <content><![CDATA[<h3 id="summary">Summary</h3>
 <p>本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。</p>
 <h3 id="vulkan-管线管理策略">Vulkan 管线管理策略</h3>
@@ -2132,7 +2132,7 @@ https://www.saschawillems.de/blog/2018/07/19/vulkan-input-attachments-and-sub-pa
   </entry>
   <entry>
     <title>Compute Shader 实现 Pyramid Algorithm</title>
-    <url>/2022/07/17/Vulkan-Basics/Compute-Shader-%E5%AE%9E%E7%8E%B0-Pyramid-Algorithm/</url>
+    <url>/Vulkan-Basics/Compute-Shader-%E5%AE%9E%E7%8E%B0-Pyramid-Algorithm.html</url>
     <content><![CDATA[<h3 id="使用-compute-shader-生成-mipmap">使用 compute shader 生成
 mipmap</h3>
 <p>本文是参考 https://github.com/nvpro-samples/vk_compute_mipmaps

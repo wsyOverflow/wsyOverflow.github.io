@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://example.com/2022/07/17/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting/</loc>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting.html</loc>
     
     <lastmod>2022-08-14T04:40:10.113Z</lastmod>
     
@@ -13,7 +13,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/16/Render-Engine/Vulkan-Render-Design/</loc>
+    <loc>https://wsyoverflow.github.io/Render-Engine/Vulkan-Render-Design.html</loc>
     
     <lastmod>2022-08-14T02:42:03.655Z</lastmod>
     
@@ -24,7 +24,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/17/Paper-Notes/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination/</loc>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination.html</loc>
     
     <lastmod>2022-07-17T13:55:10.380Z</lastmod>
     
@@ -35,7 +35,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/17/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination/</loc>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html</loc>
     
     <lastmod>2022-07-16T18:06:43.451Z</lastmod>
     
@@ -46,7 +46,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/16/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy/</loc>
+    <loc>https://wsyoverflow.github.io/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy.html</loc>
     
     <lastmod>2022-07-16T16:37:27.856Z</lastmod>
     
@@ -57,7 +57,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/17/Vulkan-Basics/Compute-Shader-%E5%AE%9E%E7%8E%B0-Pyramid-Algorithm/</loc>
+    <loc>https://wsyoverflow.github.io/Vulkan-Basics/Compute-Shader-%E5%AE%9E%E7%8E%B0-Pyramid-Algorithm.html</loc>
     
     <lastmod>2022-07-16T16:37:08.314Z</lastmod>
     
@@ -68,7 +68,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/17/Vulkan-Basics/Compute-Shader-%E5%9F%BA%E7%A1%80/</loc>
+    <loc>https://wsyoverflow.github.io/Vulkan-Basics/Compute-Shader-%E5%9F%BA%E7%A1%80.html</loc>
     
     <lastmod>2022-07-16T16:33:11.525Z</lastmod>
     
