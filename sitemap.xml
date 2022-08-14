@@ -2,7 +2,7 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
-    <loc>http://example.com/2022/07/16/Render%20Engine/Vulkan%20Render%20Design/</loc>
+    <loc>http://example.com/2022/07/16/Render-Engine/Vulkan-Render-Design/</loc>
     
     <lastmod>2022-08-14T02:42:03.655Z</lastmod>
     
@@ -13,7 +13,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/17/Paper%20Notes/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/</loc>
+    <loc>http://example.com/2022/07/17/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting/</loc>
     
     <lastmod>2022-07-17T14:01:25.084Z</lastmod>
     
@@ -24,7 +24,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/17/Paper%20Notes/Glossy%20Probe%20Reprojection%20for%20Interactive%20Global%20Illumination/</loc>
+    <loc>http://example.com/2022/07/17/Paper-Notes/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination/</loc>
     
     <lastmod>2022-07-17T13:55:10.380Z</lastmod>
     
@@ -35,7 +35,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/17/Paper%20Notes/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination/</loc>
+    <loc>http://example.com/2022/07/17/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination/</loc>
     
     <lastmod>2022-07-16T18:06:43.451Z</lastmod>
     
@@ -46,7 +46,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/16/Render%20Engine/Scene%20Graph%20and%20Draw%20Call%20Grouping%20Strategy/</loc>
+    <loc>http://example.com/2022/07/16/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy/</loc>
     
     <lastmod>2022-07-16T16:37:27.856Z</lastmod>
     
@@ -57,7 +57,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/17/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/</loc>
+    <loc>http://example.com/2022/07/17/Vulkan-Basics/Compute-Shader-%E5%AE%9E%E7%8E%B0-Pyramid-Algorithm/</loc>
     
     <lastmod>2022-07-16T16:37:08.314Z</lastmod>
     
@@ -68,7 +68,7 @@
   </url>
   
   <url>
-    <loc>http://example.com/2022/07/17/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/</loc>
+    <loc>http://example.com/2022/07/17/Vulkan-Basics/Compute-Shader-%E5%9F%BA%E7%A1%80/</loc>
     
     <lastmod>2022-07-16T16:33:11.525Z</lastmod>
     
