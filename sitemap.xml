@@ -1,0 +1,81 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  
+  <url>
+    <loc>http://example.com/2022/07/16/Render%20Engine/Vulkan%20Render%20Design/</loc>
+    
+    <lastmod>2022-08-14T02:42:03.655Z</lastmod>
+    
+    <date>1657984079418</date>
+    <title>Vulkan Render Design | wsyOverflow</title>
+    
+    <desc></desc>
+  </url>
+  
+  <url>
+    <loc>http://example.com/2022/07/17/Paper%20Notes/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/</loc>
+    
+    <lastmod>2022-07-17T14:01:25.084Z</lastmod>
+    
+    <date>1658066182858</date>
+    <title>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting | wsyOverflow</title>
+    
+    <desc></desc>
+  </url>
+  
+  <url>
+    <loc>http://example.com/2022/07/17/Paper%20Notes/Glossy%20Probe%20Reprojection%20for%20Interactive%20Global%20Illumination/</loc>
+    
+    <lastmod>2022-07-17T13:55:10.380Z</lastmod>
+    
+    <date>1658065117131</date>
+    <title>Glossy Probe Reprojection for Interactive Global Illumination | wsyOverflow</title>
+    
+    <desc></desc>
+  </url>
+  
+  <url>
+    <loc>http://example.com/2022/07/17/Paper%20Notes/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination/</loc>
+    
+    <lastmod>2022-07-16T18:06:43.451Z</lastmod>
+    
+    <date>1657992875261</date>
+    <title>Forward Light Cuts A Scalable Approach to Real-Time Global Illumination | wsyOverflow</title>
+    
+    <desc></desc>
+  </url>
+  
+  <url>
+    <loc>http://example.com/2022/07/16/Render%20Engine/Scene%20Graph%20and%20Draw%20Call%20Grouping%20Strategy/</loc>
+    
+    <lastmod>2022-07-16T16:37:27.856Z</lastmod>
+    
+    <date>1657985603850</date>
+    <title>Scene Graph and Draw Call Grouping Strategy | wsyOverflow</title>
+    
+    <desc></desc>
+  </url>
+  
+  <url>
+    <loc>http://example.com/2022/07/17/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/</loc>
+    
+    <lastmod>2022-07-16T16:37:08.314Z</lastmod>
+    
+    <date>1657989090796</date>
+    <title>Compute Shader 实现 Pyramid Algorithm | wsyOverflow</title>
+    
+    <desc></desc>
+  </url>
+  
+  <url>
+    <loc>http://example.com/2022/07/17/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/</loc>
+    
+    <lastmod>2022-07-16T16:33:11.525Z</lastmod>
+    
+    <date>1657989090797</date>
+    <title>Compute Shader 基础 | wsyOverflow</title>
+    
+    <desc></desc>
+  </url>
+  
+</urlset>
