@@ -2,23 +2,23 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>http://example.com/2022/07/17/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting/</loc>
+    
+    <lastmod>2022-08-14T04:40:10.113Z</lastmod>
+    
+    <date>1658066182858</date>
+    <title>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting | wsyOverflow</title>
+    
+    <desc></desc>
+  </url>
+  
+  <url>
     <loc>http://example.com/2022/07/16/Render-Engine/Vulkan-Render-Design/</loc>
     
     <lastmod>2022-08-14T02:42:03.655Z</lastmod>
     
     <date>1657984079418</date>
     <title>Vulkan Render Design | wsyOverflow</title>
-    
-    <desc></desc>
-  </url>
-  
-  <url>
-    <loc>http://example.com/2022/07/17/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting/</loc>
-    
-    <lastmod>2022-07-17T14:01:25.084Z</lastmod>
-    
-    <date>1658066182858</date>
-    <title>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting | wsyOverflow</title>
     
     <desc></desc>
   </url>
