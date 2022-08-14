@@ -1,6 +1,405 @@
 <?xml version="1.0" encoding="utf-8"?>
 <search>
   <entry>
+    <title>Forward Light Cuts A Scalable Approach to Real-Time Global Illumination</title>
+    <url>/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html</url>
+    <content><![CDATA[<h2 id="summary">Summary</h2>
+<p><code>Forward Light Cuts: A Scalable Approach to Real-Time Global Illumination</code>
+<a href="#%5B1%5D">[1]</a></p>
+<p>这篇论文假设了次级光源为 diffuse
+材质的场景，并且不考虑次级光照的阴影，提出了一种能够很好结合
+tessellation 和 geometry
+阶段的并行特性的高效实时全局光照近似计算算法。该算法基于 many-light
+框架，将场景中的三角形类比为虚拟点光源，首先通过将场景中三角形以一种概率分布划分为
+multi-scale radiance
+子集，在每个子集中的每个三角形上随机采样生成一个扰动的
+VPL，这样就组成了多尺度的 VPL 集合。之后求解该 VPL 集合形成的 many-light
+问题来近似全局光照。该算法既模拟了传统层级的光源数量的随尺度增加的几何级下降，又具有可高度并行的线性设计，在场景完全动态并且涉及大量物体时，相比于之前算法，画面质量无明显损失并且具有较大的性能提升。</p>
+<h2 id="motivation">Motivation</h2>
+<p>实时全局光照有很多基于 radiance caching
+的方法，之前这些方法构建出场景中几何的层级结构（多为树形结构），使用这种层级结构来构建
+multi-scale radiance
+function，之后通过查询该层级结构对像素进行照亮。</p>
+<p>对于这种策略的方法，在场景完全动态并且涉及大量物体情况下，至少有两种局限，</p>
+<ul>
+<li>层级缓存结构每一帧都要重复计算，这个缺点带来的开销在现代图形学的并行结构下更为明显</li>
+<li>对于实时渲染，初始 VPL 集合过大，带来的开销难以分摊</li>
+</ul>
+<h2 id="approach">Approach</h2>
+<h3 id="vpls-generation">1. VPLs Generation</h3>
+<h4 id="区分-divergent-和-regular-三角形">1.1 区分 Divergent 和 Regular
+三角形</h4>
+<p>设置阈值 <span class="math inline">\(S_0\)</span> ，面积大于 <span class="math inline">\(S_0\)</span> 的三角形为 Divergent
+三角形，这类三角形需要经过一次 tessellation 特殊处理，之后描述。</p>
+<p><span class="math display">\[
+S_0=4\pi \frac{D^2_{near}}{N_{avg}}
+\]</span> 这个公式表达的是启发式地照亮一个像素，该像素周围有 <span class="math inline">\(N_{avg}\)</span> 个距离为至少 <span class="math inline">\(D_{near}\)</span> 的 VPLs 。参数配置：假设 <span class="math inline">\(R_{scene}\)</span> 为场景的半径长度，设置 <span class="math inline">\(D_{near}=0.2\times R_{scene}\)</span>，<span class="math inline">\(N_{avg}\)</span> 在区间 <span class="math inline">\([64,1024]\)</span> 内进行 quality-speed
+tradeoff。</p>
+<blockquote>
+<p><code>个人理解见</code>：<a href="#附录1">附录 1. 阈值 <span class="math inline">\(S_0\)</span> 的启发式的理解</a></p>
+</blockquote>
+<h4 id="三角形抽取过程">1.2 三角形抽取过程</h4>
+<p>抽取操作目的是丢弃小三角形，因为这类三角形引入的 diffuse indirect
+lighting
+对最终的渲染贡献很小，丢弃会加快速度，但如果全部无差别丢弃，则会丢失那些多个小三角形一起作用而带来的明显间接光照效果，因此提取操作中引入一种随机过程，即<strong>随机抽取过程</strong>：</p>
+<p>对于每一个三角形计算一个 <span class="math inline">\([0,1]\)</span>
+区间均匀分布的随机数 <span class="math inline">\(u_{t_i}\)</span>，如果三角形面积 <span class="math inline">\(\mathcal{A}(t_i)&gt;u_{t_i}S_0\)</span>，则保留该三角形，否则丢弃。三角形保留的概率分布为</p>
+<p><span class="math display">\[
+\forall\space t_i\in \mathcal{L}, \quad P(t_i\in
+\mathcal{L^*})=\frac{\mathcal{A}(t_i)}{S_0}
+\]</span> 其中 <span class="math inline">\(\mathcal{L}\)</span> 是全体
+regular 三角形的集合，<span class="math inline">\(\mathcal{L^*}\)</span>
+是保留的三角形集合。由此可以看出，<strong>三角形面积越小，被丢弃的概率越大。</strong>对于整个场景的面能够保留下来的数量的期望为
+<span class="math inline">\(\mathbb{E}(N_{sample})=\frac{\mathcal{A}_{scene}}{S_0}\)</span>。</p>
+<h5 id="基于随机提取过程的三角形多尺度划分">基于随机提取过程的三角形多尺度划分</h5>
+<p>将场景中三角形划分为 <span class="math inline">\((\mathcal{L}^0,...,\mathcal{L}^N)\)</span> 共
+<span class="math inline">\(N+1\)</span> 个子集，子集索引由 <span class="math inline">\(0\)</span> 到 <span class="math inline">\(N\)</span>
+递增，影响距离递减（即尺度递减），子集包含的三角形数量递增。为了实现这样的划分，引入
+<span class="math inline">\(N+1\)</span> 长度的递增序列 <span class="math inline">\(\{S_0&lt;...&lt;S_N\}\)</span>。扩展随机提取过程到多尺度划分过程，三角形
+<span class="math inline">\(\large t_i\)</span> 划分为子集 <span class="math inline">\(\large \mathcal{L}^k\)</span> 的概率为</p>
+<p><span class="math display">\[
+\forall k\in [0...N],\quad P(t_i\in
+\mathcal{L}^k)=\frac{\mathcal{A}(t_i)}{S_k} \tag{1}\label{partition
+probability}
+\]</span> 在多尺度划分过程中，divergent
+三角形的定义更改为<strong>面积大于 <span class="math inline">\(S_N\)</span> 的三角形</strong>。</p>
+<p>实际划分算法又有进一步的改动，引入 <span class="math inline">\(\large\forall k\in [0...N],\quad
+\tilde{S}_k=\frac{1}{\sum^k_{j=0}\frac{1}{S_j}}\)</span> ，
+算法伪代码如下</p>
+<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013637705.png" alt="尺度等级划分算法" style="zoom: 67%;"></p>
+<blockquote>
+<p>可知 <span class="math inline">\(\tilde{S}_k\)</span> 单调递减，与原
+<span class="math inline">\(S_k\)</span>
+单调递增相反，但算法中是只有三角形没有被分在 <span class="math inline">\(k-1\)</span> 子集中，才有可能判断是否可分到 <span class="math inline">\(k\)</span>
+子集，这是条件概率。粗略地看，子集索引越大，三角形分到该子集的概率越低，因为需要在前面没有分到所有子集的条件，才进行后续子集的划分。</p>
+</blockquote>
+<p>至此，我们已经对场景三角形进行随机划分为多个不同尺度的子集，之后其中的每个三角形都会随机生成一个
+VPL，形成 VPL 集。接下来基于生成的 VPL 求解 many-light
+问题，即如何使用这些 VPL 照亮像素。</p>
+<h3 id="vpls-光照下的着色">2. VPLs 光照下的着色</h3>
+<h5 id="many-light-下的-vpls-lighting-问题描述">2.1 many-light 下的 VPLs
+lighting 问题描述</h5>
+<p>在 many-lights 框架中，对于 normal 为 <span class="math inline">\(\vec{n_x}\)</span> 的着色点 <span class="math inline">\(x\)</span> 的 indirect outgoing
+radiance，计算方法由连续积分近似为来自一个 VPLs 集合的 radiance
+离散求和。</p>
+<p><span class="math display">\[
+L^{ML}(x,\vec{n_x})=\sum_{t_i\in
+\mathcal{L}}H(t_i,x,\vec{n_x})\mathcal{A}(t_i) \tag{2}
+\]</span> <span class="math inline">\(\mathcal{L}\)</span>
+表示场景中所有三角形集合，<span class="math inline">\(H(t_i,x,\vec{n_x})\)</span> 表示 normal 为 <span class="math inline">\(\vec{n_x}\)</span> 的点 <span class="math inline">\(\large x\)</span> 接收到由 <span class="math inline">\(t_i\)</span>(VPL) 出发的 radiance。对于 albedo 为
+<span class="math inline">\(\rho_x\)</span> 的 diffuse receiver， <span class="math inline">\(H\)</span> 的形式如下：</p>
+<p><span class="math display">\[
+H(t_i,x,\vec{n_x})=L(t_i,\bar{y_ix})\frac{\rho_x}{\pi}\frac{&lt;\vec{n_x},\bar{xy_i}&gt;^+&lt;\vec{n_i},\bar{y_ix}&gt;^+}{d_i^2}
+\]</span> 其中 <span class="math inline">\(\large \bar{u}\)</span> 表示
+normalized 向量，<span class="math inline">\(&lt;\vec{u},\vec{v}&gt;^+=max(0,&lt;\vec{u},\vec{v}&gt;)\)</span>，<span class="math inline">\(L(t_i,\bar{y_ix})\)</span> 是离开 VPL 中心 <span class="math inline">\(\large y_i\in t_i\)</span> 朝向 <span class="math inline">\(\large \bar{y_ix}\)</span> 的 radiance， <span class="math inline">\(d_i=max(\epsilon,||\vec{xy_i}||)\)</span> 是进行过
+clamp 的 <span class="math inline">\(y_i\)</span> 与 <span class="math inline">\(\large x\)</span> 之间的距离，避免奇异点。</p>
+<blockquote>
+<p><code>对近似的个人理解见</code>：<a href="#附录2">附录 2.
+着色方程积分近似为求和的理解</a></p>
+</blockquote>
+<p>VPL 对直接光照的 diffuse 反射表示为下面的 VPL 出射 radiance：</p>
+<p><span class="math display">\[
+L(t_i,\bar{y_ix})=\rho_iE(t_i)\frac{3}{2\pi}&lt;\vec{n_i},\bar{y_ix}&gt;^+
+\]</span> 其中 <span class="math inline">\(\large E_i\)</span>
+是直接到达三角形 <span class="math inline">\(\large t_i\)</span> 的直接
+irradiance，由于 <span class="math inline">\(&lt;\vec{n_i},\bar{y_ix}&gt;^+\)</span>
+可知上式并非 perfectly Lambertian
+(一种简单的漫反射：光线被均匀的反射到表面上方的半球)，而只会在几何法线方向发生完美反射。<span class="math inline">\(\large \frac{3}{2\pi}\)</span>
+<em>用来保证能量守恒</em>。</p>
+<blockquote>
+<p>将 <span class="math inline">\(\large L(t_i,\bar{y_ix})\)</span> 代入
+<span class="math inline">\(\large H(t_i,x,\vec{n_x})\)</span> 中有</p>
+<p><span class="math display">\[
+\begin{align}H(t_i,x,\vec{n_x})&amp;=\rho_iE(t_i)\frac{3}{2\pi}&lt;\vec{n_i},\bar{y_ix}&gt;^+\frac{\rho_x}{\pi}\frac{&lt;\vec{n_x},\bar{xy_i}&gt;^+&lt;\vec{n_i},\bar{y_ix}&gt;^+}{d_i^2}\\
+&amp;=
+\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{&lt;\vec{n_x},\bar{xy_i}&gt;(&lt;\vec{n_i},\bar{y_ix}&gt;)^2}{d_i^2}
+\end{align}\tag{2} \label{received radiance}
+\]</span></p>
+</blockquote>
+<h5 id="多尺度划分下的-vpls-lighting-的近似">2.2 多尺度划分下的 VPLs
+lighting 的近似</h5>
+<p>上述进行的对三角形的多尺度随机划分引入了随机过程，因此 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span>
+也变成了<strong>随机量</strong>，接下来就需要对该随机量进行估计。我们定义
+<span class="math inline">\(K(x,\vec{n_x})\)</span> 为 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span>
+<strong>估计量(Estimator)</strong>：</p>
+<p><span class="math display">\[
+K(x,\vec{n_x})=\sum\limits^N_{k=0}\sum\limits_{t_i\in\mathcal{L}^k}H(t_i,x,\vec{n_x})F^k(t_i,k)
+\]</span> 其中 <span class="math inline">\(F^k(t_i,k)\)</span>
+是一个未知函数，参数 <span class="math inline">\(x\)</span>
+为着色点，<span class="math inline">\(t_i\)</span> 为 VPL
+所在三角形，<span class="math inline">\(k\)</span> 为子集索引。</p>
+<p>下面就要确定 <span class="math inline">\(F^k(t_i,k)\)</span>
+的形式：</p>
+<p><span class="math display">\[
+\begin{align} \mathbb{E}\left[K(x,\vec{n_x})\right]&amp;=
+\mathbb{E}\left[\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
+\mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\right] \\ &amp;=
+\sum\limits_{t_i\in \mathcal{L}}H(t_i,x,\vec{n_x})
+\mathbb{E}\left[\sum\limits^N_{k=0}F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right] \\ &amp;= \sum\limits_{t_i\in
+\mathcal{L}}H(t_i,x,\vec{n_x})\sum\limits^N_{k=0}F^k(t_i,x)P(t_i\in
+\mathcal{L}^k)\end{align}\tag{3}\label{many light estimator}
+\]</span> 其中 <span class="math inline">\(\mathbb{I}_{t_i\in
+\mathcal{L}^k}\)</span> 为指示函数，当 <span class="math inline">\(t_i\in \mathcal{L}^k\)</span> 时值为 <span class="math inline">\(1\)</span>，否则为 0。</p>
+<blockquote>
+<p><code>推导见</code>：<a href="#附录3">附录 3. VPL lighting
+推导</a></p>
+</blockquote>
+<p>我们要选取 <span class="math inline">\(F^k(t_i,x)\)</span> 使得 <span class="math inline">\(K(x,\vec{n_x})\)</span> 为 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span> 的无偏估计，即 <span class="math inline">\(\mathbb{E}\left[K(x,\vec{n_x})\right]=L^{ML}(x,\vec{n_x})\)</span>，比较式
+(2) 和 (4) 可有</p>
+<p><span class="math display">\[
+\forall x,\quad \sum\limits_k F^k(t_i,x)P(t_i\in
+\mathcal{L}^k)=\mathcal{A}(t_i)\label{partition derivate}
+\]</span> 根据划分策略，将 <span class="math inline">\(F^k\)</span>
+定义为 <span class="math inline">\(F^k(t_i,x)=S_kf^k(t_i,x)\)</span></p>
+<blockquote>
+<p><code>推导见</code>：<a href="#附录4">附录 4.
+转为整体划分问题推导</a></p>
+</blockquote>
+<p>这样就将一个无偏估计问题转为了寻找对一个整体的划分问题。</p>
+<p><strong>整体的划分选取</strong></p>
+<p><span class="math inline">\(f^k(t_i,x)\)</span> 划分函数的参数 <span class="math inline">\(t_i,x\)</span>
+都为三维，论文采用一种方法将划分函数进行降维近似处理，此方法参考了论文
+<em>Point-based approximate color bleeding</em> 中的 nested balls: <span class="math inline">\(\mathcal{B}_h(t_i)\)</span>，其定义如下：</p>
+<p><span class="math display">\[
+\forall h\in \mathbb{R}^*, \quad
+\mathcal{B}_h(t_i)=\{x\in\mathbb{R}^3\space s.t. \space
+\underset{\vec{n_x}}{max}\space H(t_i,x,\vec{n})\geq h\} \tag{4}
+\label{partition nested ball}
+\]</span></p>
+<blockquote>
+<p><span class="math inline">\(H\)</span> 是 <span class="math inline">\(\large x\)</span> 接收到 <span class="math inline">\(t_i\)</span> VPL 的 radiance，这个 nested ball
+的含义就是定义了一个对着色点 <span class="math inline">\(x\)</span> 的
+radiance 贡献较为显著的区域，这个显著程度由 <span class="math inline">\(h\)</span> 决定。</p>
+</blockquote>
+<p>此外，考虑 receiver 正对着 emitter 的情况，即 <span class="math inline">\(\vec{n_x}=\bar{xy_i}\)</span>，此时 <span class="math inline">\(H\)</span> 达到最大值，有：</p>
+<p><span class="math display">\[
+\mathcal{B}_h(t_i)=\{x\in\mathbb{R}^3\space s.t. \space
+\frac{||x-y_i||}{&lt;\vec{n_i},\bar{xy_I}&gt;^+}\leq D(h)\} \tag{5}
+\label{nested ball}
+\]</span> 其中 <span class="math inline">\(D(h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span></p>
+<blockquote>
+<p><code>推导见</code>：<a href="#附录5">附录 5.
+整体划分选取推导</a></p>
+</blockquote>
+<p><span class="math inline">\(D(h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span>
+与 <span class="math inline">\(\large x\)</span> 着色点无关，因此 <span class="math inline">\(\mathcal{B}_h(t_i)\)</span> 是一个 nest
+ball，其边界上有点 <span class="math inline">\(y_i\)</span>，其中心位于直线 <span class="math inline">\((y_i,\vec{n_i})\)</span> 上。如下图所示</p>
+<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013806858.png" alt="image-20220717013806858" style="zoom:67%;"></p>
+<blockquote>
+<p>上图是 <span class="math inline">\(f^k(t_i,x)\)</span>
+函数的二维可视化，其值从 0(黑) 到 1(白)。</p>
+</blockquote>
+<p>作者做了一个假设：nest ball 边界上的三维划分 <span class="math inline">\(^k(t_i,x)\)</span> 是不变的，通过如下 <span class="math inline">\(\large \mathbb{R}^3\)</span> 到 <span class="math inline">\(\large \mathbb{R}\)</span> 的映射：</p>
+<p><span class="math display">\[
+\forall x\in \mathbb{R}^3, \quad
+d(t_i,x)=\frac{||x-y_i||}{&lt;\vec{n_i},\bar{xy_I}&gt;^+}
+\]</span> 可以将三维划分将为一维划分：</p>
+<p><span class="math display">\[
+\forall x\in \mathbb{R}^3, \quad f^k(t_i,x)=\tilde{f}^k(d(t_i,x))
+\]</span> <span class="math inline">\(\large f^k\)</span> 将会在
+rendering 中用作 splat function，因此尽可能使得 <span class="math inline">\(f^k\)</span> 易于计算且
+smooth，论文定义为下面一组分段线性函数</p>
+<p><span class="math display">\[
+\forall d\in\mathbb{R},\quad
+\tilde{f}^k(d)=\begin{cases}\begin{align}&amp;1 &amp;k=0\space and
+\space d\in[0,D_1] \\ &amp;\frac{d-D_{k-1}}{D_k-D_{k-1}}
+&amp;k&gt;0\space and \space d\in[D_{k-1},D_k] \\
+&amp;\frac{D_{k+1}-d}{D_{k+1}-D_k} &amp;k&gt;0 \space and \space d\in
+[D_k,D_{k+1}]\\&amp;0 &amp;otherwise\end{align}\end{cases}
+\]</span> <span class="math inline">\(\{D_k\}\)</span> 定义了每一级 VPL
+的影响距离。</p>
+<p><strong>参数配置</strong></p>
+<p>作者为了模仿传统的层级表示，采用了子集大小几何级下降的参数配置。从前述划分策略来看，<span class="math inline">\(S_k\)</span> 影响到划分子集的结果，此外，可以将
+<span class="math inline">\(S_k\)</span> 理解为子集 <span class="math inline">\(\mathcal{L}^k\)</span>
+的平均面积，应几何级增加，因此定义如下参数配置：</p>
+<p><span class="math display">\[
+S_k=S_0\mu^k
+\]</span> 其中 <span class="math inline">\(\mu &gt;1\)</span>
+是用户定义的参数，论文建议 <span class="math inline">\([1.4,5]\)</span>。作者还建议定义影响距离参数，这样每个点都只会有一个可控数量的
+VPL 到达，控制计算量，如：</p>
+<p><span class="math display">\[
+\begin{cases}D_k=\sqrt{S_0\mu^k}\\ D_{N+1}=D_{N}\end{cases}
+\]</span></p>
+<blockquote>
+<p>个人理解见：<a href="#附录6">附录 6.
+模拟传统层级的几何级下降的理解</a></p>
+</blockquote>
+<h2 id="实现细节">实现细节</h2>
+<h5 id="pipeline-描述">1. Pipeline 描述</h5>
+<p>本论文提出的技术共用到三个 geometry pass，其中两个主要 pass 用于生成
+GBuffer 和生成并 Splat VPLs。第三个 pass 用于处理 Divergent
+triangle。如下图所示</p>
+<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013853277.png" alt="image-20220717013853277" style="zoom:50%;"></p>
+<h5 id="divergent-三角形处理">2. Divergent 三角形处理</h5>
+<p>在本论文提出的 indirect lighting pipeline 中包含了两个 geometry
+pass：第一个 pass 关闭 tessellation stage
+处理整个场景的三角形，这个阶段检测出哪些是 Divergent
+三角形，并存入单独的 buffer 中。剩下的 regular 三角形送入 regular
+pipeline。</p>
+<p>存储 Divergent 三角形的 buffer 直接作为后续第二个 geometry pass
+的输入。tessellation stage 只在这个 pass 开启，用于细分 divergent
+三角形，使得它们的面积小到能够被 regular pipeline 处理。</p>
+<blockquote>
+<p>Tessellation stage 相比于 geometry 是开销是非常大的，因此使用一个
+geometry 阶段过滤 regular 三角形，提高了效率。</p>
+</blockquote>
+<p>regular pipeline 即对 regular 三角形采样分级，再进行 VPL lighting
+计算。</p>
+<h5 id="per-triangle-random-number-generation">3. Per-triangle random
+number generation</h5>
+<p>本论文涉及的随机过程都需要随机数来完成，对于算法 1 用到的随机数 <span class="math inline">\(\large u_{t_i}\)</span>，作者使用伪随机数。mesh
+中每个顶点添加一个额外的 uint32 属性，v_rand。该属性在加载 mesh
+时为每个顶点生成一个 uniform 随机数。在 regular pipeline
+中，每个三角形的随机数 <span class="math inline">\(\large
+u_{t_i}\)</span> 是使用其三个顶点间的 <span class="math inline">\(\large
+xor\)</span> 操作得到的。</p>
+<p>对于 tessellation stage
+细分生成的新三角形，作者通过采样一张预计算的噪声贴图得到新顶点的随机值，采样坐标为新顶点的重心坐标，最后对新三角形顶点的随机数使用同样的
+<span class="math inline">\(\large xor\)</span> 操作。</p>
+<p>想要以上随机数每帧更新，以上随机数最终再与一个 uniform 的全局变量
+u_rand 进行 <span class="math inline">\(\large xor\)</span> 操作，这个
+uniform 全局变量大概要一帧更新一次。算法如下</p>
+<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013914497.png" alt="image-20220717013914497" style="zoom: 67%;"></p>
+<h5 id="progressive-rendering">4. Progressive rendering</h5>
+<p>可以按照上述使用 u_rand 的方法生成多个 independent
+rendering，之后累积作平均用以产生更好的渲染结果。如，从 u_rand
+中为每个三角形生成两个独立的随机数，用以扰动 VPL 中心点 <span class="math inline">\(\large y_i\)</span>。平均由多个 jittered VPLs
+生成的多个 independent rendering，可以提供接近公式 (4)
+真实解的结果。</p>
+<h2 id="remain-question">Remain Question</h2>
+<ul class="task-list">
+<li><input type="checkbox" disabled>
+划分整体过程中的整体应该怎么理解？</li>
+<li><input type="checkbox" disabled>
+Splatting indirect illumination 技术不了解</li>
+</ul>
+<h2 id="reference">Reference</h2>
+<p><a name="[1]">[1]</a> Gilles LAURENT, Cyril DELALANDRE, Grégoire de
+LA RIVIÈRE, and Tamy BOUBEKEUR. 2016. Forward Light Cuts: A Scalable
+Approach to Real-Time Global Illumination. <i>Comput. Graph. Forum</i>
+35, 4 (July 2016), 79–88.</p>
+<h2 id="附录">附录</h2>
+<h3 id="阈值-s_0-的启发式的理解">1. <a name="附录1">阈值 <span class="math inline">\(S_0\)</span> 的启发式的理解</a></h3>
+<p>以像素为球心、半径为 <span class="math inline">\(D_{near}\)</span>
+的球面面积为 <span class="math inline">\(4\pi
+D^2_{near}\)</span>，假设在距离 <span class="math inline">\(D_{near}\)</span> 内的 VPL
+光源才能到达该像素，并且 <span class="math inline">\(N_{avg}\)</span> 个
+VPL 共同作用下才能照亮该像素。由于本文中次级光源都假设为
+diffuse，因此可粗略地认为 VPL 发出的 radiance
+与面积成正比。这样下来，VPL 的平均面积 <span class="math inline">\(4\pi
+\frac{D^2_{near}}{N_{avg}}\)</span>，高于此平均面积的三角形成为
+divergent，剩下的三角形为 regular，regular 三角形生成的 VPL
+具有可控的影响距离，divergent 三角形后续会进一步细分为小三角形。</p>
+<h3 id="着色方程积分近似为求和的理解">2.
+<a name="附录2">着色方程积分近似为求和的理解</a></h3>
+<p>首先来看精确的 rendering equation，</p>
+<p><span class="math display">\[
+L(x,\omega_o)=\int_{\Omega^+}\space
+f_r(x,\omega_i\rightarrow\omega_o)L_i(x&#39;,\omega_i)cos\theta \space
+d\omega_i
+\]</span> 上式为对立体角的积分，转为对光源面积的积分为</p>
+<p><span class="math display">\[
+L(x,\omega_o)=\int_{A}\space
+f_r(x,\omega_i\rightarrow\omega_o)L_i(x&#39;,\omega_i)\frac{cos\theta
+cos\theta&#39;}{||x&#39;-x||^2} \space dA
+\]</span></p>
+<p><span class="math inline">\(L^{ML}\)</span>
+的形式即从对光源面积的积分近似而来，diffuse 下 BRDF 是常量，即 <span class="math inline">\(H\)</span> 中的 <span class="math inline">\(\large\frac{\rho_x}{\pi}\)</span>，<span class="math inline">\(L_i\)</span> 对应 <span class="math inline">\(H\)</span> 中的 <span class="math inline">\(L\)</span>。因此，<span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span> 与 <span class="math inline">\(L(x,\omega_o)\)</span>
+唯一不同的是一个是对总体面积的连续积分，一个是将每个 VPL
+的面积视为微元的离散求和。可知，在 VPL
+面积较小时，这种近似较为接近正确。</p>
+<h3 id="vpl-lighting-推导">3. <a name="附录3">VPL lighting 推导</a></h3>
+<p>将划分的三角形所有子集看作一个整体求和符号有：<span class="math inline">\(\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
+\mathcal{L}^k}=\sum\limits_{t_i\in \mathcal{L}}\)</span></p>
+<blockquote>
+<p>因为 <span class="math inline">\(t_i^k\)</span> 本就代表是子集 <span class="math inline">\(\mathcal{L}^k\)</span> 中的三角形，可知 <span class="math inline">\(\large \mathbb{I}_{t_i^k\in
+\mathcal{L}^k}\)</span> 恒为 <span class="math inline">\(1\)</span>，因此有</p>
+</blockquote>
+<p><span class="math inline">\(\mathbb{E}\left[\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
+\mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\right]=\mathbb{E}\left[\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
+\mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\mathbb{I}_{t_i^k\in
+\mathcal{L}^k}\right]\)</span>，</p>
+<blockquote>
+<p>将和的期望转为期望的和</p>
+</blockquote>
+<p><span class="math inline">\(=\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
+\mathcal{L}^k}\mathbb{E}\left[H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\mathbb{I}_{t_i^k\in
+\mathcal{L}^k}\right]\)</span>，</p>
+<blockquote>
+<p>此时由于指示函数的存在可将三角形子集看作一个整体求和，</p>
+</blockquote>
+<p><span class="math inline">\(=\sum\limits_{t_i\in
+\mathcal{L}}\mathbb{E}\left[H(t_i,x,\vec{n_x})F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]\)</span>，</p>
+<blockquote>
+<p><span class="math inline">\(H(t_i,x,\vec{n_x})\)</span>
+与随机划分无关，对于期望而言是常量，可以提出期望计算外，即</p>
+</blockquote>
+<p><span class="math inline">\(=\sum\limits_{t_i\in
+\mathcal{L}}H(t_i,x,\vec{n_x})\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]\)</span>，</p>
+<blockquote>
+<p>接下来进行一个恒等变换，<span class="math inline">\(F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}=\sum\limits^N_{k=0}F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\)</span>，因为对于每一个 <span class="math inline">\(t_i\)</span>，只会有一个 <span class="math inline">\(k\)</span> 值使得 <span class="math inline">\(\large \mathbb{I}_{t_i\in
+\mathcal{L}^k}=1\)</span>，其余都为 <span class="math inline">\(0\)</span>。</p>
+</blockquote>
+<p><span class="math inline">\(=\sum\limits_{t_i\in
+\mathcal{L}}H(t_i,x,\vec{n_x})\sum\limits^N_{k=0}\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]\)</span>，</p>
+<blockquote>
+<p>目前期望计算中只有指示函数与随机划分相关，且易知 <span class="math inline">\(\mathbb{E}\left[\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]=P(t_i\in \mathcal{L^k})\)</span> ，有</p>
+</blockquote>
+<p><span class="math inline">\(\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]=F^k(t_i,x)\mathbb{E}\left[\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]=F^k(t_i,x)P(t_i\in \mathcal{L^k})\)</span></p>
+<blockquote>
+<p>最终有</p>
+</blockquote>
+<p>$ _{t_i}H(t_i,x,)<sup>N_{k=0}F</sup>k(t_i,x)P(t_i^k)$</p>
+<h3 id="转为整体划分问题推导">4.
+<a name="附录4">转为整体划分问题推导</a></h3>
+<p>由 <span class="math inline">\(\eqref{partition probability}\)</span>
+式代入 <span class="math inline">\(\eqref{many light estimator}\)</span>
+中有</p>
+<p><span class="math display">\[\forall x,\quad \sum\limits_k
+F^k(t_i,x)\frac{\mathcal{A}(t_i)}{S_k}=\mathcal{A}(t_i)\]</span></p>
+<p><span class="math display">\[\forall x,\quad \sum\limits_k
+\frac{F^k(t_i,x)}{S_k}=1\]</span></p>
+<p>假设未知函数 <span class="math inline">\(f^k(t_i,x)\)</span> 使得
+<span class="math inline">\(F^k(t_i,x)=S_kf^k(t_i,x)\)</span>，那么有</p>
+<p>​ <span class="math inline">\(\sum\limits_kf^k(t_i,x)=1\)</span></p>
+<h3 id="整体划分选取推导">5. <a name="附录5">整体划分选取推导</a></h3>
+<blockquote>
+<p>当 receiver 正对着 emitter 时，将 <span class="math inline">\(\vec{n_x}=\bar{xy_i}\)</span> 代入 <span class="math inline">\(\eqref{received radiance}\)</span>，有</p>
+</blockquote>
+<p><span class="math inline">\(\begin{align}\underset{\vec{n_x}}{max}\space
+H(t_i,x,\vec{n_x})&amp;=\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{(&lt;\vec{n_i},\bar{y_ix}&gt;)^2}{d_i^2}\\&amp;=\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2\end{align}\)</span>​</p>
+<blockquote>
+<p>将 <span class="math inline">\(\large H\)</span> 代入公式 <span class="math inline">\(\eqref{partition nested ball}\)</span> 有</p>
+</blockquote>
+<p><span class="math display">\[\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2
+\geq h\]</span></p>
+<p><span class="math display">\[\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2
+\geq \frac{2h\pi^2}{3\rho_i\rho_xE(t_i)}\]</span></p>
+<p><span class="math display">\[\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}
+\geq \pi \sqrt{\frac{2h}{3\rho_i\rho_xE(t_i)}}\]</span></p>
+<p><span class="math display">\[\frac{||x-y_i||}{&lt;\vec{n_i},\bar{y_ix}&gt;}
+\leq \frac{1}{\pi} \sqrt{\frac{3\rho_i\rho_xE(t_i)}{2h}}\]</span></p>
+<h3 id="模拟传统层级的几何级下降的理解">6.
+<a name="附录6">模拟传统层级的几何级下降的理解</a></h3>
+<p>这里的模拟层级表示而引入几何级下降的参数配置：例如满二叉树的层级表示，根节点层(0层)节点数量为
+<span class="math inline">\(S_0=1\)</span> 个，往下每层数量是前一层的 2
+倍，即有 <span class="math inline">\(S_k=S_0 2^k\)</span>
+个，为几何级增长。</p>
+]]></content>
+      <categories>
+        <category>Paper Notes</category>
+      </categories>
+  </entry>
+  <entry>
     <title>Glossy Probe Reprojection for Interactive Global Illumination</title>
     <url>/Paper-Notes/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination.html</url>
     <content><![CDATA[<h2 id="summary">Summary</h2>
@@ -528,405 +927,6 @@ DOI:https://doi.org/10.1145/3414685.3417823</em></p>
       </categories>
   </entry>
   <entry>
-    <title>Forward Light Cuts A Scalable Approach to Real-Time Global Illumination</title>
-    <url>/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html</url>
-    <content><![CDATA[<h2 id="summary">Summary</h2>
-<p><code>Forward Light Cuts: A Scalable Approach to Real-Time Global Illumination</code>
-<a href="#%5B1%5D">[1]</a></p>
-<p>这篇论文假设了次级光源为 diffuse
-材质的场景，并且不考虑次级光照的阴影，提出了一种能够很好结合
-tessellation 和 geometry
-阶段的并行特性的高效实时全局光照近似计算算法。该算法基于 many-light
-框架，将场景中的三角形类比为虚拟点光源，首先通过将场景中三角形以一种概率分布划分为
-multi-scale radiance
-子集，在每个子集中的每个三角形上随机采样生成一个扰动的
-VPL，这样就组成了多尺度的 VPL 集合。之后求解该 VPL 集合形成的 many-light
-问题来近似全局光照。该算法既模拟了传统层级的光源数量的随尺度增加的几何级下降，又具有可高度并行的线性设计，在场景完全动态并且涉及大量物体时，相比于之前算法，画面质量无明显损失并且具有较大的性能提升。</p>
-<h2 id="motivation">Motivation</h2>
-<p>实时全局光照有很多基于 radiance caching
-的方法，之前这些方法构建出场景中几何的层级结构（多为树形结构），使用这种层级结构来构建
-multi-scale radiance
-function，之后通过查询该层级结构对像素进行照亮。</p>
-<p>对于这种策略的方法，在场景完全动态并且涉及大量物体情况下，至少有两种局限，</p>
-<ul>
-<li>层级缓存结构每一帧都要重复计算，这个缺点带来的开销在现代图形学的并行结构下更为明显</li>
-<li>对于实时渲染，初始 VPL 集合过大，带来的开销难以分摊</li>
-</ul>
-<h2 id="approach">Approach</h2>
-<h3 id="vpls-generation">1. VPLs Generation</h3>
-<h4 id="区分-divergent-和-regular-三角形">1.1 区分 Divergent 和 Regular
-三角形</h4>
-<p>设置阈值 <span class="math inline">\(S_0\)</span> ，面积大于 <span class="math inline">\(S_0\)</span> 的三角形为 Divergent
-三角形，这类三角形需要经过一次 tessellation 特殊处理，之后描述。</p>
-<p><span class="math display">\[
-S_0=4\pi \frac{D^2_{near}}{N_{avg}}
-\]</span> 这个公式表达的是启发式地照亮一个像素，该像素周围有 <span class="math inline">\(N_{avg}\)</span> 个距离为至少 <span class="math inline">\(D_{near}\)</span> 的 VPLs 。参数配置：假设 <span class="math inline">\(R_{scene}\)</span> 为场景的半径长度，设置 <span class="math inline">\(D_{near}=0.2\times R_{scene}\)</span>，<span class="math inline">\(N_{avg}\)</span> 在区间 <span class="math inline">\([64,1024]\)</span> 内进行 quality-speed
-tradeoff。</p>
-<blockquote>
-<p><code>个人理解见</code>：<a href="#附录1">附录 1. 阈值 <span class="math inline">\(S_0\)</span> 的启发式的理解</a></p>
-</blockquote>
-<h4 id="三角形抽取过程">1.2 三角形抽取过程</h4>
-<p>抽取操作目的是丢弃小三角形，因为这类三角形引入的 diffuse indirect
-lighting
-对最终的渲染贡献很小，丢弃会加快速度，但如果全部无差别丢弃，则会丢失那些多个小三角形一起作用而带来的明显间接光照效果，因此提取操作中引入一种随机过程，即<strong>随机抽取过程</strong>：</p>
-<p>对于每一个三角形计算一个 <span class="math inline">\([0,1]\)</span>
-区间均匀分布的随机数 <span class="math inline">\(u_{t_i}\)</span>，如果三角形面积 <span class="math inline">\(\mathcal{A}(t_i)&gt;u_{t_i}S_0\)</span>，则保留该三角形，否则丢弃。三角形保留的概率分布为</p>
-<p><span class="math display">\[
-\forall\space t_i\in \mathcal{L}, \quad P(t_i\in
-\mathcal{L^*})=\frac{\mathcal{A}(t_i)}{S_0}
-\]</span> 其中 <span class="math inline">\(\mathcal{L}\)</span> 是全体
-regular 三角形的集合，<span class="math inline">\(\mathcal{L^*}\)</span>
-是保留的三角形集合。由此可以看出，<strong>三角形面积越小，被丢弃的概率越大。</strong>对于整个场景的面能够保留下来的数量的期望为
-<span class="math inline">\(\mathbb{E}(N_{sample})=\frac{\mathcal{A}_{scene}}{S_0}\)</span>。</p>
-<h5 id="基于随机提取过程的三角形多尺度划分">基于随机提取过程的三角形多尺度划分</h5>
-<p>将场景中三角形划分为 <span class="math inline">\((\mathcal{L}^0,...,\mathcal{L}^N)\)</span> 共
-<span class="math inline">\(N+1\)</span> 个子集，子集索引由 <span class="math inline">\(0\)</span> 到 <span class="math inline">\(N\)</span>
-递增，影响距离递减（即尺度递减），子集包含的三角形数量递增。为了实现这样的划分，引入
-<span class="math inline">\(N+1\)</span> 长度的递增序列 <span class="math inline">\(\{S_0&lt;...&lt;S_N\}\)</span>。扩展随机提取过程到多尺度划分过程，三角形
-<span class="math inline">\(\large t_i\)</span> 划分为子集 <span class="math inline">\(\large \mathcal{L}^k\)</span> 的概率为</p>
-<p><span class="math display">\[
-\forall k\in [0...N],\quad P(t_i\in
-\mathcal{L}^k)=\frac{\mathcal{A}(t_i)}{S_k} \tag{1}\label{partition
-probability}
-\]</span> 在多尺度划分过程中，divergent
-三角形的定义更改为<strong>面积大于 <span class="math inline">\(S_N\)</span> 的三角形</strong>。</p>
-<p>实际划分算法又有进一步的改动，引入 <span class="math inline">\(\large\forall k\in [0...N],\quad
-\tilde{S}_k=\frac{1}{\sum^k_{j=0}\frac{1}{S_j}}\)</span> ，
-算法伪代码如下</p>
-<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013637705.png" alt="尺度等级划分算法" style="zoom: 67%;"></p>
-<blockquote>
-<p>可知 <span class="math inline">\(\tilde{S}_k\)</span> 单调递减，与原
-<span class="math inline">\(S_k\)</span>
-单调递增相反，但算法中是只有三角形没有被分在 <span class="math inline">\(k-1\)</span> 子集中，才有可能判断是否可分到 <span class="math inline">\(k\)</span>
-子集，这是条件概率。粗略地看，子集索引越大，三角形分到该子集的概率越低，因为需要在前面没有分到所有子集的条件，才进行后续子集的划分。</p>
-</blockquote>
-<p>至此，我们已经对场景三角形进行随机划分为多个不同尺度的子集，之后其中的每个三角形都会随机生成一个
-VPL，形成 VPL 集。接下来基于生成的 VPL 求解 many-light
-问题，即如何使用这些 VPL 照亮像素。</p>
-<h3 id="vpls-光照下的着色">2. VPLs 光照下的着色</h3>
-<h5 id="many-light-下的-vpls-lighting-问题描述">2.1 many-light 下的 VPLs
-lighting 问题描述</h5>
-<p>在 many-lights 框架中，对于 normal 为 <span class="math inline">\(\vec{n_x}\)</span> 的着色点 <span class="math inline">\(x\)</span> 的 indirect outgoing
-radiance，计算方法由连续积分近似为来自一个 VPLs 集合的 radiance
-离散求和。</p>
-<p><span class="math display">\[
-L^{ML}(x,\vec{n_x})=\sum_{t_i\in
-\mathcal{L}}H(t_i,x,\vec{n_x})\mathcal{A}(t_i) \tag{2}
-\]</span> <span class="math inline">\(\mathcal{L}\)</span>
-表示场景中所有三角形集合，<span class="math inline">\(H(t_i,x,\vec{n_x})\)</span> 表示 normal 为 <span class="math inline">\(\vec{n_x}\)</span> 的点 <span class="math inline">\(\large x\)</span> 接收到由 <span class="math inline">\(t_i\)</span>(VPL) 出发的 radiance。对于 albedo 为
-<span class="math inline">\(\rho_x\)</span> 的 diffuse receiver， <span class="math inline">\(H\)</span> 的形式如下：</p>
-<p><span class="math display">\[
-H(t_i,x,\vec{n_x})=L(t_i,\bar{y_ix})\frac{\rho_x}{\pi}\frac{&lt;\vec{n_x},\bar{xy_i}&gt;^+&lt;\vec{n_i},\bar{y_ix}&gt;^+}{d_i^2}
-\]</span> 其中 <span class="math inline">\(\large \bar{u}\)</span> 表示
-normalized 向量，<span class="math inline">\(&lt;\vec{u},\vec{v}&gt;^+=max(0,&lt;\vec{u},\vec{v}&gt;)\)</span>，<span class="math inline">\(L(t_i,\bar{y_ix})\)</span> 是离开 VPL 中心 <span class="math inline">\(\large y_i\in t_i\)</span> 朝向 <span class="math inline">\(\large \bar{y_ix}\)</span> 的 radiance， <span class="math inline">\(d_i=max(\epsilon,||\vec{xy_i}||)\)</span> 是进行过
-clamp 的 <span class="math inline">\(y_i\)</span> 与 <span class="math inline">\(\large x\)</span> 之间的距离，避免奇异点。</p>
-<blockquote>
-<p><code>对近似的个人理解见</code>：<a href="#附录2">附录 2.
-着色方程积分近似为求和的理解</a></p>
-</blockquote>
-<p>VPL 对直接光照的 diffuse 反射表示为下面的 VPL 出射 radiance：</p>
-<p><span class="math display">\[
-L(t_i,\bar{y_ix})=\rho_iE(t_i)\frac{3}{2\pi}&lt;\vec{n_i},\bar{y_ix}&gt;^+
-\]</span> 其中 <span class="math inline">\(\large E_i\)</span>
-是直接到达三角形 <span class="math inline">\(\large t_i\)</span> 的直接
-irradiance，由于 <span class="math inline">\(&lt;\vec{n_i},\bar{y_ix}&gt;^+\)</span>
-可知上式并非 perfectly Lambertian
-(一种简单的漫反射：光线被均匀的反射到表面上方的半球)，而只会在几何法线方向发生完美反射。<span class="math inline">\(\large \frac{3}{2\pi}\)</span>
-<em>用来保证能量守恒</em>。</p>
-<blockquote>
-<p>将 <span class="math inline">\(\large L(t_i,\bar{y_ix})\)</span> 代入
-<span class="math inline">\(\large H(t_i,x,\vec{n_x})\)</span> 中有</p>
-<p><span class="math display">\[
-\begin{align}H(t_i,x,\vec{n_x})&amp;=\rho_iE(t_i)\frac{3}{2\pi}&lt;\vec{n_i},\bar{y_ix}&gt;^+\frac{\rho_x}{\pi}\frac{&lt;\vec{n_x},\bar{xy_i}&gt;^+&lt;\vec{n_i},\bar{y_ix}&gt;^+}{d_i^2}\\
-&amp;=
-\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{&lt;\vec{n_x},\bar{xy_i}&gt;(&lt;\vec{n_i},\bar{y_ix}&gt;)^2}{d_i^2}
-\end{align}\tag{2} \label{received radiance}
-\]</span></p>
-</blockquote>
-<h5 id="多尺度划分下的-vpls-lighting-的近似">2.2 多尺度划分下的 VPLs
-lighting 的近似</h5>
-<p>上述进行的对三角形的多尺度随机划分引入了随机过程，因此 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span>
-也变成了<strong>随机量</strong>，接下来就需要对该随机量进行估计。我们定义
-<span class="math inline">\(K(x,\vec{n_x})\)</span> 为 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span>
-<strong>估计量(Estimator)</strong>：</p>
-<p><span class="math display">\[
-K(x,\vec{n_x})=\sum\limits^N_{k=0}\sum\limits_{t_i\in\mathcal{L}^k}H(t_i,x,\vec{n_x})F^k(t_i,k)
-\]</span> 其中 <span class="math inline">\(F^k(t_i,k)\)</span>
-是一个未知函数，参数 <span class="math inline">\(x\)</span>
-为着色点，<span class="math inline">\(t_i\)</span> 为 VPL
-所在三角形，<span class="math inline">\(k\)</span> 为子集索引。</p>
-<p>下面就要确定 <span class="math inline">\(F^k(t_i,k)\)</span>
-的形式：</p>
-<p><span class="math display">\[
-\begin{align} \mathbb{E}\left[K(x,\vec{n_x})\right]&amp;=
-\mathbb{E}\left[\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
-\mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\right] \\ &amp;=
-\sum\limits_{t_i\in \mathcal{L}}H(t_i,x,\vec{n_x})
-\mathbb{E}\left[\sum\limits^N_{k=0}F^k(t_i,x)\mathbb{I}_{t_i\in
-\mathcal{L}^k}\right] \\ &amp;= \sum\limits_{t_i\in
-\mathcal{L}}H(t_i,x,\vec{n_x})\sum\limits^N_{k=0}F^k(t_i,x)P(t_i\in
-\mathcal{L}^k)\end{align}\tag{3}\label{many light estimator}
-\]</span> 其中 <span class="math inline">\(\mathbb{I}_{t_i\in
-\mathcal{L}^k}\)</span> 为指示函数，当 <span class="math inline">\(t_i\in \mathcal{L}^k\)</span> 时值为 <span class="math inline">\(1\)</span>，否则为 0。</p>
-<blockquote>
-<p><code>推导见</code>：<a href="#附录3">附录 3. VPL lighting
-推导</a></p>
-</blockquote>
-<p>我们要选取 <span class="math inline">\(F^k(t_i,x)\)</span> 使得 <span class="math inline">\(K(x,\vec{n_x})\)</span> 为 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span> 的无偏估计，即 <span class="math inline">\(\mathbb{E}\left[K(x,\vec{n_x})\right]=L^{ML}(x,\vec{n_x})\)</span>，比较式
-(2) 和 (4) 可有</p>
-<p><span class="math display">\[
-\forall x,\quad \sum\limits_k F^k(t_i,x)P(t_i\in
-\mathcal{L}^k)=\mathcal{A}(t_i)\label{partition derivate}
-\]</span> 根据划分策略，将 <span class="math inline">\(F^k\)</span>
-定义为 <span class="math inline">\(F^k(t_i,x)=S_kf^k(t_i,x)\)</span></p>
-<blockquote>
-<p><code>推导见</code>：<a href="#附录4">附录 4.
-转为整体划分问题推导</a></p>
-</blockquote>
-<p>这样就将一个无偏估计问题转为了寻找对一个整体的划分问题。</p>
-<p><strong>整体的划分选取</strong></p>
-<p><span class="math inline">\(f^k(t_i,x)\)</span> 划分函数的参数 <span class="math inline">\(t_i,x\)</span>
-都为三维，论文采用一种方法将划分函数进行降维近似处理，此方法参考了论文
-<em>Point-based approximate color bleeding</em> 中的 nested balls: <span class="math inline">\(\mathcal{B}_h(t_i)\)</span>，其定义如下：</p>
-<p><span class="math display">\[
-\forall h\in \mathbb{R}^*, \quad
-\mathcal{B}_h(t_i)=\{x\in\mathbb{R}^3\space s.t. \space
-\underset{\vec{n_x}}{max}\space H(t_i,x,\vec{n})\geq h\} \tag{4}
-\label{partition nested ball}
-\]</span></p>
-<blockquote>
-<p><span class="math inline">\(H\)</span> 是 <span class="math inline">\(\large x\)</span> 接收到 <span class="math inline">\(t_i\)</span> VPL 的 radiance，这个 nested ball
-的含义就是定义了一个对着色点 <span class="math inline">\(x\)</span> 的
-radiance 贡献较为显著的区域，这个显著程度由 <span class="math inline">\(h\)</span> 决定。</p>
-</blockquote>
-<p>此外，考虑 receiver 正对着 emitter 的情况，即 <span class="math inline">\(\vec{n_x}=\bar{xy_i}\)</span>，此时 <span class="math inline">\(H\)</span> 达到最大值，有：</p>
-<p><span class="math display">\[
-\mathcal{B}_h(t_i)=\{x\in\mathbb{R}^3\space s.t. \space
-\frac{||x-y_i||}{&lt;\vec{n_i},\bar{xy_I}&gt;^+}\leq D(h)\} \tag{5}
-\label{nested ball}
-\]</span> 其中 <span class="math inline">\(D(h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span></p>
-<blockquote>
-<p><code>推导见</code>：<a href="#附录5">附录 5.
-整体划分选取推导</a></p>
-</blockquote>
-<p><span class="math inline">\(D(h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span>
-与 <span class="math inline">\(\large x\)</span> 着色点无关，因此 <span class="math inline">\(\mathcal{B}_h(t_i)\)</span> 是一个 nest
-ball，其边界上有点 <span class="math inline">\(y_i\)</span>，其中心位于直线 <span class="math inline">\((y_i,\vec{n_i})\)</span> 上。如下图所示</p>
-<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013806858.png" alt="image-20220717013806858" style="zoom:67%;"></p>
-<blockquote>
-<p>上图是 <span class="math inline">\(f^k(t_i,x)\)</span>
-函数的二维可视化，其值从 0(黑) 到 1(白)。</p>
-</blockquote>
-<p>作者做了一个假设：nest ball 边界上的三维划分 <span class="math inline">\(^k(t_i,x)\)</span> 是不变的，通过如下 <span class="math inline">\(\large \mathbb{R}^3\)</span> 到 <span class="math inline">\(\large \mathbb{R}\)</span> 的映射：</p>
-<p><span class="math display">\[
-\forall x\in \mathbb{R}^3, \quad
-d(t_i,x)=\frac{||x-y_i||}{&lt;\vec{n_i},\bar{xy_I}&gt;^+}
-\]</span> 可以将三维划分将为一维划分：</p>
-<p><span class="math display">\[
-\forall x\in \mathbb{R}^3, \quad f^k(t_i,x)=\tilde{f}^k(d(t_i,x))
-\]</span> <span class="math inline">\(\large f^k\)</span> 将会在
-rendering 中用作 splat function，因此尽可能使得 <span class="math inline">\(f^k\)</span> 易于计算且
-smooth，论文定义为下面一组分段线性函数</p>
-<p><span class="math display">\[
-\forall d\in\mathbb{R},\quad
-\tilde{f}^k(d)=\begin{cases}\begin{align}&amp;1 &amp;k=0\space and
-\space d\in[0,D_1] \\ &amp;\frac{d-D_{k-1}}{D_k-D_{k-1}}
-&amp;k&gt;0\space and \space d\in[D_{k-1},D_k] \\
-&amp;\frac{D_{k+1}-d}{D_{k+1}-D_k} &amp;k&gt;0 \space and \space d\in
-[D_k,D_{k+1}]\\&amp;0 &amp;otherwise\end{align}\end{cases}
-\]</span> <span class="math inline">\(\{D_k\}\)</span> 定义了每一级 VPL
-的影响距离。</p>
-<p><strong>参数配置</strong></p>
-<p>作者为了模仿传统的层级表示，采用了子集大小几何级下降的参数配置。从前述划分策略来看，<span class="math inline">\(S_k\)</span> 影响到划分子集的结果，此外，可以将
-<span class="math inline">\(S_k\)</span> 理解为子集 <span class="math inline">\(\mathcal{L}^k\)</span>
-的平均面积，应几何级增加，因此定义如下参数配置：</p>
-<p><span class="math display">\[
-S_k=S_0\mu^k
-\]</span> 其中 <span class="math inline">\(\mu &gt;1\)</span>
-是用户定义的参数，论文建议 <span class="math inline">\([1.4,5]\)</span>。作者还建议定义影响距离参数，这样每个点都只会有一个可控数量的
-VPL 到达，控制计算量，如：</p>
-<p><span class="math display">\[
-\begin{cases}D_k=\sqrt{S_0\mu^k}\\ D_{N+1}=D_{N}\end{cases}
-\]</span></p>
-<blockquote>
-<p>个人理解见：<a href="#附录6">附录 6.
-模拟传统层级的几何级下降的理解</a></p>
-</blockquote>
-<h2 id="实现细节">实现细节</h2>
-<h5 id="pipeline-描述">1. Pipeline 描述</h5>
-<p>本论文提出的技术共用到三个 geometry pass，其中两个主要 pass 用于生成
-GBuffer 和生成并 Splat VPLs。第三个 pass 用于处理 Divergent
-triangle。如下图所示</p>
-<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013853277.png" alt="image-20220717013853277" style="zoom:50%;"></p>
-<h5 id="divergent-三角形处理">2. Divergent 三角形处理</h5>
-<p>在本论文提出的 indirect lighting pipeline 中包含了两个 geometry
-pass：第一个 pass 关闭 tessellation stage
-处理整个场景的三角形，这个阶段检测出哪些是 Divergent
-三角形，并存入单独的 buffer 中。剩下的 regular 三角形送入 regular
-pipeline。</p>
-<p>存储 Divergent 三角形的 buffer 直接作为后续第二个 geometry pass
-的输入。tessellation stage 只在这个 pass 开启，用于细分 divergent
-三角形，使得它们的面积小到能够被 regular pipeline 处理。</p>
-<blockquote>
-<p>Tessellation stage 相比于 geometry 是开销是非常大的，因此使用一个
-geometry 阶段过滤 regular 三角形，提高了效率。</p>
-</blockquote>
-<p>regular pipeline 即对 regular 三角形采样分级，再进行 VPL lighting
-计算。</p>
-<h5 id="per-triangle-random-number-generation">3. Per-triangle random
-number generation</h5>
-<p>本论文涉及的随机过程都需要随机数来完成，对于算法 1 用到的随机数 <span class="math inline">\(\large u_{t_i}\)</span>，作者使用伪随机数。mesh
-中每个顶点添加一个额外的 uint32 属性，v_rand。该属性在加载 mesh
-时为每个顶点生成一个 uniform 随机数。在 regular pipeline
-中，每个三角形的随机数 <span class="math inline">\(\large
-u_{t_i}\)</span> 是使用其三个顶点间的 <span class="math inline">\(\large
-xor\)</span> 操作得到的。</p>
-<p>对于 tessellation stage
-细分生成的新三角形，作者通过采样一张预计算的噪声贴图得到新顶点的随机值，采样坐标为新顶点的重心坐标，最后对新三角形顶点的随机数使用同样的
-<span class="math inline">\(\large xor\)</span> 操作。</p>
-<p>想要以上随机数每帧更新，以上随机数最终再与一个 uniform 的全局变量
-u_rand 进行 <span class="math inline">\(\large xor\)</span> 操作，这个
-uniform 全局变量大概要一帧更新一次。算法如下</p>
-<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013914497.png" alt="image-20220717013914497" style="zoom: 67%;"></p>
-<h5 id="progressive-rendering">4. Progressive rendering</h5>
-<p>可以按照上述使用 u_rand 的方法生成多个 independent
-rendering，之后累积作平均用以产生更好的渲染结果。如，从 u_rand
-中为每个三角形生成两个独立的随机数，用以扰动 VPL 中心点 <span class="math inline">\(\large y_i\)</span>。平均由多个 jittered VPLs
-生成的多个 independent rendering，可以提供接近公式 (4)
-真实解的结果。</p>
-<h2 id="remain-question">Remain Question</h2>
-<ul class="task-list">
-<li><input type="checkbox" disabled>
-划分整体过程中的整体应该怎么理解？</li>
-<li><input type="checkbox" disabled>
-Splatting indirect illumination 技术不了解</li>
-</ul>
-<h2 id="reference">Reference</h2>
-<p><a name="[1]">[1]</a> Gilles LAURENT, Cyril DELALANDRE, Grégoire de
-LA RIVIÈRE, and Tamy BOUBEKEUR. 2016. Forward Light Cuts: A Scalable
-Approach to Real-Time Global Illumination. <i>Comput. Graph. Forum</i>
-35, 4 (July 2016), 79–88.</p>
-<h2 id="附录">附录</h2>
-<h3 id="阈值-s_0-的启发式的理解">1. <a name="附录1">阈值 <span class="math inline">\(S_0\)</span> 的启发式的理解</a></h3>
-<p>以像素为球心、半径为 <span class="math inline">\(D_{near}\)</span>
-的球面面积为 <span class="math inline">\(4\pi
-D^2_{near}\)</span>，假设在距离 <span class="math inline">\(D_{near}\)</span> 内的 VPL
-光源才能到达该像素，并且 <span class="math inline">\(N_{avg}\)</span> 个
-VPL 共同作用下才能照亮该像素。由于本文中次级光源都假设为
-diffuse，因此可粗略地认为 VPL 发出的 radiance
-与面积成正比。这样下来，VPL 的平均面积 <span class="math inline">\(4\pi
-\frac{D^2_{near}}{N_{avg}}\)</span>，高于此平均面积的三角形成为
-divergent，剩下的三角形为 regular，regular 三角形生成的 VPL
-具有可控的影响距离，divergent 三角形后续会进一步细分为小三角形。</p>
-<h3 id="着色方程积分近似为求和的理解">2.
-<a name="附录2">着色方程积分近似为求和的理解</a></h3>
-<p>首先来看精确的 rendering equation，</p>
-<p><span class="math display">\[
-L(x,\omega_o)=\int_{\Omega^+}\space
-f_r(x,\omega_i\rightarrow\omega_o)L_i(x&#39;,\omega_i)cos\theta \space
-d\omega_i
-\]</span> 上式为对立体角的积分，转为对光源面积的积分为</p>
-<p><span class="math display">\[
-L(x,\omega_o)=\int_{A}\space
-f_r(x,\omega_i\rightarrow\omega_o)L_i(x&#39;,\omega_i)\frac{cos\theta
-cos\theta&#39;}{||x&#39;-x||^2} \space dA
-\]</span></p>
-<p><span class="math inline">\(L^{ML}\)</span>
-的形式即从对光源面积的积分近似而来，diffuse 下 BRDF 是常量，即 <span class="math inline">\(H\)</span> 中的 <span class="math inline">\(\large\frac{\rho_x}{\pi}\)</span>，<span class="math inline">\(L_i\)</span> 对应 <span class="math inline">\(H\)</span> 中的 <span class="math inline">\(L\)</span>。因此，<span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span> 与 <span class="math inline">\(L(x,\omega_o)\)</span>
-唯一不同的是一个是对总体面积的连续积分，一个是将每个 VPL
-的面积视为微元的离散求和。可知，在 VPL
-面积较小时，这种近似较为接近正确。</p>
-<h3 id="vpl-lighting-推导">3. <a name="附录3">VPL lighting 推导</a></h3>
-<p>将划分的三角形所有子集看作一个整体求和符号有：<span class="math inline">\(\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
-\mathcal{L}^k}=\sum\limits_{t_i\in \mathcal{L}}\)</span></p>
-<blockquote>
-<p>因为 <span class="math inline">\(t_i^k\)</span> 本就代表是子集 <span class="math inline">\(\mathcal{L}^k\)</span> 中的三角形，可知 <span class="math inline">\(\large \mathbb{I}_{t_i^k\in
-\mathcal{L}^k}\)</span> 恒为 <span class="math inline">\(1\)</span>，因此有</p>
-</blockquote>
-<p><span class="math inline">\(\mathbb{E}\left[\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
-\mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\right]=\mathbb{E}\left[\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
-\mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\mathbb{I}_{t_i^k\in
-\mathcal{L}^k}\right]\)</span>，</p>
-<blockquote>
-<p>将和的期望转为期望的和</p>
-</blockquote>
-<p><span class="math inline">\(=\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
-\mathcal{L}^k}\mathbb{E}\left[H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\mathbb{I}_{t_i^k\in
-\mathcal{L}^k}\right]\)</span>，</p>
-<blockquote>
-<p>此时由于指示函数的存在可将三角形子集看作一个整体求和，</p>
-</blockquote>
-<p><span class="math inline">\(=\sum\limits_{t_i\in
-\mathcal{L}}\mathbb{E}\left[H(t_i,x,\vec{n_x})F^k(t_i,x)\mathbb{I}_{t_i\in
-\mathcal{L}^k}\right]\)</span>，</p>
-<blockquote>
-<p><span class="math inline">\(H(t_i,x,\vec{n_x})\)</span>
-与随机划分无关，对于期望而言是常量，可以提出期望计算外，即</p>
-</blockquote>
-<p><span class="math inline">\(=\sum\limits_{t_i\in
-\mathcal{L}}H(t_i,x,\vec{n_x})\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in
-\mathcal{L}^k}\right]\)</span>，</p>
-<blockquote>
-<p>接下来进行一个恒等变换，<span class="math inline">\(F^k(t_i,x)\mathbb{I}_{t_i\in
-\mathcal{L}^k}=\sum\limits^N_{k=0}F^k(t_i,x)\mathbb{I}_{t_i\in
-\mathcal{L}^k}\)</span>，因为对于每一个 <span class="math inline">\(t_i\)</span>，只会有一个 <span class="math inline">\(k\)</span> 值使得 <span class="math inline">\(\large \mathbb{I}_{t_i\in
-\mathcal{L}^k}=1\)</span>，其余都为 <span class="math inline">\(0\)</span>。</p>
-</blockquote>
-<p><span class="math inline">\(=\sum\limits_{t_i\in
-\mathcal{L}}H(t_i,x,\vec{n_x})\sum\limits^N_{k=0}\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in
-\mathcal{L}^k}\right]\)</span>，</p>
-<blockquote>
-<p>目前期望计算中只有指示函数与随机划分相关，且易知 <span class="math inline">\(\mathbb{E}\left[\mathbb{I}_{t_i\in
-\mathcal{L}^k}\right]=P(t_i\in \mathcal{L^k})\)</span> ，有</p>
-</blockquote>
-<p><span class="math inline">\(\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in
-\mathcal{L}^k}\right]=F^k(t_i,x)\mathbb{E}\left[\mathbb{I}_{t_i\in
-\mathcal{L}^k}\right]=F^k(t_i,x)P(t_i\in \mathcal{L^k})\)</span></p>
-<blockquote>
-<p>最终有</p>
-</blockquote>
-<p>$ _{t_i}H(t_i,x,)<sup>N_{k=0}F</sup>k(t_i,x)P(t_i^k)$</p>
-<h3 id="转为整体划分问题推导">4.
-<a name="附录4">转为整体划分问题推导</a></h3>
-<p>由 <span class="math inline">\(\eqref{partition probability}\)</span>
-式代入 <span class="math inline">\(\eqref{many light estimator}\)</span>
-中有</p>
-<p><span class="math display">\[\forall x,\quad \sum\limits_k
-F^k(t_i,x)\frac{\mathcal{A}(t_i)}{S_k}=\mathcal{A}(t_i)\]</span></p>
-<p><span class="math display">\[\forall x,\quad \sum\limits_k
-\frac{F^k(t_i,x)}{S_k}=1\]</span></p>
-<p>假设未知函数 <span class="math inline">\(f^k(t_i,x)\)</span> 使得
-<span class="math inline">\(F^k(t_i,x)=S_kf^k(t_i,x)\)</span>，那么有</p>
-<p>​ <span class="math inline">\(\sum\limits_kf^k(t_i,x)=1\)</span></p>
-<h3 id="整体划分选取推导">5. <a name="附录5">整体划分选取推导</a></h3>
-<blockquote>
-<p>当 receiver 正对着 emitter 时，将 <span class="math inline">\(\vec{n_x}=\bar{xy_i}\)</span> 代入 <span class="math inline">\(\eqref{received radiance}\)</span>，有</p>
-</blockquote>
-<p><span class="math inline">\(\begin{align}\underset{\vec{n_x}}{max}\space
-H(t_i,x,\vec{n_x})&amp;=\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{(&lt;\vec{n_i},\bar{y_ix}&gt;)^2}{d_i^2}\\&amp;=\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2\end{align}\)</span>​</p>
-<blockquote>
-<p>将 <span class="math inline">\(\large H\)</span> 代入公式 <span class="math inline">\(\eqref{partition nested ball}\)</span> 有</p>
-</blockquote>
-<p><span class="math display">\[\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2
-\geq h\]</span></p>
-<p><span class="math display">\[\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2
-\geq \frac{2h\pi^2}{3\rho_i\rho_xE(t_i)}\]</span></p>
-<p><span class="math display">\[\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}
-\geq \pi \sqrt{\frac{2h}{3\rho_i\rho_xE(t_i)}}\]</span></p>
-<p><span class="math display">\[\frac{||x-y_i||}{&lt;\vec{n_i},\bar{y_ix}&gt;}
-\leq \frac{1}{\pi} \sqrt{\frac{3\rho_i\rho_xE(t_i)}{2h}}\]</span></p>
-<h3 id="模拟传统层级的几何级下降的理解">6.
-<a name="附录6">模拟传统层级的几何级下降的理解</a></h3>
-<p>这里的模拟层级表示而引入几何级下降的参数配置：例如满二叉树的层级表示，根节点层(0层)节点数量为
-<span class="math inline">\(S_0=1\)</span> 个，往下每层数量是前一层的 2
-倍，即有 <span class="math inline">\(S_k=S_0 2^k\)</span>
-个，为几何级增长。</p>
-]]></content>
-      <categories>
-        <category>Paper Notes</category>
-      </categories>
-  </entry>
-  <entry>
     <title>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting</title>
     <url>/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting.html</url>
     <content><![CDATA[<h2 id="summary">Summary</h2>
@@ -1419,6 +1419,207 @@ Z(y)}\left(\frac{p_i(x_i)}{\hat{p}(x_i)}\frac{\textup{w}_i(x_i)}{M}\right)
 ]]></content>
       <categories>
         <category>Paper Notes</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Vulkan Render Design</title>
+    <url>/Render-Engine/Vulkan-Render-Design.html</url>
+    <content><![CDATA[<h3 id="summary">Summary</h3>
+<p>本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。</p>
+<h3 id="vulkan-管线管理策略">Vulkan 管线管理策略</h3>
+<p>Vulkan 包含三种管线
+graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提
+OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API
+调用来进行切换的，属于 high-level 的 API 设计。而Vulkan 使用
+<strong>PSO(pipeline state object)</strong> 来描述管线状态，类型为
+<code>VkPipeline</code>，这个类型的对象需要用户自己创建。</p>
+<p>PSO 只是描述管线的各种状态，状态相同的管线可以使用同一个
+PSO，不相容的状态则需要创建新的 PSO。因此对于 PSO
+的管理采用将当前状态进行 hash 处理，如果存在当前状态 hash 的 PSO
+则直接使用，否则创建新的 PSO 并记录到 unordered_map 中。这部分工作由类
+<code>VulkanPipelineStateManager</code> 完成，目前的 hash
+算法只是简单的移位与异或，留待之后更改。</p>
+<p>创建 PSO 的 API 有三个，<a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateGraphicsPipelines.html"><code>vkCreateGraphicsPipelines</code></a>
+创建 graphics PSO，<a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateComputePipelines.html"><code>vkCreateComputePipelines</code></a>
+创建 compute PSO， <a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateRayTracingPipelinesKHR.html"><code>vkCreateRayTracingPipelinesKHR</code></a>
+创建 raytracing PSO。创建 PSO 需要传入描述管线状态的结构体，管线状态的
+hash 也主要对这些结构体中的字段进行。另一个 cache
+参数，是允许用户将执行过程中创建的 PSO 保存到文件，然后下次启动加载到
+cache 参数中，Vulkan 可以通过 cache
+来减少创建过程中需要的底层开销，可以提高运行时帧数的稳定性。</p>
+<p>对于 PSO 的封装有类 <code>VulkanPipeline</code> 及其三个子类
+<code>VulkanGraphicsPipelineState</code>、<code>VulkanComputePipeline</code>
+以及 <code>VulkanRayTracingPipeline</code>。下面以 graphics PSO
+为例，介绍管线的创建流程。</p>
+<h3 id="graphics-pso-的创建">Graphics PSO 的创建</h3>
+<h4 id="vulkan-graphics-pipeline-介绍">1. Vulkan Graphics Pipeline
+介绍</h4>
+<p>创建 Vulkan Graphics PSO 的描述封装在结构体 <a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkGraphicsPipelineCreateInfo.html"><code>VkGraphicsPipelineCreateInfo</code></a>
+中，下面简要介绍它的成员：</p>
+<ul>
+<li><code>VkPipelineShaderStageCreateInfo*</code> ：管线使用的 shader
+信息数组，每个元素包含使用的 shader
+对象(VkShaderModule)、入口函数、shader 阶段(vertex/fragment
+...)等。</li>
+<li><code>VkPipelineVertexInputStateCreateInfo*</code>：每个元素描述顶点包含的输入属性(vertex
+shader)，即
+location、binding、数据格式以及相对于顶点起始位置的偏移量。</li>
+<li><code>VkPipelineInputAssemblyStateCreateInfo</code>：描述图元数据的拓扑结构(VkPrimitiveTopology)，如<br>
+POINT_LIST、TRIANGLE_LIST 等。</li>
+<li><code>VkPipelineTessellationStateCreateInfo</code>：曲面细分阶段的配置参数，例如控制点数量</li>
+<li><code>VkPipelineViewportStateCreateInfo</code>：用来描述当前渲染的
+viewport 和 scissor 的区域，视口和裁剪可能变化较频繁，可以设置为 dynamic
+state，创建管线时不设置，在渲染前使用 command 动态设置。</li>
+<li><code>VkPipelineRasterizationStateCreateInfo</code>：描述光栅化阶段的配置参数，几何绘制模式(填充/线框)，正面的顶点环绕方向，剔除面(正面剔除还是背面剔除)。是否开启
+depth bias，对 depth buffer
+中的深度加上一个偏移量，可以在避免自遮挡时使用</li>
+<li><code>VkPipelineMultisampleStateCreateInfo</code>：描述光栅化阶段的采样数，1
+表示无超采样。</li>
+<li><code>VkPipelineDepthStencilStateCreateInfo</code>：描述是否开启深度测试、模板测试，以及深度测试的操作、模板测试的操作。</li>
+<li><code>VkPipelineColorBlendStateCreateInfo</code>：描述 frame buffer
+中每个 render target 的 blend 操作，包含 blend 参数、blend
+计算方式等。</li>
+<li><code>VkPipelineDynamicStateCreateInfo</code>：描述管线状态中哪些是可以使用
+command 指定的动态状态，其他则是创建管线时就确定的。</li>
+<li><code>VkPipelineLayout</code>：包含管线中着色器的输入资源描述</li>
+<li><code>VkRenderPass</code>：管线所使用的 render pass，包含了 render
+pass 的 render target 的描述。</li>
+</ul>
+<h5 id="vulkan-render-pass">1.1 Vulkan Render Pass</h5>
+<p>Vulkan Render Pass 也是一种描述，因此同样使用 hash
+方式进行自动创建，主要包含三部分：</p>
+<ul>
+<li>描述其使用到的所有 attachment 的描述
+<code>VkAttachmentDescription</code>，一个 attachment 即为一个 image
+view，用于访问 vulkan texture。进入 renderpass 之前、renderpass
+之内、renderpass 结束时的 image layout；加载与存储时的操作；attachment
+格式，采样数。</li>
+<li>描述其内部的 subpass，并且至少包含一个 subpass。每个 subpass
+描述包含其 color/resolve/depth attachment 的引用描述，即 framebuffer 中
+attachment index、image layout</li>
+<li>subpass 之间的依赖</li>
+</ul>
+<p>Vulkan Render Pass 特殊之处在于其是由 subpass
+来描述内部多个子阶段的，绘制指令也会被记录在一个当前激活的 subpass
+中。subpass 的设计是为了能够高效利用某些 tile-based 架构的移动端 GPU，即
+fragment shader 的执行是以 tile 为单位的，因此之后的 subpass
+可以直接读到上一个 subpass 写入 attachment 的数据，而不需要等到整个
+render pass 执行完。</p>
+<p><a href="#%5B1%5D">[1]</a> 以由两个 pass 组成的 deferred shading
+为例，第一个 pass 为了绘制 G-Buffer，第二个 pass 基于 G-Buffer
+进行光照计算，得到最终绘制结果。可以设置 render pass 包含两个
+subpass，第一个 subpass 绘制 G-Buffer，第二个 subpass 将第一个 subpass
+的 G-Buffer 作为
+<code>input attachment</code>，执行光照计算。流程如下述伪代码：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function">cmdBeginRenderPass</span></span><br><span class="line"><span class="function">	<span class="title">cmdBindPipeline</span><span class="params">(pipeline0)</span></span></span><br><span class="line"><span class="function">	... <span class="comment">// bind vertex/index buffer or descriptor set of shader resource</span></span></span><br><span class="line"><span class="function">	cmdDraw</span></span><br><span class="line"><span class="function">	cmdNextSubpass</span></span><br><span class="line"><span class="function">	<span class="title">cmdBindPipeline</span><span class="params">(pipeline1)</span></span></span><br><span class="line"><span class="function">	... <span class="comment">// bind vertex/index buffer or descriptor set of shader resource</span></span></span><br><span class="line"><span class="function">	cmdDraw</span></span><br><span class="line"><span class="function">cmdEndRenderPass</span></span><br></pre></td></tr></table></figure>
+<p>注意两个 subpass 使用的是两个 PSO，因为 geometry pass 的 shader 与
+deferred shading 的 shader，以及其 shader 输入肯定不同。在第二个 subpass
+使用到的 pipeline1 的 shader 则可以使用如下方式来声明 input
+attachment，</p>
+<figure class="highlight glsl"><table><tr><td class="code"><pre><span class="line"><span class="keyword">layout</span> (input_attachment_index = <span class="number">0</span>, set = <span class="number">0</span>, <span class="keyword">binding</span> = <span class="number">0</span>) <span class="keyword">uniform</span> subpassInput inputColor;</span><br><span class="line"><span class="keyword">layout</span> (input_attachment_index = <span class="number">1</span>, set = <span class="number">1</span>, <span class="keyword">binding</span> = <span class="number">1</span>) <span class="keyword">uniform</span> subpassInput inputDepth;</span><br></pre></td></tr></table></figure>
+<p><code>subpassLoad(inputColor)</code> 则会读取上个 subpass 在
+inputColor 同样区域写入的数据。</p>
+<h5 id="vulkan-pipeline-layout">1.2 Vulkan Pipeline Layout</h5>
+<p>shader 中的输入参数需要对应描述符 <code>VkDescriptorSetLayout</code>
+对其描述，而 vulkan pipeline layout 则包含了整个管线的所有 shader
+输入参数的描述符。上述 set=0、set=1 则分别表示了索引 0、1 的
+VkDescriptorSetLayout
+对象，相当于整个管线的描述符分到了两个描述符堆上。一个输入资源的描述符
+<code>VkDescriptorSetLayoutBinding</code>，包含了
+binding、资源类型(如上例中的
+<code>VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT</code>)、当为数组时的数组长度以及被哪些
+shader 阶段使用。</p>
+<p>Vulkan Pipeline Layout 只是对管线 shader
+输入的描述，相当于函数签名中形参，真正使用的数据资源，如
+sampler、texture、buffer 等，需要使用 command 在 draw call
+之前指定。因此 Vulkan Pipeline Layout 同样使用 hash 自动创建。</p>
+<p>特别注意，描述符堆是从 descriptorPool 中使用 VkDescriptorSetLayout
+创建得到的，每个描述符堆 <code>VkDescriptorSet</code> 同时只能由一个
+command buffer 使用，因此描述符堆的申请使用与停止使用应该由 command
+buffer 完成。类 <code>VulkanDescriptorPoolManager</code>
+维护已经创建的描述符堆以及其使用状态，command buffer
+在更新描述符资源之前请求使用，如果没有可用的 descriptorSet
+则新创建。command buffer 具有自己执行是否完成的 fence，类
+<code>VulkanCommandBufferManager</code> 更新 command buffer 状态时，如果
+command buffer 中的指令已经完成，则归还其使用的描述符堆。</p>
+<h4 id="从上层到渲染层的管线创建">2. 从上层到渲染层的管线创建</h4>
+<p>本渲染器的最初设计是面向多平台的，设置了平台无关层，只是目前只有
+Vulkan 的渲染层，因此平台无关层更偏向于
+Vulkan。下面介绍与管线创建相关的平台无关层的类。</p>
+<ul>
+<li><code>GPIRenderPassInfo</code>：对标 vulkan render pass
+的描述，但不仅仅包含了对 render pass 的描述，还包含 render pass
+中使用到的 render target ，因此 render pass 对应的 frame buffer
+的创建所需参数也是从该类型中获取。</li>
+<li><code>GPIGfxPipelineStateInitializer</code>：对标 Graphics PSO
+的配置参数。</li>
+</ul>
+<p>抽象类 <code>GraphicsBridge</code>
+定义了一系列到渲染层的接口，不同的平台实现其接口。例如，设置 render pass
+以及管线的接口 <code>GPIBeginRenderPass</code>
+、<code>GPISetGfxPipelineState</code>。下面是管线创建的上层逻辑的伪代码：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">GPIRenderPassInfo basePassInfo;</span><br><span class="line"><span class="comment">// ... // config basePass info</span></span><br><span class="line">gGfxBridge-&gt;<span class="built_in">GPIBeginRenderPass</span>(basePassInfo);</span><br><span class="line">&#123;</span><br><span class="line">    GPIGfxPipelineStateInitializer PSOInitializer;</span><br><span class="line">    <span class="comment">// ... // config PSOInitializer</span></span><br><span class="line">    gGfxBridge-&gt;<span class="built_in">GPISetGfxPipelineState</span>(PSOInitializer, basePassInfo);</span><br><span class="line">    <span class="comment">// ... // config the resources of descriptor set</span></span><br><span class="line">    gGfxBridge-&gt;<span class="built_in">GPIDrawPrimitive</span>();</span><br><span class="line">&#125;</span><br><span class="line">gGfxBridge-&gt;<span class="built_in">GPIEndRenderPass</span>();</span><br></pre></td></tr></table></figure>
+<p><code>GPIBeginRenderPass</code> 会根据参数 basePassInfo 来生成 vulkan
+render pass 的配置，以及 frame buffer 的资源参数，通过 hash
+的方式查找是否存在对应配置的 render pass 与 frame
+buffer，不存在则创建。同理 <code>GPISetGfxPipelineState</code> 根据
+PSOInitializer 与 basePassInfo 参数以 hash 方式查找 PSO，并绑定到当前
+command buffer。</p>
+<p>同时 <code>GPIBeginRenderPass</code>
+还做了一些开始管线前的准备工作，比如向
+<code>VulkanCommandBufferManager</code> 申请 command buffer，以及将
+render pass 需要的 render target 调整到其所指定的输入 layout 等。</p>
+<h3 id="shader-的管理与配置">Shader 的管理与配置</h3>
+<p>上述管线创建过程中，还需要 shader 的配置。<code>UltraShader</code>
+基类定义了 shader 相关描述，如 shader 源码文件路径、shader
+编译相关配置、shader 输入参数描述等。不同 shader
+继承自此基类，声明自己的参数，其中输入参数会被用于管线创建
+<code>VkPipelineLayout</code>
+资源描述。而编译相关配置则包括一些全局编译配置，如平台、优化参数等，以及一些宏定义，用以开启或关闭某些代码。</p>
+<h5 id="shader-源码编译与加载">1. Shader 源码编译与加载</h5>
+<p>本渲染器的 shader 编译与加载由类 <code>ShaderCompilerManager</code>
+完成。该类基于 shaderc，但为了在 renderdoc 能够源码级调试 shader，在
+debug 时使用 glslangValidator 编译。目前编译触发条件，有两种：</p>
+<ul>
+<li>加载过程中，shader 文件及其 include
+文件的时间戳要比记录文件中的更新。或者 shader 的一些配置发生改变。</li>
+<li>运行过程中，shader 的一些配置(如宏定义)发生改变。<a href="#todo">TODO</a> 运行过程中文件的改动主动触发编译</li>
+</ul>
+<p>Shader 文件的后缀分为作为头文件的 .glsl 以及表示不同阶段的源码文件如
+.ver、.frag、.comp 等。编译过程中会记录源码文件以及其 include
+文件的时间戳，用以辨别是否有更改。同时将 shader 编译配置进行
+hash，作为编译输出文件的文件名一部分，用以辨别当前 shader
+编译配置是否已经编译过。这些信息都会记录在 "intermediate/Shaders/
+ShaderFileCache.json" 文件中，该文件在启动时加载。</p>
+<p>由于 include 文件会有多级 include，因此只有加载了 shader
+源码将所有层级的 include 文件进行时间戳比对才能确定是否需要编译此
+shader，因此这一模式只能在加载过程中应用。在运行时需要采用主动触发编译，目前主动触发编译只有实现了
+shader 的编译配置发生改变，文件发生改变主动触发编译留待之后实现。</p>
+<h5 id="shader-输入参数描述">2. Shader 输入参数描述</h5>
+<p>模板类 <code>TShaderResourceParameter</code> 可以容纳各种类型的
+shader
+参数描述，同时可以绑定实际的资源。但这些目前都需要大量的手写代码完成，手动与
+shader 代码里的声明对齐，手动绑定资源。更合理的做法应该是，</p>
+<ul>
+<li>实现 C++ 反射宏，使用宏能够更快速声明 shader 参数描述</li>
+<li>shader 编译过程应该利用 shader
+反射生成包含输入资源描述的头信息。shader 参数在 C++
+中使用相同的名称，使用头信息中的名称进行自动配置参数描述(layout信息等)，并进行验证。</li>
+</ul>
+<p>这些留待之后实现。</p>
+<h3 id="todo">TODO</h3>
+<p>由于时间有限，有很多搁置的策略未实现。</p>
+<ul>
+<li>描述符堆目前未实现同时多个堆策略</li>
+<li>shader 编译流程生成 layout 头信息，使用 C++ 反射宏进行绑定</li>
+<li>多线程渲染</li>
+</ul>
+<h3 id="reference">Reference</h3>
+<p><a name="[1]">[1]</a>
+https://www.saschawillems.de/blog/2018/07/19/vulkan-input-attachments-and-sub-passes/</p>
+]]></content>
+      <categories>
+        <category>Render Engine</category>
       </categories>
   </entry>
   <entry>
@@ -1927,207 +2128,6 @@ https://www.khronos.org/opengl/wiki/Memory_Model#Incoherent_memory_access</p>
 ]]></content>
       <categories>
         <category>Vulkan Basics</category>
-      </categories>
-  </entry>
-  <entry>
-    <title>Vulkan Render Design</title>
-    <url>/Render-Engine/Vulkan-Render-Design.html</url>
-    <content><![CDATA[<h3 id="summary">Summary</h3>
-<p>本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。</p>
-<h3 id="vulkan-管线管理策略">Vulkan 管线管理策略</h3>
-<p>Vulkan 包含三种管线
-graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提
-OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API
-调用来进行切换的，属于 high-level 的 API 设计。而Vulkan 使用
-<strong>PSO(pipeline state object)</strong> 来描述管线状态，类型为
-<code>VkPipeline</code>，这个类型的对象需要用户自己创建。</p>
-<p>PSO 只是描述管线的各种状态，状态相同的管线可以使用同一个
-PSO，不相容的状态则需要创建新的 PSO。因此对于 PSO
-的管理采用将当前状态进行 hash 处理，如果存在当前状态 hash 的 PSO
-则直接使用，否则创建新的 PSO 并记录到 unordered_map 中。这部分工作由类
-<code>VulkanPipelineStateManager</code> 完成，目前的 hash
-算法只是简单的移位与异或，留待之后更改。</p>
-<p>创建 PSO 的 API 有三个，<a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateGraphicsPipelines.html"><code>vkCreateGraphicsPipelines</code></a>
-创建 graphics PSO，<a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateComputePipelines.html"><code>vkCreateComputePipelines</code></a>
-创建 compute PSO， <a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateRayTracingPipelinesKHR.html"><code>vkCreateRayTracingPipelinesKHR</code></a>
-创建 raytracing PSO。创建 PSO 需要传入描述管线状态的结构体，管线状态的
-hash 也主要对这些结构体中的字段进行。另一个 cache
-参数，是允许用户将执行过程中创建的 PSO 保存到文件，然后下次启动加载到
-cache 参数中，Vulkan 可以通过 cache
-来减少创建过程中需要的底层开销，可以提高运行时帧数的稳定性。</p>
-<p>对于 PSO 的封装有类 <code>VulkanPipeline</code> 及其三个子类
-<code>VulkanGraphicsPipelineState</code>、<code>VulkanComputePipeline</code>
-以及 <code>VulkanRayTracingPipeline</code>。下面以 graphics PSO
-为例，介绍管线的创建流程。</p>
-<h3 id="graphics-pso-的创建">Graphics PSO 的创建</h3>
-<h4 id="vulkan-graphics-pipeline-介绍">1. Vulkan Graphics Pipeline
-介绍</h4>
-<p>创建 Vulkan Graphics PSO 的描述封装在结构体 <a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkGraphicsPipelineCreateInfo.html"><code>VkGraphicsPipelineCreateInfo</code></a>
-中，下面简要介绍它的成员：</p>
-<ul>
-<li><code>VkPipelineShaderStageCreateInfo*</code> ：管线使用的 shader
-信息数组，每个元素包含使用的 shader
-对象(VkShaderModule)、入口函数、shader 阶段(vertex/fragment
-...)等。</li>
-<li><code>VkPipelineVertexInputStateCreateInfo*</code>：每个元素描述顶点包含的输入属性(vertex
-shader)，即
-location、binding、数据格式以及相对于顶点起始位置的偏移量。</li>
-<li><code>VkPipelineInputAssemblyStateCreateInfo</code>：描述图元数据的拓扑结构(VkPrimitiveTopology)，如<br>
-POINT_LIST、TRIANGLE_LIST 等。</li>
-<li><code>VkPipelineTessellationStateCreateInfo</code>：曲面细分阶段的配置参数，例如控制点数量</li>
-<li><code>VkPipelineViewportStateCreateInfo</code>：用来描述当前渲染的
-viewport 和 scissor 的区域，视口和裁剪可能变化较频繁，可以设置为 dynamic
-state，创建管线时不设置，在渲染前使用 command 动态设置。</li>
-<li><code>VkPipelineRasterizationStateCreateInfo</code>：描述光栅化阶段的配置参数，几何绘制模式(填充/线框)，正面的顶点环绕方向，剔除面(正面剔除还是背面剔除)。是否开启
-depth bias，对 depth buffer
-中的深度加上一个偏移量，可以在避免自遮挡时使用</li>
-<li><code>VkPipelineMultisampleStateCreateInfo</code>：描述光栅化阶段的采样数，1
-表示无超采样。</li>
-<li><code>VkPipelineDepthStencilStateCreateInfo</code>：描述是否开启深度测试、模板测试，以及深度测试的操作、模板测试的操作。</li>
-<li><code>VkPipelineColorBlendStateCreateInfo</code>：描述 frame buffer
-中每个 render target 的 blend 操作，包含 blend 参数、blend
-计算方式等。</li>
-<li><code>VkPipelineDynamicStateCreateInfo</code>：描述管线状态中哪些是可以使用
-command 指定的动态状态，其他则是创建管线时就确定的。</li>
-<li><code>VkPipelineLayout</code>：包含管线中着色器的输入资源描述</li>
-<li><code>VkRenderPass</code>：管线所使用的 render pass，包含了 render
-pass 的 render target 的描述。</li>
-</ul>
-<h5 id="vulkan-render-pass">1.1 Vulkan Render Pass</h5>
-<p>Vulkan Render Pass 也是一种描述，因此同样使用 hash
-方式进行自动创建，主要包含三部分：</p>
-<ul>
-<li>描述其使用到的所有 attachment 的描述
-<code>VkAttachmentDescription</code>，一个 attachment 即为一个 image
-view，用于访问 vulkan texture。进入 renderpass 之前、renderpass
-之内、renderpass 结束时的 image layout；加载与存储时的操作；attachment
-格式，采样数。</li>
-<li>描述其内部的 subpass，并且至少包含一个 subpass。每个 subpass
-描述包含其 color/resolve/depth attachment 的引用描述，即 framebuffer 中
-attachment index、image layout</li>
-<li>subpass 之间的依赖</li>
-</ul>
-<p>Vulkan Render Pass 特殊之处在于其是由 subpass
-来描述内部多个子阶段的，绘制指令也会被记录在一个当前激活的 subpass
-中。subpass 的设计是为了能够高效利用某些 tile-based 架构的移动端 GPU，即
-fragment shader 的执行是以 tile 为单位的，因此之后的 subpass
-可以直接读到上一个 subpass 写入 attachment 的数据，而不需要等到整个
-render pass 执行完。</p>
-<p><a href="#%5B1%5D">[1]</a> 以由两个 pass 组成的 deferred shading
-为例，第一个 pass 为了绘制 G-Buffer，第二个 pass 基于 G-Buffer
-进行光照计算，得到最终绘制结果。可以设置 render pass 包含两个
-subpass，第一个 subpass 绘制 G-Buffer，第二个 subpass 将第一个 subpass
-的 G-Buffer 作为
-<code>input attachment</code>，执行光照计算。流程如下述伪代码：</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function">cmdBeginRenderPass</span></span><br><span class="line"><span class="function">	<span class="title">cmdBindPipeline</span><span class="params">(pipeline0)</span></span></span><br><span class="line"><span class="function">	... <span class="comment">// bind vertex/index buffer or descriptor set of shader resource</span></span></span><br><span class="line"><span class="function">	cmdDraw</span></span><br><span class="line"><span class="function">	cmdNextSubpass</span></span><br><span class="line"><span class="function">	<span class="title">cmdBindPipeline</span><span class="params">(pipeline1)</span></span></span><br><span class="line"><span class="function">	... <span class="comment">// bind vertex/index buffer or descriptor set of shader resource</span></span></span><br><span class="line"><span class="function">	cmdDraw</span></span><br><span class="line"><span class="function">cmdEndRenderPass</span></span><br></pre></td></tr></table></figure>
-<p>注意两个 subpass 使用的是两个 PSO，因为 geometry pass 的 shader 与
-deferred shading 的 shader，以及其 shader 输入肯定不同。在第二个 subpass
-使用到的 pipeline1 的 shader 则可以使用如下方式来声明 input
-attachment，</p>
-<figure class="highlight glsl"><table><tr><td class="code"><pre><span class="line"><span class="keyword">layout</span> (input_attachment_index = <span class="number">0</span>, set = <span class="number">0</span>, <span class="keyword">binding</span> = <span class="number">0</span>) <span class="keyword">uniform</span> subpassInput inputColor;</span><br><span class="line"><span class="keyword">layout</span> (input_attachment_index = <span class="number">1</span>, set = <span class="number">1</span>, <span class="keyword">binding</span> = <span class="number">1</span>) <span class="keyword">uniform</span> subpassInput inputDepth;</span><br></pre></td></tr></table></figure>
-<p><code>subpassLoad(inputColor)</code> 则会读取上个 subpass 在
-inputColor 同样区域写入的数据。</p>
-<h5 id="vulkan-pipeline-layout">1.2 Vulkan Pipeline Layout</h5>
-<p>shader 中的输入参数需要对应描述符 <code>VkDescriptorSetLayout</code>
-对其描述，而 vulkan pipeline layout 则包含了整个管线的所有 shader
-输入参数的描述符。上述 set=0、set=1 则分别表示了索引 0、1 的
-VkDescriptorSetLayout
-对象，相当于整个管线的描述符分到了两个描述符堆上。一个输入资源的描述符
-<code>VkDescriptorSetLayoutBinding</code>，包含了
-binding、资源类型(如上例中的
-<code>VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT</code>)、当为数组时的数组长度以及被哪些
-shader 阶段使用。</p>
-<p>Vulkan Pipeline Layout 只是对管线 shader
-输入的描述，相当于函数签名中形参，真正使用的数据资源，如
-sampler、texture、buffer 等，需要使用 command 在 draw call
-之前指定。因此 Vulkan Pipeline Layout 同样使用 hash 自动创建。</p>
-<p>特别注意，描述符堆是从 descriptorPool 中使用 VkDescriptorSetLayout
-创建得到的，每个描述符堆 <code>VkDescriptorSet</code> 同时只能由一个
-command buffer 使用，因此描述符堆的申请使用与停止使用应该由 command
-buffer 完成。类 <code>VulkanDescriptorPoolManager</code>
-维护已经创建的描述符堆以及其使用状态，command buffer
-在更新描述符资源之前请求使用，如果没有可用的 descriptorSet
-则新创建。command buffer 具有自己执行是否完成的 fence，类
-<code>VulkanCommandBufferManager</code> 更新 command buffer 状态时，如果
-command buffer 中的指令已经完成，则归还其使用的描述符堆。</p>
-<h4 id="从上层到渲染层的管线创建">2. 从上层到渲染层的管线创建</h4>
-<p>本渲染器的最初设计是面向多平台的，设置了平台无关层，只是目前只有
-Vulkan 的渲染层，因此平台无关层更偏向于
-Vulkan。下面介绍与管线创建相关的平台无关层的类。</p>
-<ul>
-<li><code>GPIRenderPassInfo</code>：对标 vulkan render pass
-的描述，但不仅仅包含了对 render pass 的描述，还包含 render pass
-中使用到的 render target ，因此 render pass 对应的 frame buffer
-的创建所需参数也是从该类型中获取。</li>
-<li><code>GPIGfxPipelineStateInitializer</code>：对标 Graphics PSO
-的配置参数。</li>
-</ul>
-<p>抽象类 <code>GraphicsBridge</code>
-定义了一系列到渲染层的接口，不同的平台实现其接口。例如，设置 render pass
-以及管线的接口 <code>GPIBeginRenderPass</code>
-、<code>GPISetGfxPipelineState</code>。下面是管线创建的上层逻辑的伪代码：</p>
-<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">GPIRenderPassInfo basePassInfo;</span><br><span class="line"><span class="comment">// ... // config basePass info</span></span><br><span class="line">gGfxBridge-&gt;<span class="built_in">GPIBeginRenderPass</span>(basePassInfo);</span><br><span class="line">&#123;</span><br><span class="line">    GPIGfxPipelineStateInitializer PSOInitializer;</span><br><span class="line">    <span class="comment">// ... // config PSOInitializer</span></span><br><span class="line">    gGfxBridge-&gt;<span class="built_in">GPISetGfxPipelineState</span>(PSOInitializer, basePassInfo);</span><br><span class="line">    <span class="comment">// ... // config the resources of descriptor set</span></span><br><span class="line">    gGfxBridge-&gt;<span class="built_in">GPIDrawPrimitive</span>();</span><br><span class="line">&#125;</span><br><span class="line">gGfxBridge-&gt;<span class="built_in">GPIEndRenderPass</span>();</span><br></pre></td></tr></table></figure>
-<p><code>GPIBeginRenderPass</code> 会根据参数 basePassInfo 来生成 vulkan
-render pass 的配置，以及 frame buffer 的资源参数，通过 hash
-的方式查找是否存在对应配置的 render pass 与 frame
-buffer，不存在则创建。同理 <code>GPISetGfxPipelineState</code> 根据
-PSOInitializer 与 basePassInfo 参数以 hash 方式查找 PSO，并绑定到当前
-command buffer。</p>
-<p>同时 <code>GPIBeginRenderPass</code>
-还做了一些开始管线前的准备工作，比如向
-<code>VulkanCommandBufferManager</code> 申请 command buffer，以及将
-render pass 需要的 render target 调整到其所指定的输入 layout 等。</p>
-<h3 id="shader-的管理与配置">Shader 的管理与配置</h3>
-<p>上述管线创建过程中，还需要 shader 的配置。<code>UltraShader</code>
-基类定义了 shader 相关描述，如 shader 源码文件路径、shader
-编译相关配置、shader 输入参数描述等。不同 shader
-继承自此基类，声明自己的参数，其中输入参数会被用于管线创建
-<code>VkPipelineLayout</code>
-资源描述。而编译相关配置则包括一些全局编译配置，如平台、优化参数等，以及一些宏定义，用以开启或关闭某些代码。</p>
-<h5 id="shader-源码编译与加载">1. Shader 源码编译与加载</h5>
-<p>本渲染器的 shader 编译与加载由类 <code>ShaderCompilerManager</code>
-完成。该类基于 shaderc，但为了在 renderdoc 能够源码级调试 shader，在
-debug 时使用 glslangValidator 编译。目前编译触发条件，有两种：</p>
-<ul>
-<li>加载过程中，shader 文件及其 include
-文件的时间戳要比记录文件中的更新。或者 shader 的一些配置发生改变。</li>
-<li>运行过程中，shader 的一些配置(如宏定义)发生改变。<a href="#todo">TODO</a> 运行过程中文件的改动主动触发编译</li>
-</ul>
-<p>Shader 文件的后缀分为作为头文件的 .glsl 以及表示不同阶段的源码文件如
-.ver、.frag、.comp 等。编译过程中会记录源码文件以及其 include
-文件的时间戳，用以辨别是否有更改。同时将 shader 编译配置进行
-hash，作为编译输出文件的文件名一部分，用以辨别当前 shader
-编译配置是否已经编译过。这些信息都会记录在 "intermediate/Shaders/
-ShaderFileCache.json" 文件中，该文件在启动时加载。</p>
-<p>由于 include 文件会有多级 include，因此只有加载了 shader
-源码将所有层级的 include 文件进行时间戳比对才能确定是否需要编译此
-shader，因此这一模式只能在加载过程中应用。在运行时需要采用主动触发编译，目前主动触发编译只有实现了
-shader 的编译配置发生改变，文件发生改变主动触发编译留待之后实现。</p>
-<h5 id="shader-输入参数描述">2. Shader 输入参数描述</h5>
-<p>模板类 <code>TShaderResourceParameter</code> 可以容纳各种类型的
-shader
-参数描述，同时可以绑定实际的资源。但这些目前都需要大量的手写代码完成，手动与
-shader 代码里的声明对齐，手动绑定资源。更合理的做法应该是，</p>
-<ul>
-<li>实现 C++ 反射宏，使用宏能够更快速声明 shader 参数描述</li>
-<li>shader 编译过程应该利用 shader
-反射生成包含输入资源描述的头信息。shader 参数在 C++
-中使用相同的名称，使用头信息中的名称进行自动配置参数描述(layout信息等)，并进行验证。</li>
-</ul>
-<p>这些留待之后实现。</p>
-<h3 id="todo">TODO</h3>
-<p>由于时间有限，有很多搁置的策略未实现。</p>
-<ul>
-<li>描述符堆目前未实现同时多个堆策略</li>
-<li>shader 编译流程生成 layout 头信息，使用 C++ 反射宏进行绑定</li>
-<li>多线程渲染</li>
-</ul>
-<h3 id="reference">Reference</h3>
-<p><a name="[1]">[1]</a>
-https://www.saschawillems.de/blog/2018/07/19/vulkan-input-attachments-and-sub-passes/</p>
-]]></content>
-      <categories>
-        <category>Render Engine</category>
       </categories>
   </entry>
   <entry>
