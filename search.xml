@@ -1,0 +1,2362 @@
+<?xml version="1.0" encoding="utf-8"?>
+<search>
+  <entry>
+    <title>Forward Light Cuts A Scalable Approach to Real-Time Global Illumination</title>
+    <url>/2022/07/17/Paper%20Notes/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination/</url>
+    <content><![CDATA[<h2 id="summary">Summary</h2>
+<p><code>Forward Light Cuts: A Scalable Approach to Real-Time Global Illumination</code>
+<a href="#%5B1%5D">[1]</a></p>
+<p>这篇论文假设了次级光源为 diffuse
+材质的场景，并且不考虑次级光照的阴影，提出了一种能够很好结合
+tessellation 和 geometry
+阶段的并行特性的高效实时全局光照近似计算算法。该算法基于 many-light
+框架，将场景中的三角形类比为虚拟点光源，首先通过将场景中三角形以一种概率分布划分为
+multi-scale radiance
+子集，在每个子集中的每个三角形上随机采样生成一个扰动的
+VPL，这样就组成了多尺度的 VPL 集合。之后求解该 VPL 集合形成的 many-light
+问题来近似全局光照。该算法既模拟了传统层级的光源数量的随尺度增加的几何级下降，又具有可高度并行的线性设计，在场景完全动态并且涉及大量物体时，相比于之前算法，画面质量无明显损失并且具有较大的性能提升。</p>
+<h2 id="motivation">Motivation</h2>
+<p>实时全局光照有很多基于 radiance caching
+的方法，之前这些方法构建出场景中几何的层级结构（多为树形结构），使用这种层级结构来构建
+multi-scale radiance
+function，之后通过查询该层级结构对像素进行照亮。</p>
+<p>对于这种策略的方法，在场景完全动态并且涉及大量物体情况下，至少有两种局限，</p>
+<ul>
+<li>层级缓存结构每一帧都要重复计算，这个缺点带来的开销在现代图形学的并行结构下更为明显</li>
+<li>对于实时渲染，初始 VPL 集合过大，带来的开销难以分摊</li>
+</ul>
+<h2 id="approach">Approach</h2>
+<h3 id="vpls-generation">1. VPLs Generation</h3>
+<h4 id="区分-divergent-和-regular-三角形">1.1 区分 Divergent 和 Regular
+三角形</h4>
+<p>设置阈值 <span class="math inline">\(S_0\)</span> ，面积大于 <span class="math inline">\(S_0\)</span> 的三角形为 Divergent
+三角形，这类三角形需要经过一次 tessellation 特殊处理，之后描述。</p>
+<p><span class="math display">\[
+S_0=4\pi \frac{D^2_{near}}{N_{avg}}
+\]</span> 这个公式表达的是启发式地照亮一个像素，该像素周围有 <span class="math inline">\(N_{avg}\)</span> 个距离为至少 <span class="math inline">\(D_{near}\)</span> 的 VPLs 。参数配置：假设 <span class="math inline">\(R_{scene}\)</span> 为场景的半径长度，设置 <span class="math inline">\(D_{near}=0.2\times R_{scene}\)</span>，<span class="math inline">\(N_{avg}\)</span> 在区间 <span class="math inline">\([64,1024]\)</span> 内进行 quality-speed
+tradeoff。</p>
+<blockquote>
+<p><code>个人理解见</code>：<a href="#附录1">附录 1. 阈值 <span class="math inline">\(S_0\)</span> 的启发式的理解</a></p>
+</blockquote>
+<h4 id="三角形抽取过程">1.2 三角形抽取过程</h4>
+<p>抽取操作目的是丢弃小三角形，因为这类三角形引入的 diffuse indirect
+lighting
+对最终的渲染贡献很小，丢弃会加快速度，但如果全部无差别丢弃，则会丢失那些多个小三角形一起作用而带来的明显间接光照效果，因此提取操作中引入一种随机过程，即<strong>随机抽取过程</strong>：</p>
+<p>对于每一个三角形计算一个 <span class="math inline">\([0,1]\)</span>
+区间均匀分布的随机数 <span class="math inline">\(u_{t_i}\)</span>，如果三角形面积 <span class="math inline">\(\mathcal{A}(t_i)&gt;u_{t_i}S_0\)</span>，则保留该三角形，否则丢弃。三角形保留的概率分布为</p>
+<p><span class="math display">\[
+\forall\space t_i\in \mathcal{L}, \quad P(t_i\in
+\mathcal{L^*})=\frac{\mathcal{A}(t_i)}{S_0}
+\]</span> 其中 <span class="math inline">\(\mathcal{L}\)</span> 是全体
+regular 三角形的集合，<span class="math inline">\(\mathcal{L^*}\)</span>
+是保留的三角形集合。由此可以看出，<strong>三角形面积越小，被丢弃的概率越大。</strong>对于整个场景的面能够保留下来的数量的期望为
+<span class="math inline">\(\mathbb{E}(N_{sample})=\frac{\mathcal{A}_{scene}}{S_0}\)</span>。</p>
+<h5 id="基于随机提取过程的三角形多尺度划分">基于随机提取过程的三角形多尺度划分</h5>
+<p>将场景中三角形划分为 <span class="math inline">\((\mathcal{L}^0,...,\mathcal{L}^N)\)</span> 共
+<span class="math inline">\(N+1\)</span> 个子集，子集索引由 <span class="math inline">\(0\)</span> 到 <span class="math inline">\(N\)</span>
+递增，影响距离递减（即尺度递减），子集包含的三角形数量递增。为了实现这样的划分，引入
+<span class="math inline">\(N+1\)</span> 长度的递增序列 <span class="math inline">\(\{S_0&lt;...&lt;S_N\}\)</span>。扩展随机提取过程到多尺度划分过程，三角形
+<span class="math inline">\(\large t_i\)</span> 划分为子集 <span class="math inline">\(\large \mathcal{L}^k\)</span> 的概率为</p>
+<p><span class="math display">\[
+\forall k\in [0...N],\quad P(t_i\in
+\mathcal{L}^k)=\frac{\mathcal{A}(t_i)}{S_k} \tag{1}\label{partition
+probability}
+\]</span> 在多尺度划分过程中，divergent
+三角形的定义更改为<strong>面积大于 <span class="math inline">\(S_N\)</span> 的三角形</strong>。</p>
+<p>实际划分算法又有进一步的改动，引入 <span class="math inline">\(\large\forall k\in [0...N],\quad
+\tilde{S}_k=\frac{1}{\sum^k_{j=0}\frac{1}{S_j}}\)</span> ，
+算法伪代码如下</p>
+<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013637705.png" alt="尺度等级划分算法" style="zoom: 67%;"></p>
+<blockquote>
+<p>可知 <span class="math inline">\(\tilde{S}_k\)</span> 单调递减，与原
+<span class="math inline">\(S_k\)</span>
+单调递增相反，但算法中是只有三角形没有被分在 <span class="math inline">\(k-1\)</span> 子集中，才有可能判断是否可分到 <span class="math inline">\(k\)</span>
+子集，这是条件概率。粗略地看，子集索引越大，三角形分到该子集的概率越低，因为需要在前面没有分到所有子集的条件，才进行后续子集的划分。</p>
+</blockquote>
+<p>至此，我们已经对场景三角形进行随机划分为多个不同尺度的子集，之后其中的每个三角形都会随机生成一个
+VPL，形成 VPL 集。接下来基于生成的 VPL 求解 many-light
+问题，即如何使用这些 VPL 照亮像素。</p>
+<h3 id="vpls-光照下的着色">2. VPLs 光照下的着色</h3>
+<h5 id="many-light-下的-vpls-lighting-问题描述">2.1 many-light 下的 VPLs
+lighting 问题描述</h5>
+<p>在 many-lights 框架中，对于 normal 为 <span class="math inline">\(\vec{n_x}\)</span> 的着色点 <span class="math inline">\(x\)</span> 的 indirect outgoing
+radiance，计算方法由连续积分近似为来自一个 VPLs 集合的 radiance
+离散求和。</p>
+<p><span class="math display">\[
+L^{ML}(x,\vec{n_x})=\sum_{t_i\in
+\mathcal{L}}H(t_i,x,\vec{n_x})\mathcal{A}(t_i) \tag{2}
+\]</span> <span class="math inline">\(\mathcal{L}\)</span>
+表示场景中所有三角形集合，<span class="math inline">\(H(t_i,x,\vec{n_x})\)</span> 表示 normal 为 <span class="math inline">\(\vec{n_x}\)</span> 的点 <span class="math inline">\(\large x\)</span> 接收到由 <span class="math inline">\(t_i\)</span>(VPL) 出发的 radiance。对于 albedo 为
+<span class="math inline">\(\rho_x\)</span> 的 diffuse receiver， <span class="math inline">\(H\)</span> 的形式如下：</p>
+<p><span class="math display">\[
+H(t_i,x,\vec{n_x})=L(t_i,\bar{y_ix})\frac{\rho_x}{\pi}\frac{&lt;\vec{n_x},\bar{xy_i}&gt;^+&lt;\vec{n_i},\bar{y_ix}&gt;^+}{d_i^2}
+\]</span> 其中 <span class="math inline">\(\large \bar{u}\)</span> 表示
+normalized 向量，<span class="math inline">\(&lt;\vec{u},\vec{v}&gt;^+=max(0,&lt;\vec{u},\vec{v}&gt;)\)</span>，<span class="math inline">\(L(t_i,\bar{y_ix})\)</span> 是离开 VPL 中心 <span class="math inline">\(\large y_i\in t_i\)</span> 朝向 <span class="math inline">\(\large \bar{y_ix}\)</span> 的 radiance， <span class="math inline">\(d_i=max(\epsilon,||\vec{xy_i}||)\)</span> 是进行过
+clamp 的 <span class="math inline">\(y_i\)</span> 与 <span class="math inline">\(\large x\)</span> 之间的距离，避免奇异点。</p>
+<blockquote>
+<p><code>对近似的个人理解见</code>：<a href="#附录2">附录 2.
+着色方程积分近似为求和的理解</a></p>
+</blockquote>
+<p>VPL 对直接光照的 diffuse 反射表示为下面的 VPL 出射 radiance：</p>
+<p><span class="math display">\[
+L(t_i,\bar{y_ix})=\rho_iE(t_i)\frac{3}{2\pi}&lt;\vec{n_i},\bar{y_ix}&gt;^+
+\]</span> 其中 <span class="math inline">\(\large E_i\)</span>
+是直接到达三角形 <span class="math inline">\(\large t_i\)</span> 的直接
+irradiance，由于 <span class="math inline">\(&lt;\vec{n_i},\bar{y_ix}&gt;^+\)</span>
+可知上式并非 perfectly Lambertian
+(一种简单的漫反射：光线被均匀的反射到表面上方的半球)，而只会在几何法线方向发生完美反射。<span class="math inline">\(\large \frac{3}{2\pi}\)</span>
+<em>用来保证能量守恒</em>。</p>
+<blockquote>
+<p>将 <span class="math inline">\(\large L(t_i,\bar{y_ix})\)</span> 代入
+<span class="math inline">\(\large H(t_i,x,\vec{n_x})\)</span> 中有</p>
+<p><span class="math display">\[
+\begin{align}H(t_i,x,\vec{n_x})&amp;=\rho_iE(t_i)\frac{3}{2\pi}&lt;\vec{n_i},\bar{y_ix}&gt;^+\frac{\rho_x}{\pi}\frac{&lt;\vec{n_x},\bar{xy_i}&gt;^+&lt;\vec{n_i},\bar{y_ix}&gt;^+}{d_i^2}\\
+&amp;=
+\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{&lt;\vec{n_x},\bar{xy_i}&gt;(&lt;\vec{n_i},\bar{y_ix}&gt;)^2}{d_i^2}
+\end{align}\tag{2} \label{received radiance}
+\]</span></p>
+</blockquote>
+<h5 id="多尺度划分下的-vpls-lighting-的近似">2.2 多尺度划分下的 VPLs
+lighting 的近似</h5>
+<p>上述进行的对三角形的多尺度随机划分引入了随机过程，因此 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span>
+也变成了<strong>随机量</strong>，接下来就需要对该随机量进行估计。我们定义
+<span class="math inline">\(K(x,\vec{n_x})\)</span> 为 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span>
+<strong>估计量(Estimator)</strong>：</p>
+<p><span class="math display">\[
+K(x,\vec{n_x})=\sum\limits^N_{k=0}\sum\limits_{t_i\in\mathcal{L}^k}H(t_i,x,\vec{n_x})F^k(t_i,k)
+\]</span> 其中 <span class="math inline">\(F^k(t_i,k)\)</span>
+是一个未知函数，参数 <span class="math inline">\(x\)</span>
+为着色点，<span class="math inline">\(t_i\)</span> 为 VPL
+所在三角形，<span class="math inline">\(k\)</span> 为子集索引。</p>
+<p>下面就要确定 <span class="math inline">\(F^k(t_i,k)\)</span>
+的形式：</p>
+<p><span class="math display">\[
+\begin{align} \mathbb{E}\left[K(x,\vec{n_x})\right]&amp;=
+\mathbb{E}\left[\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
+\mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\right] \\ &amp;=
+\sum\limits_{t_i\in \mathcal{L}}H(t_i,x,\vec{n_x})
+\mathbb{E}\left[\sum\limits^N_{k=0}F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right] \\ &amp;= \sum\limits_{t_i\in
+\mathcal{L}}H(t_i,x,\vec{n_x})\sum\limits^N_{k=0}F^k(t_i,x)P(t_i\in
+\mathcal{L}^k)\end{align}\tag{3}\label{many light estimator}
+\]</span> 其中 <span class="math inline">\(\mathbb{I}_{t_i\in
+\mathcal{L}^k}\)</span> 为指示函数，当 <span class="math inline">\(t_i\in \mathcal{L}^k\)</span> 时值为 <span class="math inline">\(1\)</span>，否则为 0。</p>
+<blockquote>
+<p><code>推导见</code>：<a href="#附录3">附录 3. VPL lighting
+推导</a></p>
+</blockquote>
+<p>我们要选取 <span class="math inline">\(F^k(t_i,x)\)</span> 使得 <span class="math inline">\(K(x,\vec{n_x})\)</span> 为 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span> 的无偏估计，即 <span class="math inline">\(\mathbb{E}\left[K(x,\vec{n_x})\right]=L^{ML}(x,\vec{n_x})\)</span>，比较式
+(2) 和 (4) 可有</p>
+<p><span class="math display">\[
+\forall x,\quad \sum\limits_k F^k(t_i,x)P(t_i\in
+\mathcal{L}^k)=\mathcal{A}(t_i)\label{partition derivate}
+\]</span> 根据划分策略，将 <span class="math inline">\(F^k\)</span>
+定义为 <span class="math inline">\(F^k(t_i,x)=S_kf^k(t_i,x)\)</span></p>
+<blockquote>
+<p><code>推导见</code>：<a href="#附录4">附录 4.
+转为整体划分问题推导</a></p>
+</blockquote>
+<p>这样就将一个无偏估计问题转为了寻找对一个整体的划分问题。</p>
+<p><strong>整体的划分选取</strong></p>
+<p><span class="math inline">\(f^k(t_i,x)\)</span> 划分函数的参数 <span class="math inline">\(t_i,x\)</span>
+都为三维，论文采用一种方法将划分函数进行降维近似处理，此方法参考了论文
+<em>Point-based approximate color bleeding</em> 中的 nested balls: <span class="math inline">\(\mathcal{B}_h(t_i)\)</span>，其定义如下：</p>
+<p><span class="math display">\[
+\forall h\in \mathbb{R}^*, \quad
+\mathcal{B}_h(t_i)=\{x\in\mathbb{R}^3\space s.t. \space
+\underset{\vec{n_x}}{max}\space H(t_i,x,\vec{n})\geq h\} \tag{4}
+\label{partition nested ball}
+\]</span></p>
+<blockquote>
+<p><span class="math inline">\(H\)</span> 是 <span class="math inline">\(\large x\)</span> 接收到 <span class="math inline">\(t_i\)</span> VPL 的 radiance，这个 nested ball
+的含义就是定义了一个对着色点 <span class="math inline">\(x\)</span> 的
+radiance 贡献较为显著的区域，这个显著程度由 <span class="math inline">\(h\)</span> 决定。</p>
+</blockquote>
+<p>此外，考虑 receiver 正对着 emitter 的情况，即 <span class="math inline">\(\vec{n_x}=\bar{xy_i}\)</span>，此时 <span class="math inline">\(H\)</span> 达到最大值，有：</p>
+<p><span class="math display">\[
+\mathcal{B}_h(t_i)=\{x\in\mathbb{R}^3\space s.t. \space
+\frac{||x-y_i||}{&lt;\vec{n_i},\bar{xy_I}&gt;^+}\leq D(h)\} \tag{5}
+\label{nested ball}
+\]</span> 其中 <span class="math inline">\(D(h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span></p>
+<blockquote>
+<p><code>推导见</code>：<a href="#附录5">附录 5.
+整体划分选取推导</a></p>
+</blockquote>
+<p><span class="math inline">\(D(h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span>
+与 <span class="math inline">\(\large x\)</span> 着色点无关，因此 <span class="math inline">\(\mathcal{B}_h(t_i)\)</span> 是一个 nest
+ball，其边界上有点 <span class="math inline">\(y_i\)</span>，其中心位于直线 <span class="math inline">\((y_i,\vec{n_i})\)</span> 上。如下图所示</p>
+<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013806858.png" alt="image-20220717013806858" style="zoom:67%;"></p>
+<blockquote>
+<p>上图是 <span class="math inline">\(f^k(t_i,x)\)</span>
+函数的二维可视化，其值从 0(黑) 到 1(白)。</p>
+</blockquote>
+<p>作者做了一个假设：nest ball 边界上的三维划分 <span class="math inline">\(^k(t_i,x)\)</span> 是不变的，通过如下 <span class="math inline">\(\large \mathbb{R}^3\)</span> 到 <span class="math inline">\(\large \mathbb{R}\)</span> 的映射：</p>
+<p><span class="math display">\[
+\forall x\in \mathbb{R}^3, \quad
+d(t_i,x)=\frac{||x-y_i||}{&lt;\vec{n_i},\bar{xy_I}&gt;^+}
+\]</span> 可以将三维划分将为一维划分：</p>
+<p><span class="math display">\[
+\forall x\in \mathbb{R}^3, \quad f^k(t_i,x)=\tilde{f}^k(d(t_i,x))
+\]</span> <span class="math inline">\(\large f^k\)</span> 将会在
+rendering 中用作 splat function，因此尽可能使得 <span class="math inline">\(f^k\)</span> 易于计算且
+smooth，论文定义为下面一组分段线性函数</p>
+<p><span class="math display">\[
+\forall d\in\mathbb{R},\quad
+\tilde{f}^k(d)=\begin{cases}\begin{align}&amp;1 &amp;k=0\space and
+\space d\in[0,D_1] \\ &amp;\frac{d-D_{k-1}}{D_k-D_{k-1}}
+&amp;k&gt;0\space and \space d\in[D_{k-1},D_k] \\
+&amp;\frac{D_{k+1}-d}{D_{k+1}-D_k} &amp;k&gt;0 \space and \space d\in
+[D_k,D_{k+1}]\\&amp;0 &amp;otherwise\end{align}\end{cases}
+\]</span> <span class="math inline">\(\{D_k\}\)</span> 定义了每一级 VPL
+的影响距离。</p>
+<p><strong>参数配置</strong></p>
+<p>作者为了模仿传统的层级表示，采用了子集大小几何级下降的参数配置。从前述划分策略来看，<span class="math inline">\(S_k\)</span> 影响到划分子集的结果，此外，可以将
+<span class="math inline">\(S_k\)</span> 理解为子集 <span class="math inline">\(\mathcal{L}^k\)</span>
+的平均面积，应几何级增加，因此定义如下参数配置：</p>
+<p><span class="math display">\[
+S_k=S_0\mu^k
+\]</span> 其中 <span class="math inline">\(\mu &gt;1\)</span>
+是用户定义的参数，论文建议 <span class="math inline">\([1.4,5]\)</span>。作者还建议定义影响距离参数，这样每个点都只会有一个可控数量的
+VPL 到达，控制计算量，如：</p>
+<p><span class="math display">\[
+\begin{cases}D_k=\sqrt{S_0\mu^k}\\ D_{N+1}=D_{N}\end{cases}
+\]</span></p>
+<blockquote>
+<p>个人理解见：<a href="#附录6">附录 6.
+模拟传统层级的几何级下降的理解</a></p>
+</blockquote>
+<h2 id="实现细节">实现细节</h2>
+<h5 id="pipeline-描述">1. Pipeline 描述</h5>
+<p>本论文提出的技术共用到三个 geometry pass，其中两个主要 pass 用于生成
+GBuffer 和生成并 Splat VPLs。第三个 pass 用于处理 Divergent
+triangle。如下图所示</p>
+<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013853277.png" alt="image-20220717013853277" style="zoom:50%;"></p>
+<h5 id="divergent-三角形处理">2. Divergent 三角形处理</h5>
+<p>在本论文提出的 indirect lighting pipeline 中包含了两个 geometry
+pass：第一个 pass 关闭 tessellation stage
+处理整个场景的三角形，这个阶段检测出哪些是 Divergent
+三角形，并存入单独的 buffer 中。剩下的 regular 三角形送入 regular
+pipeline。</p>
+<p>存储 Divergent 三角形的 buffer 直接作为后续第二个 geometry pass
+的输入。tessellation stage 只在这个 pass 开启，用于细分 divergent
+三角形，使得它们的面积小到能够被 regular pipeline 处理。</p>
+<blockquote>
+<p>Tessellation stage 相比于 geometry 是开销是非常大的，因此使用一个
+geometry 阶段过滤 regular 三角形，提高了效率。</p>
+</blockquote>
+<p>regular pipeline 即对 regular 三角形采样分级，再进行 VPL lighting
+计算。</p>
+<h5 id="per-triangle-random-number-generation">3. Per-triangle random
+number generation</h5>
+<p>本论文涉及的随机过程都需要随机数来完成，对于算法 1 用到的随机数 <span class="math inline">\(\large u_{t_i}\)</span>，作者使用伪随机数。mesh
+中每个顶点添加一个额外的 uint32 属性，v_rand。该属性在加载 mesh
+时为每个顶点生成一个 uniform 随机数。在 regular pipeline
+中，每个三角形的随机数 <span class="math inline">\(\large
+u_{t_i}\)</span> 是使用其三个顶点间的 <span class="math inline">\(\large
+xor\)</span> 操作得到的。</p>
+<p>对于 tessellation stage
+细分生成的新三角形，作者通过采样一张预计算的噪声贴图得到新顶点的随机值，采样坐标为新顶点的重心坐标，最后对新三角形顶点的随机数使用同样的
+<span class="math inline">\(\large xor\)</span> 操作。</p>
+<p>想要以上随机数每帧更新，以上随机数最终再与一个 uniform 的全局变量
+u_rand 进行 <span class="math inline">\(\large xor\)</span> 操作，这个
+uniform 全局变量大概要一帧更新一次。算法如下</p>
+<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013914497.png" alt="image-20220717013914497" style="zoom: 67%;"></p>
+<h5 id="progressive-rendering">4. Progressive rendering</h5>
+<p>可以按照上述使用 u_rand 的方法生成多个 independent
+rendering，之后累积作平均用以产生更好的渲染结果。如，从 u_rand
+中为每个三角形生成两个独立的随机数，用以扰动 VPL 中心点 <span class="math inline">\(\large y_i\)</span>。平均由多个 jittered VPLs
+生成的多个 independent rendering，可以提供接近公式 (4)
+真实解的结果。</p>
+<h2 id="remain-question">Remain Question</h2>
+<ul class="task-list">
+<li><input type="checkbox" disabled>
+划分整体过程中的整体应该怎么理解？</li>
+<li><input type="checkbox" disabled>
+Splatting indirect illumination 技术不了解</li>
+</ul>
+<h2 id="reference">Reference</h2>
+<p><a name="[1]">[1]</a> Gilles LAURENT, Cyril DELALANDRE, Grégoire de
+LA RIVIÈRE, and Tamy BOUBEKEUR. 2016. Forward Light Cuts: A Scalable
+Approach to Real-Time Global Illumination. <i>Comput. Graph. Forum</i>
+35, 4 (July 2016), 79–88.</p>
+<h2 id="附录">附录</h2>
+<h3 id="阈值-s_0-的启发式的理解">1. <a name="附录1">阈值 <span class="math inline">\(S_0\)</span> 的启发式的理解</a></h3>
+<p>以像素为球心、半径为 <span class="math inline">\(D_{near}\)</span>
+的球面面积为 <span class="math inline">\(4\pi
+D^2_{near}\)</span>，假设在距离 <span class="math inline">\(D_{near}\)</span> 内的 VPL
+光源才能到达该像素，并且 <span class="math inline">\(N_{avg}\)</span> 个
+VPL 共同作用下才能照亮该像素。由于本文中次级光源都假设为
+diffuse，因此可粗略地认为 VPL 发出的 radiance
+与面积成正比。这样下来，VPL 的平均面积 <span class="math inline">\(4\pi
+\frac{D^2_{near}}{N_{avg}}\)</span>，高于此平均面积的三角形成为
+divergent，剩下的三角形为 regular，regular 三角形生成的 VPL
+具有可控的影响距离，divergent 三角形后续会进一步细分为小三角形。</p>
+<h3 id="着色方程积分近似为求和的理解">2.
+<a name="附录2">着色方程积分近似为求和的理解</a></h3>
+<p>首先来看精确的 rendering equation，</p>
+<p><span class="math display">\[
+L(x,\omega_o)=\int_{\Omega^+}\space
+f_r(x,\omega_i\rightarrow\omega_o)L_i(x&#39;,\omega_i)cos\theta \space
+d\omega_i
+\]</span> 上式为对立体角的积分，转为对光源面积的积分为</p>
+<p><span class="math display">\[
+L(x,\omega_o)=\int_{A}\space
+f_r(x,\omega_i\rightarrow\omega_o)L_i(x&#39;,\omega_i)\frac{cos\theta
+cos\theta&#39;}{||x&#39;-x||^2} \space dA
+\]</span></p>
+<p><span class="math inline">\(L^{ML}\)</span>
+的形式即从对光源面积的积分近似而来，diffuse 下 BRDF 是常量，即 <span class="math inline">\(H\)</span> 中的 <span class="math inline">\(\large\frac{\rho_x}{\pi}\)</span>，<span class="math inline">\(L_i\)</span> 对应 <span class="math inline">\(H\)</span> 中的 <span class="math inline">\(L\)</span>。因此，<span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span> 与 <span class="math inline">\(L(x,\omega_o)\)</span>
+唯一不同的是一个是对总体面积的连续积分，一个是将每个 VPL
+的面积视为微元的离散求和。可知，在 VPL
+面积较小时，这种近似较为接近正确。</p>
+<h3 id="vpl-lighting-推导">3. <a name="附录3">VPL lighting 推导</a></h3>
+<p>将划分的三角形所有子集看作一个整体求和符号有：<span class="math inline">\(\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
+\mathcal{L}^k}=\sum\limits_{t_i\in \mathcal{L}}\)</span></p>
+<blockquote>
+<p>因为 <span class="math inline">\(t_i^k\)</span> 本就代表是子集 <span class="math inline">\(\mathcal{L}^k\)</span> 中的三角形，可知 <span class="math inline">\(\large \mathbb{I}_{t_i^k\in
+\mathcal{L}^k}\)</span> 恒为 <span class="math inline">\(1\)</span>，因此有</p>
+</blockquote>
+<p><span class="math inline">\(\mathbb{E}\left[\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
+\mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\right]=\mathbb{E}\left[\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
+\mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\mathbb{I}_{t_i^k\in
+\mathcal{L}^k}\right]\)</span>，</p>
+<blockquote>
+<p>将和的期望转为期望的和</p>
+</blockquote>
+<p><span class="math inline">\(=\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
+\mathcal{L}^k}\mathbb{E}\left[H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\mathbb{I}_{t_i^k\in
+\mathcal{L}^k}\right]\)</span>，</p>
+<blockquote>
+<p>此时由于指示函数的存在可将三角形子集看作一个整体求和，</p>
+</blockquote>
+<p><span class="math inline">\(=\sum\limits_{t_i\in
+\mathcal{L}}\mathbb{E}\left[H(t_i,x,\vec{n_x})F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]\)</span>，</p>
+<blockquote>
+<p><span class="math inline">\(H(t_i,x,\vec{n_x})\)</span>
+与随机划分无关，对于期望而言是常量，可以提出期望计算外，即</p>
+</blockquote>
+<p><span class="math inline">\(=\sum\limits_{t_i\in
+\mathcal{L}}H(t_i,x,\vec{n_x})\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]\)</span>，</p>
+<blockquote>
+<p>接下来进行一个恒等变换，<span class="math inline">\(F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}=\sum\limits^N_{k=0}F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\)</span>，因为对于每一个 <span class="math inline">\(t_i\)</span>，只会有一个 <span class="math inline">\(k\)</span> 值使得 <span class="math inline">\(\large \mathbb{I}_{t_i\in
+\mathcal{L}^k}=1\)</span>，其余都为 <span class="math inline">\(0\)</span>。</p>
+</blockquote>
+<p><span class="math inline">\(=\sum\limits_{t_i\in
+\mathcal{L}}H(t_i,x,\vec{n_x})\sum\limits^N_{k=0}\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]\)</span>，</p>
+<blockquote>
+<p>目前期望计算中只有指示函数与随机划分相关，且易知 <span class="math inline">\(\mathbb{E}\left[\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]=P(t_i\in \mathcal{L^k})\)</span> ，有</p>
+</blockquote>
+<p><span class="math inline">\(\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]=F^k(t_i,x)\mathbb{E}\left[\mathbb{I}_{t_i\in
+\mathcal{L}^k}\right]=F^k(t_i,x)P(t_i\in \mathcal{L^k})\)</span></p>
+<blockquote>
+<p>最终有</p>
+</blockquote>
+<p>$ _{t_i}H(t_i,x,)<sup>N_{k=0}F</sup>k(t_i,x)P(t_i^k)$</p>
+<h3 id="转为整体划分问题推导">4.
+<a name="附录4">转为整体划分问题推导</a></h3>
+<p>由 <span class="math inline">\(\eqref{partition probability}\)</span>
+式代入 <span class="math inline">\(\eqref{many light estimator}\)</span>
+中有</p>
+<p><span class="math display">\[\forall x,\quad \sum\limits_k
+F^k(t_i,x)\frac{\mathcal{A}(t_i)}{S_k}=\mathcal{A}(t_i)\]</span></p>
+<p><span class="math display">\[\forall x,\quad \sum\limits_k
+\frac{F^k(t_i,x)}{S_k}=1\]</span></p>
+<p>假设未知函数 <span class="math inline">\(f^k(t_i,x)\)</span> 使得
+<span class="math inline">\(F^k(t_i,x)=S_kf^k(t_i,x)\)</span>，那么有</p>
+<p>​ <span class="math inline">\(\sum\limits_kf^k(t_i,x)=1\)</span></p>
+<h3 id="整体划分选取推导">5. <a name="附录5">整体划分选取推导</a></h3>
+<blockquote>
+<p>当 receiver 正对着 emitter 时，将 <span class="math inline">\(\vec{n_x}=\bar{xy_i}\)</span> 代入 <span class="math inline">\(\eqref{received radiance}\)</span>，有</p>
+</blockquote>
+<p><span class="math inline">\(\begin{align}\underset{\vec{n_x}}{max}\space
+H(t_i,x,\vec{n_x})&amp;=\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{(&lt;\vec{n_i},\bar{y_ix}&gt;)^2}{d_i^2}\\&amp;=\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2\end{align}\)</span>​</p>
+<blockquote>
+<p>将 <span class="math inline">\(\large H\)</span> 代入公式 <span class="math inline">\(\eqref{partition nested ball}\)</span> 有</p>
+</blockquote>
+<p><span class="math display">\[\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2
+\geq h\]</span></p>
+<p><span class="math display">\[\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2
+\geq \frac{2h\pi^2}{3\rho_i\rho_xE(t_i)}\]</span></p>
+<p><span class="math display">\[\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}
+\geq \pi \sqrt{\frac{2h}{3\rho_i\rho_xE(t_i)}}\]</span></p>
+<p><span class="math display">\[\frac{||x-y_i||}{&lt;\vec{n_i},\bar{y_ix}&gt;}
+\leq \frac{1}{\pi} \sqrt{\frac{3\rho_i\rho_xE(t_i)}{2h}}\]</span></p>
+<h3 id="模拟传统层级的几何级下降的理解">6.
+<a name="附录6">模拟传统层级的几何级下降的理解</a></h3>
+<p>这里的模拟层级表示而引入几何级下降的参数配置：例如满二叉树的层级表示，根节点层(0层)节点数量为
+<span class="math inline">\(S_0=1\)</span> 个，往下每层数量是前一层的 2
+倍，即有 <span class="math inline">\(S_k=S_0 2^k\)</span>
+个，为几何级增长。</p>
+]]></content>
+      <categories>
+        <category>Paper Notes</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Glossy Probe Reprojection for Interactive Global Illumination</title>
+    <url>/2022/07/17/Paper%20Notes/Glossy%20Probe%20Reprojection%20for%20Interactive%20Global%20Illumination/</url>
+    <content><![CDATA[<h2 id="summary">Summary</h2>
+<p><code>Glossy Probe Reprojection for Interactive Global Illumination</code>
+<a href="#%5B8%5D">[8]</a></p>
+<p>这篇论文提出了一种基于 light probe
+思想的实时全局光照算法，高效解决带有 glossy 路径的全局光照问题。light
+probe 思想在场景中放置多个 light probe，每个 light probe
+包含了该位置的间接光照信息，这些信息通过预计算过程存入 light
+probe，并用于在实时渲染过程中计算着色点的全局光照。本论文提出自适应的
+probe
+参数化，通过评估不同角度、不同位置的几何信息，自适应不同情况所需要的
+probe 分辨率，用以缓解 glossy
+全局光照带来的高内存消耗问题。在实时渲染中提出基于 specular path
+perturbation 的间接光反射点估计方法，高效 reproject glossy path
+信息到实时的 novel view
+space，进而收集到实时全局光照信息。同时论文改善了 occlusion boundaries
+附近出现的硬边界问题，通过预计算过程中降低几何 roughness 来预计算 probe
+data，以收集到更大范围的全局光照信息，在实时渲染中设计 filter 重构原
+roughness，达到硬边界的平滑过渡。</p>
+<h2 id="background">Background</h2>
+<h3 id="light-probe">1. Light Probe</h3>
+<ul class="task-list">
+<li><p><input type="checkbox" disabled>
+light probe 算法思想</p></li>
+<li><p><input type="checkbox" disabled>
+基于 3D-grid 的 light probe <a href="#%5B1%5D">[1]</a></p></li>
+</ul>
+<h2 id="approach">Approach</h2>
+<h3 id="probe-预计算">1. Probe 预计算</h3>
+<p>Probe 中存储实时渲染过程中需要使用的全局光照信息，通过 path-tracer
+计算得到。glossy BRDF
+需要较多的采样才能得到平滑的着色，如果在整个场景中的每个 probe
+的所有方向都收集同样多样本的信息，会使得 probe
+数据存储消耗过大。因此作者提出 adaptive probe
+resolution，即根据不同位置、不同视角观察到的几何信息来评估该位置需要的
+probe resolution
+，高分辨率对应高样本数，低分辨率对应低样本数。先介绍一下本论文使用的
+probe data 存储的数据</p>
+<h4 id="per-probe-data">1.1 Per Probe Data</h4>
+<p>预计算过程中，为每个 Probe 生成数据，包含三张贴图，如下图所示：</p>
+<p><img src="/images/Glossy Probe Reprojection for Interactive Global Illumination.assets/image-20220717214054549.png" alt="image-20220717214054549" style="zoom:50%;"><img src="/images/Glossy Probe Reprojection for Interactive Global Illumination.assets/image-20220717214112108.png" alt="image-20220717214112108" style="zoom:50%;"><img src="/images/Glossy Probe Reprojection for Interactive Global Illumination.assets/image-20220717214125605.png" alt="image-20220717214125605" style="zoom:50%;"></p>
+<ul>
+<li><ol type="a">
+<li>可见的三角形信息(三角形 ID、重心坐标)</li>
+</ol></li>
+<li><ol start="2" type="a">
+<li>probe 空间的环境贴图(只存储 glossy BRDF 计算的颜色值)</li>
+</ol></li>
+<li><ol start="3" type="a">
+<li>将每个面视为镜面，记录完美反射过程中的几何信息(反射点、及其材质
+ID)</li>
+</ol></li>
+</ul>
+<p>这三张贴图都是 360 度贴图，将 probe 作为相机，贴图中每个 texel
+存储的是不同角度看向场景得到的信息，即 probe view 下的渲染信息。</p>
+<h4 id="probe-parameterization">1.2 Probe Parameterization</h4>
+<p>对于有限的内存消耗，probe 数量是有限的，这篇论文提出的 adaptive probe
+resolution 是为了将更多地 probe resolution
+分配到需要高采样的区域(因为同样的 fov 下，probe
+数据的分辨率越高，包含采样的样本越多)。作者设计了一种 probe
+需求的评估策略，评估结果为一个方向看到的场景所需的 probe resolution
+参数。根据评估得来的 probe resolution 不断调整 probe 对应 3D grid
+的等划分网格，最终达到网格大小与 probe resolution 相匹配，即 probe
+resolution 越大，网格越大。对网格中像素对应的场景角度，使用 path tracer
+计算 probe 离线数据。</p>
+<p><strong>如何确定什么情况需要较高的 probe resolution 或较低的 probe
+resolution？</strong></p>
+<ul>
+<li><ol type="a">
+<li>因为光滑表面频率信息较高，因此越光滑的表面需要越高的分辨率，反之粗糙的材质频率较低，需要较少的样本</li>
+</ol></li>
+<li><ol start="2" type="a">
+<li>远距离表面或者 grazing 角度看到的表面需要较高的分辨率</li>
+</ol></li>
+<li><ol start="3" type="a">
+<li>高频几何(法线)信息在 reflected radiance
+上表现出很大的变化，因此需要较高的分辨率。</li>
+</ol></li>
+</ul>
+<p>根据上述要求，论文使用 lat-long (相当于球坐标) 对 probe
+分辨率参数化。在 probe view space 中，计算每个角度对应的 probe
+resolution 参数，并存储到 adaptive resolution map 中。lat-long
+参数化易于确定 adaptive resolution map 的每个像素对应的 ray
+direction，方便 probe data预计算过程的 ray-tracing。</p>
+<h5 id="adaptive-resolution-map-计算">1.2.1 Adaptive Resolution Map
+计算</h5>
+<p>一个 Adaptive resolution map 的元素表示 probe 每个方向对应的 probe
+resolution 参数。计算该 Map 前先使用以 probe 出发的 ray casting 构建 4
+个 256x128 的 buffers，(i) 材质 smoothness <span class="math inline">\(m_{mat}\)</span>，(ii) 深度值 <span class="math inline">\(m_{depth}\)</span>，(iii) 法线 $ m_{norm}$，(iv)
+facing angle <span class="math inline">\(m_{face}\)</span>
+(入射光方向与表面法线点乘)。</p>
+<p>Adaptive resolution map 的元素计算：</p>
+<p><span class="math display">\[
+m=m_{mat}(m_{size}+m_{complexity})
+\]</span> 可以看出</p>
+<ul>
+<li><p><span class="math inline">\(m_{mat}\)</span>​ 满足了 a)，越光滑
+<span class="math inline">\(m_{mat}\)</span>​ 越大，得到的分辨率参数
+<span class="math inline">\(m\)</span>​ 也越大；</p></li>
+<li><p><span class="math inline">\(m_{size}\)</span>​​​​ 考虑了 b)
+中距离与角度的要求，其计算为 <span class="math display">\[
+                m_{size}=\frac{m^2_{depth}}{m_{face}}\cos(\theta_{long})
+\]</span></p>
+<blockquote>
+<p>depth 越大，表面面积相对越小，对应较大的 <span class="math inline">\(m\)</span>​；<span class="math inline">\(m_{face}\)</span>​​ 越小，表示入射光与 normal
+夹角越大，越 grazing，对应较大的 <span class="math inline">\(m\)</span></p>
+</blockquote>
+<ul class="task-list">
+<li><input type="checkbox" disabled>
+不明白：This term converts probe area to actual object size,
+compensating for perspective and angular foreshortening akin to a form
+factor. <span class="math inline">\(\theta_{long}\)</span> is the
+longitude angle, which compensates for size variations induced by the
+lat-long base parameterization.</li>
+</ul></li>
+<li><p>要求 c) 需要对局部几何复杂度分析，作者使用频率分析代替： <span class="math display">\[
+   m_{complexity}=\frac{1}{N^2}\sum\limits^{N-1}_{p=0}\sum\limits^{N-1}_{q=0}w_{p,q}||\mathbf{b}_{p,q}*m_{norm}||_1
+   \]</span></p>
+<ul class="task-list">
+<li><input type="checkbox" disabled>
+2D Discrete consine transform <a href="#%5B2%5D">[2]</a>: <span class="math inline">\(\mathbf{b}\)</span>​ 是 basis function，basis
+function 与 法线的卷积用来分析 local neighborhood 的频率信息</li>
+</ul>
+<p><span class="math inline">\(w_{p,q} =||[p,q]||^k\)</span>
+权重用来确保高频对几何复杂度贡献更高，论文中取 <span class="math inline">\(N=16,k=5\)</span>。</p></li>
+</ul>
+<p><span class="math inline">\(m_{size}\)</span> 和 <span class="math inline">\(m_{complexity}\)</span> 使用均值经过归一化。</p>
+<p>上述 Adaptive Resolution Map 只是计算了 probe
+在不同方向上的分辨率参数，但这个参数只是相对分辨率，反应不同方向上分辨率的大小关系，而不是真正的分辨率。接下来需要根据这个相对分辨率参数，进行对
+probe 真正分辨率的参数化。</p>
+<h5 id="adaptive-parameterization">1.2.2 Adaptive Parameterization
+<a name="1.2.2"></a></h5>
+<p>本小节，作者使用 tensorial quasi-harmonic maps <a href="#%5B3%5D">[3]</a>，将 adaptive resolution map 转为 adapted
+resolution。转换过程如下：</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled>
+需要理解 <a href="#%5B3%5D">[3]</a> 的数学原理，描述下面过程的细节</li>
+</ul>
+<ol type="1">
+<li>将每个 proble 对应的 3D grid 进行离散等划分，得到均分的四边形网格
+quad mesh (应该是 3D grid 的六面划分成 四边形网格)，并且 adaptive
+resolution map 中每一个元素对应一个 quad mesh。</li>
+<li>根据 adaptive resolution map ，求解 quasi-harmonic equation ，得到
+forward flow map。</li>
+<li>forward flow map 指示如何调整 quad mesh 的顶点，不断对 quad mesh
+变形，最终达到与 apaptive resolution map 相一致的参数化。probe 对应的 3D
+grid 最终变形为如图 <a href="#Fig.%201.2.2">Fig. 1.2.2(h)</a>
+所示。</li>
+</ol>
+<p>至此，变形的 quad mesh 达到与 adaptive resolution map 描述一致的
+adaptive resolution，即 adaptive resolution map
+较大的元素对应较大的网格，较小的元素对应较小的网格。下面就需要计算不同分辨率的
+probe data，即对网格的每个像素进行 path-tracing 计算 probe
+data。但由于变形，这里的像素位置已经不能确定 path-tracing
+的光线方向，即像素的 view vector。作者将 forward flow map 进行求逆，得到
+inverse flow map，这样就可以确定像素真正的 view vector。</p>
+<p><a name="Fig. 1.2.2"></a></p>
+<p><img src="/images/Glossy Probe Reprojection for Interactive Global Illumination.assets/image-20220717214426137.png" alt="image-20220717214426137" style="zoom: 67%;"></p>
+<center>
+Fig. 1.2.2
+</center>
+<p>全局光照包含两个组成成分 glossy 和 diffuse：glossy 成分存储在 probe
+数据中，在计算 probe 时，path-tracer 计算 glossy BRDF；Diffuse 成分与
+view 视角无关(view-independent)，因此存储在传统的 lightmap 中。</p>
+<h4 id="geometric-information">1.3 Geometric Information</h4>
+<p>上一小节完成了 probe 中包含的全局光照信息的预计算，但 probe
+贴图数据中包含的是 360°
+视角的全局信息，在实时渲染中，需要确定当前着色点需要哪些 probe
+数据的样本。对于此，作者使用 specular path perturbation
+的方法，这个在之后章节阐述，但该方法需要几何面的导数信息。</p>
+<p>因此本小节预计算场景几何信息，估计场景中每个顶点的主曲率，以此将 mesh
+近似为具有解析表达式形式的抛物面，这样的抛物面可以高效计算出其高阶导，用于实时渲染中收集
+probe 样本的 glossy light 信息。过程如下：</p>
+<ol type="1">
+<li><ul class="task-list">
+<li><input type="checkbox" disabled>
+对于每个顶点，使用 <a href="#%5B4%5D">[4]</a> 技术估计其主曲率与对应方向
+<a href="#Fig%201.3">Fig
+1.3(a)</a>。该步骤在每个物体上分别进行，并且为了更好的结果，对较大表面，先进行细分
+<a href="#Fig%201.3">Fig 1.3(b d)</a>。</li>
+</ul></li>
+<li>计算来的主曲率可以以曲率方向为坐标轴将物体表面局部表示为具有解析表达式的抛物面
+<a href="#Fig%201.3">Fig
+1.3(c)</a>，该解析表达式方便后续高效计算其高阶导。</li>
+</ol>
+<p><a name="Fig 1.3"></a></p>
+<p><img src="/images/Glossy Probe Reprojection for Interactive Global Illumination.assets/image-20220717214455780.png" alt="image-20220717214455780" style="zoom:67%;"><img src="/images/Glossy Probe Reprojection for Interactive Global Illumination.assets/image-20220717214514069.png" alt="image-20220717214514069" style="zoom:67%;"></p>
+<center>
+Fig 1.3
+</center>
+<p>至此，预计算部分已经结束，下面开始实时渲染。</p>
+<h3 id="rendering-global-illumination">2. Rendering Global
+Illumination</h3>
+<p>上述预计算的数据都是 probe view 下的光照信息，实时渲染中则需要将
+probe view 重投影为 novel view 下所需要的全局光照信息。全局光照信息包含
+diffuse 与 glossy 光照信息，对于 diffuse 全局光照，直接采样预计算的
+lightmap。而 glossy 成分则需要对 light probe 重投影到 novel view。</p>
+<p>glossy 光线路径的全局光照渲染概要：</p>
+<ol type="1">
+<li><p>需要将预计算的 light probe
+进行重投影(reprojection)。为此，先光栅化一个 G-buffer，其中包含
+position、normal、表面曲率和材质(ID和roughness)。</p></li>
+<li><p>使用 ray-caster，发射光线到 specular pixels(应该指把像素看作
+specular)，再经过完美镜面反射。ray data 中存储反射光的 hit position
+和对应的材质 IDs。</p></li>
+<li><p>之后基于像素附近收集的 probes 信息来计算像素的 glossy
+光照信息。</p>
+<ul>
+<li><p>选择距离着色点最近的 probe(最终方案为最近的 8 个)，确定 probe
+data 中与当前像素关联的 sample：计算 probe 经过镜面反射最终到达 ray data
+中的 hit position 的反射点，probe data 中该反射点对应的 sample
+即包含了着色像素的 glossy GI 信息。(因为 camera -&gt; shading point
+-&gt; hit position -&gt; specular reflected position -&gt; probe
+正好形成了一条带有间接光照的光线路径，前三个是一个镜面反射路径(从 ray
+data 中获取)，后三个是一个镜面反射路径(由选定的 probe
+位置计算得到))。</p>
+<blockquote>
+<p>如图 <a href="#Fig%202">Fig 2(a)</a> 所示，光线路径为 <span class="math inline">\(\mathbf{p}\rightarrow \mathbf{x} \rightarrow
+\mathbf{q} \rightarrow \mathbf{x&#39;} \rightarrow
+\mathbf{p&#39;}\)</span>​，其中 <span class="math inline">\(\mathbf{x}\)</span> 为像素对应的着色点，<span class="math inline">\(\mathbf{q}\)</span> 为经过镜面反射的 hit
+position(存储在 ray data 中)，<span class="math inline">\(\mathbf{p&#39;}\)</span> 为​挑选的 probe，<span class="math inline">\(\mathbf{x&#39;}\)</span> 为由 <span class="math inline">\(\mathbf{p&#39;}\)</span> 与 <span class="math inline">\(\mathbf{q}\)</span>​
+作为镜面反射路径端点计算得到。</p>
+</blockquote></li>
+<li><p>基于一种设计的评估策略，在反射点对应的 probe sample
+附近搜索选择最优的 probe sample，即为最终用来计算着色点 GI 的
+sample。</p></li>
+</ul></li>
+</ol>
+<p><a name="Fig 2"></a></p>
+<p><img src="/images/Glossy Probe Reprojection for Interactive Global Illumination.assets/image-20220717214548051.png" alt="image-20220717214548051" style="zoom:67%;"></p>
+<center>
+Fig 2
+</center>
+<p>由上述可知，想要收集 probe samples 信息，必须先知道反射点 <span class="math inline">\(\mathbf{x&#39;}\)</span> 的位置。虽然可以再次使用
+ray-caster，但为了高效，作者引入 specular path perturbation 方法。</p>
+<h4 id="on-the-fly-reflection-position-estimation">2.1 On-the-fly
+Reflection Position Estimation</h4>
+<p>当相机由 <span class="math inline">\(\mathbf{p}\)</span>​​​ 移动到 <span class="math inline">\(\mathbf{p&#39;}\)</span>​​​ 时，作者基于 specular
+path perturbation 理论来确定 <span class="math inline">\(\mathbf{x}\)</span>​​​ 移动到的位置 <span class="math inline">\(\mathbf{x&#39;}\)</span>​​​。这样的移动描述的其实是镜面反射路径<span class="math inline">\(\mathcal{S}_1\)</span>​​​(<span class="math inline">\(p\rightarrow x\rightarrow q\)</span>​​​) 到 <span class="math inline">\(\mathcal{S}_2\)</span>​​​(<span class="math inline">\(p&#39;\rightarrow x&#39;\rightarrow q\)</span>​​​​) 的
+specular motion。其中反射路径 <span class="math inline">\(\mathcal{S}_1\)</span>​​​​ 在 G-buffer
+光栅化后已经确定，那么只有 <span class="math inline">\(\mathbf{x&#39;}\)</span>​​​ 是未知的。</p>
+<ul class="task-list">
+<li><input type="checkbox" disabled>
+基于 specular path perturbation <a href="#%5B5%5D">[5]</a>
+理论，此时问题转化为：已知 <span class="math inline">\(\Delta
+p=p&#39;-p\)</span>​​，近似 <span class="math inline">\(\Delta
+x=x-x&#39;\)</span>​​，从而得到 <span class="math inline">\(x&#39;=x+\Delta x\)</span>​​. <span class="math display">\[
+\Delta x=J\Delta p+[\Delta p]^TH[\Delta p]
+\]</span> 其中，<span class="math inline">\(J(p,q,x,f)\)</span>​​ 是一个
+3X3 Jacobian 矩阵，<span class="math inline">\(H(p,q,x,f)\)</span>​​
+是一个 3x3x3 tensor，<span class="math inline">\([\Delta p]\)</span>​​
+是重复 <span class="math inline">\(\Delta p\)</span>​​ 三次的 1x1x3
+tensor。由于 specular path perturbation 需要使用到 <span class="math inline">\(f\)</span>​​
+的一阶、二阶、三阶导数，这里就使用到了预计算中近似的抛物面。</li>
+</ul>
+<p>至此，已经计算出 <span class="math inline">\(p\rightarrow x
+\rightarrow q \rightarrow x&#39; \rightarrow p&#39;\)</span> 光线路径中
+<span class="math inline">\(x&#39;\)</span> 的位置，作者对于得到的 <span class="math inline">\(x&#39;\)</span> 做了额外的处理，只保留和 <span class="math inline">\(x\)</span> 具有相同材质的 <span class="math inline">\(x&#39;\)</span> 点。下面可以使用 <span class="math inline">\(x&#39;\)</span> 来收集 probe data 中的 probe
+samples，从而得到 probe data 中存储的 glossy GI 信息。</p>
+<h4 id="gathering-view-dependent-color">2.2 Gathering View-dependent
+Color</h4>
+<p>结合 specular path perturbation
+和预计算中表面曲率估计的方法，只是得到了 novel view 到 probe view 的
+specular motion。为了得到更加鲁棒的结果，需要在 <span class="math inline">\(x&#39;\)</span> 对应的 probe sample
+的区域中搜索，选取最优的 probe sample。</p>
+<blockquote>
+<p>在 <span class="math inline">\(p\rightarrow x \rightarrow q
+\rightarrow x&#39; \rightarrow p&#39;\)</span> 光线路径中，<span class="math inline">\(p&#39;\rightarrow x&#39;\rightarrow q\)</span>
+为镜面反射的路径，但 probe data 中存储的是 glossy GI，glossy BRDF 是一个
+lobe，光线路径对应的是一个区域，只要最终能到达 <span class="math inline">\(q\)</span> 即为所找 probe sample。因此，<span class="math inline">\(x&#39;\)</span>
+对应的样本附近区域也属于该镜面反射对应的 glossy
+路径。因此可以在这个区域的 probe samples 中选取最优的
+sample。注意：probe data 中的每个 sample 携带的都是其 probe 对应的 3D
+grid 区域的 glossy BRDF
+的全局光照信息，若要使得像素的全局光照信息更加平滑，应收集不同区域
+(即不同 probe) 的全局光照信息。</p>
+</blockquote>
+<p><strong>probe sample 搜索算法</strong>：使用 two-level 的 grid
+搜索算法，coarse-level 在较大的区域内使用较大的 step-size 进行搜索，得到
+coarse-level 的最优 sample。然后以这个最优 sample 为中心，使用较小的
+step-size 进行 fine-level 搜索。</p>
+<p><strong>评估 probe sample 的优劣</strong>：接下来使用 <a href="#Fig%202">Fig 2(b)</a> 中的符号，probe view 下的 reflector
+position <span class="math inline">\(r_p\)</span>、normal <span class="math inline">\(n_p\)</span> 和 reflected position <span class="math inline">\(R_p\)</span>；novel view 下对应的 <span class="math inline">\(r_v\)</span>、<span class="math inline">\(n_v\)</span> 和 <span class="math inline">\(R_v\)</span>​ 。设计 energy function 来评估 probe
+sample 优劣的四个标准：</p>
+<ul>
+<li><p>novel view sample(<span class="math inline">\(R_v\)</span>) 和
+probe view samples(<span class="math inline">\(R_p\)</span>)
+更倾向于位于同一表面。如果二者的材质 ID 不同，则惩罚总 energy，即乘上
+<span class="math inline">\(\large s_a=10\)</span>.
+因此只有在其他样本不可用时，才会选用材质不匹配的样本。</p></li>
+<li><p><span class="math inline">\(R_v\)</span> 与 <span class="math inline">\(R_p\)</span> 距离近更好，对此引入 <span class="math inline">\(s_b=||R_v-R_p||\)</span>.</p></li>
+<li><p>相近的表面法线 <span class="math inline">\(n_v\)</span>​ 和 <span class="math inline">\(n_p\)</span>​ 可以确保一致的光照。对此引入 <span class="math inline">\(s_c=1-(n_v\cdot n_p)\)</span>​</p></li>
+<li><p>样本应该具有相近的 reflected ray，对此引入： <span class="math display">\[
+             s_d=1-\frac{(R_v-r_v)\cdot
+(R_p-r_p)}{||R_v-r_v||\cdot||R_p-r_p||}
+             \]</span></p></li>
+<li></li>
+</ul>
+<p>结合以上标准，设计 energy function 为：</p>
+<p><span class="math display">\[
+\varepsilon=s_a\cdot \big(min(s_b,1)+min(s_c,1)+min(s_d,1)\big) \tag{1}
+\label{energy function}
+\]</span> 由于预计算 probe data 过程中应用了 apaptive
+parameterization，因此在搜索 sample 邻域中不能按常规使用固定大小的
+grid(即搜索算法中的步长大小单位不应该固定)，因为这样会在压缩区域中丢失细节，或在放大区域中不充分搜索。对于此，作者对
+step size 进行一次 scale，即步长(grid 数量)要乘以</p>
+<p><span class="math display">\[
+|\frac{\partial f^{-1}_h}{\partial x}|^{-1}
+\]</span> 其中 <span class="math inline">\(\large f^{-1}_h\)</span>​​
+是预计算过程中生成的 <a href="#1.2.2">inverse flow
+field</a>。在作者实验中，coarse-level 搜索区域大小为 7X7 samples，步长为
+4 texels；fine-level 搜索区域大小为 3X3 samples，步长为 2
+texels。(步长都是 scale 前的)。</p>
+<p>至此已经完成在 probe data 中选取最优 probe sample 的方法。下面将
+probe sample 中的 glossy GI 信息加入到像素的最终着色中。</p>
+<p>如果简单的只收集一个 probe 的 probe sample 中的 glossy
+GI，相机移动过程中会出现 pop-up 不平滑现象。作者使用距离 novel view
+最近（即距相机最近）的 8 个 probe，每个 probe 选取一个最优 probe
+sample，最终以以下方式整合： <span class="math display">\[
+C=\frac{1}{Z}\sum\limits^8_{i=1} t_i\cdot exp(-\phi\varepsilon_i)\cdot
+c_i \tag{2} \label{the sum of neighboor probes}
+\]</span> 其中 <span class="math inline">\(t_i\)</span>​ 是 trilinear
+weight；<span class="math inline">\(\phi\)</span> 是 falloff
+因子，论文中设为 8；<span class="math inline">\(Z\)</span>
+是归一化系数，确保加权和为一个 unity；<span class="math inline">\(c_i\)</span> 从 probe data 中得到，当 sample 没有
+color-blend 时，在加载 <span class="math inline">\(c_i\)</span>​​
+过程中使用 bilinear 插值。对于没有找到有效 sample 的像素，对上一帧的
+probe 进行 reprojection。</p>
+<h3 id="two-step-convolution-for-accurate-warping-of-glossy-probes">3.
+Two-step Convolution For Accurate Warping of Glossy Probes</h3>
+<p>上述描述的都是完美镜面反射的着色点，即 <span class="math inline">\(p\rightarrow x\rightarrow q\)</span>
+为镜面反射路径，但实际中着色点更多的还是 glossy 材质。对于 glossy
+材质的着色点，其对应的 hit position <span class="math inline">\(q\)</span> 会变为一个区域，即 glossy lobe
+对应的区域。任何可以到达该区域的光线都可以复用该区域内对应的 probe
+samples。</p>
+<p>对于一种特殊情况，两个相邻着色点的 BRDF lobe 的所有 probe samples
+正好分别落在了 occlusion 边界两侧，这样就形成了明显的硬边界。图 <a href="#Fig%203">Fig 3</a> 形象描述了出现这种情况的原理，<a href="#Fig%203">Fig 3(e)</a> 中两个像素对应的着色点的 BRDF lobe
+包含了黄色和蓝色两个平面的信息，这是 ground truth <a href="#Fig%203">Fig
+3(a)</a> 对应的 BRDF lobe 积分情况；简单的 reprojection 收集的 probe
+samples 正好落在了遮挡的一侧 <a href="#Fig%203">Fig
+3(f)</a>，使得模糊的边缘变得 sharpen <a href="#Fig%203">Fig
+3(d)</a>；如果仅进行一次简单的 post-process filter，会导致
+overblur，使得表面视觉 roughness 增大 <a href="#Fig%203">Fig
+3(g)</a>，注意着色像素的颜色(roughness
+增大，导致像素包含了更大区域的信息，最终颜色过于平滑)。</p>
+<p><a name="Fig 3"></a></p>
+<p><img src="/images/Glossy Probe Reprojection for Interactive Global Illumination.assets/image-20220717214753044.png" alt="image-20220717214753044" style="zoom: 67%;"></p>
+<center>
+Fig 3
+</center>
+<p>本章节设计新的 filter，减小 Naive post-process filter 造成的
+overblur。作者使用 Gaussian 分布拟合 BRDF，利用 Gaussian
+分布卷积中的可分离特性，将 BRDF
+包含的卷积进行分离为两步。在预计算过程中，减小表面 roughness，设计实时
+image filter 重构原 roughness</p>
+<blockquote>
+<p>这种聚集 occlusion
+边界一侧的现象可以理解为采样不足导致的，本章节提出在不提高采样数量的情况下，在
+probe 预计算阶段降低几何表面的
+roughness，这样会使得反射的光线更发散，probe sampe
+更容易收集到周围着色点信息。在实时渲染过程中，再使用设计的 filter 重构原
+roughness，得到原 roughness 下的周围着色点信息。</p>
+</blockquote>
+<h4 id="filter-footprint-estimation">3.1 Filter Footprint
+Estimation</h4>
+<p>为了使用 Gaussian 分布可分离特性，首先需要使用 Gaussian 分布拟合
+BRDF，为此需要估计其 footprint（指不同参数变化下 BRDF
+的变化足迹）。为了估计 BRDF footprint，作者使用了一个简单的设定，如 <a href="#Fig%203.1">Fig 3.1(a)</a> 所示：相机通过看向各向同性均匀
+roughness 的反射平面(<span class="math inline">\(\mathbf{x}\)</span>​​​​​​​​)来观察 reflected
+point，其中反射平面法向量与 view direction 平行，并且与相机和 reflected
+point 的共线并行。基于这种设定，以固定的 fov 评估每一个点的 GGX
+BRDF(微表面法线模型) <a href="#%5B6%5D">[6]</a>，如 <a href="#Fig%203.1">Fig 3.1(b)</a>
+所示，中间区域最亮应该是直射区域，越往外侧越暗，GGX BRDF 的 specular
+lobe 反射到相机的越来越少。</p>
+<p>影响 BRDF footprint 的参数有评估点的 roughness <span class="math inline">\(\rho\)</span>​ 、相机到反射平面的距离 <span class="math inline">\(d_c\)</span>​、反射平面到反射点的距离 <span class="math inline">\(d_r\)</span>​​，给定这些参数，可以拟合一个协方差矩阵为
+<span class="math inline">\(\sum_{\rho}\)</span>​ 的 Gaussian 分布 <span class="math inline">\(\mathcal{G}_{\rho}(\mathbf{x}:\rho,d_c,d_r)\)</span>​
+。协方差矩阵 <span class="math inline">\(\sum_{\rho}\)</span>​
+可以通过选定一组 <span class="math inline">\([\rho, d_c,d_r]\)</span>​
+参数，采样 BRDF footprint 来确定。​例如 <a href="#Fig%203.1">Fig
+3.1(c)</a> 展示的是一条扫描线(相机移动轨迹)下的 BRDF 随 <span class="math inline">\(\mathbf{x}\)</span>​
+变化的曲线。作者通过预计算不同参数组合下的协方差表格，供实时渲染时查表。该制表包含
+32x32x32 bins，roughness 由 <span class="math inline">\(0\)</span> 到
+<span class="math inline">\(0.5\)</span> 、距离由 <span class="math inline">\(0.01\)</span> 到 <span class="math inline">\(10m\)</span>。并且采样过程选取 power sampling，在
+<span class="math inline">\(d_r&lt;0.5m\)</span>​
+降低协方差，防止这种情况下的拟合 overestimated 协方差。</p>
+<p><a name="Fig 3.1"></a></p>
+<p><img src="/images/Glossy Probe Reprojection for Interactive Global Illumination.assets/image-20220717214823052.png" alt="image-20220717214823052" style="zoom:67%;"></p>
+<center>
+Fig 3.1
+</center>
+<p>上述简单设定是 view direction
+与反射平面垂直的情况，当二者不垂直时，即反射平面为一个倾斜平面，会使得
+BRDF footprint
+会由于远小近大而沿着倾斜方向缩小。在渲染时，通过将协方差乘上 view
+direction 和 surface normal 的点乘来进行补偿。</p>
+<blockquote>
+<p>使用 <a href="#Fig%203.1">Fig 3.1(a)</a> 中的设置在预计算过程中拟合出
+<span class="math inline">\([\rho, d_c,d_r]\)</span> 参数不同组合下的
+BRDF footprint 的 Gaussian 分布，然后在实时渲染中，根据当前着色点的
+<span class="math inline">\([\rho, d_c,d_r]\)</span> 查表获取该点的 BRDF
+footprint。但实时渲染中着色点、相机、反射平面多数不是 <a href="#Fig%203.1">Fig 3.1(a)</a> 的简单设定，需要通过对协方差参数进行
+scale 补偿，scale 系数为 view direction 和 surface normal 的点乘。</p>
+</blockquote>
+<p>假设 <span class="math inline">\(\mathcal{G}_{\rho}\)</span>
+是反射平面的 BRDF，在 glossy light probes 预计算中获取；<span class="math inline">\(\mathcal{G}_I\)</span> 是 runtime image
+filter。我们可以在预计算中降低反射平面的 roughness，得到具有对应新
+roughness <span class="math inline">\(\rho&#39;\)</span> 的协方差矩阵
+<span class="math inline">\(\sum_{\rho&#39;}\)</span> 的 <span class="math inline">\(\mathcal{G}_{\rho&#39;}\)</span>. 使用 Gaussian
+分布的性质：</p>
+<p>​ <span class="math display">\[\sum(\mathcal{G}_1*\mathcal{G}_2)=\sum(\mathcal{G}_1)+\sum(\mathcal{G}_2)\]</span>​​,
+其中 <span class="math inline">\(\sum\)</span>
+是卷积的求和操作，其余为协方差矩阵</p>
+<p>现在需要求得一个 image filter <span class="math inline">\(\mathcal{G}_I\)</span> 将降低过 roughness <span class="math inline">\(\rho &#39;\)</span> 的 <span class="math inline">\(\mathcal{G}_{\rho&#39;}\)</span> 重构为原
+roughness 的 <span class="math inline">\(\mathcal{G}_{\rho}\)</span>​.
+利用上述性质，可以得到</p>
+<p><span class="math display">\[
+\sum_I=\sum_{\rho}-\sum_{\rho&#39;}
+\]</span> 从而得到 <span class="math inline">\(\mathcal{G}_I\)</span>
+（因为这里所有的 Gaussian 分布都采用均值为 0）。在实现中，作者使用 <span class="math inline">\(\rho &#39;=\rho/2\)</span>​
+作为预计算中光线路径中的第一个 glossy 顶点的 roughness 参数。</p>
+<p>至此，已经完成对 image-space filter footprint 的估计。下面是如何应用
+image filter。</p>
+<h4 id="gloss-filtering">3.2 Gloss Filtering</h4>
+<p>使用几何数据来估计公式 <span class="math inline">\(\eqref{the sum of
+neighboor probes}\)</span> 中的 <span class="math inline">\(C\)</span>
+， <span class="math display">\[
+\hat{C}(\mathbf{x})=\frac{1}{Z(\mathbf{x})}\sum\limits_{\mathbf{x}_i\in\mathcal{N}(\mathbf{x})}\mathcal{G}_I(\mathbf{x}_i-\mathbf{x})w_r(\mathbf{x,x}_i)\space\varepsilon^{-1}(\mathbf{x}_i)C(\mathbf{x}_i)
+\tag{3} \label{glossy filtering}
+\]</span> 其中，<span class="math inline">\(\mathcal{N}(\mathbf{x})\)</span>​​​​ 表示 <span class="math inline">\(\mathbf{x}\)</span>​​​​ 处的 filter footprint；<span class="math inline">\(\large \varepsilon\)</span>​​​​ 是 energy function
+<span class="math inline">\(\eqref{energy
+function}\)</span>​​​​，其逆函数作为置信度来限制向匹配良好的像素的传播；range
+weight：</p>
+<p><span class="math display">\[
+w_r(\mathbf{x,x}_i)=\mathbb{1}_{\mathbf{n(x)\cdot
+n}(\mathbf{x}_i)&gt;\alpha_\mathbf{n}}\cdot
+\mathbb{1}_{|d(\mathbf{x})-d(\mathbf{x}_i)|&lt;\alpha_d}\cdot
+\mathbb{1}_{m(\mathbf{x})=m(\mathbf{x}_i)}
+\]</span> 作为 cross-bilateral 项，防止不连续的 normal 和 depth
+或者不同反射材质 IDs 之间的 filtering. 实现中，作者设置 <span class="math inline">\(\alpha_{\mathbf{n}}=0.8\)</span>​ 和 <span class="math inline">\(\alpha_d=0.2\)</span>​；<span class="math inline">\(Z\)</span>​​ is the normalizing partition function,
+ensuring filter weights sum to unity。</p>
+<blockquote>
+<p>求和的区域应该是 glossy BRDF lobe 对应的区域，对这个区域进行
+filter</p>
+</blockquote>
+<h4 id="efficient-filter-approximation">3.3 Efficient Filter
+Approximation</h4>
+<ul class="task-list">
+<li><input type="checkbox" disabled>
+<span class="math inline">\(\eqref{glossy filtering}\)</span>​​​
+式的计算开销太大，作者使用 two passes, effectively using four 1D
+separable filters 进行高效近似计算 <a href="#%5B7%5D">[7]</a></li>
+</ul>
+<h2 id="remain-questions">Remain Questions</h2>
+<ul class="task-list">
+<li><p><input type="checkbox" disabled>
+不明白：This term converts probe area to actual object size,
+compensating for perspective and angular foreshortening akin to a form
+factor. <span class="math inline">\(\large \theta_{long}\)</span> is the
+longitude angle, which compensates for size variations induced by the
+lat-long base parameterization.</p></li>
+<li><p><input type="checkbox" disabled>
+2D Discrete consine transform <a href="#%5B2%5D">[2]</a>: <span class="math inline">\(\mathbf{b}\)</span>​ 是 basis function，basis
+function 与 法线的卷积用来分析 local neighborhood 的频率信息</p></li>
+<li><p><input type="checkbox" disabled>
+需要理解 <a href="#%5B3%5D">[3]</a>
+的数学原理，描述下面过程的细节</p></li>
+<li><p><input type="checkbox" disabled>
+对于每个顶点，使用 <a href="#%5B4%5D">[4]</a> 技术估计其主曲率与对应方向
+<a href="#Fig%201.3">Fig
+1.3(a)</a>。该步骤在每个物体上分别进行，并且为了更好的结果，对较大表面，先进行细分
+<a href="#Fig%201.3">Fig 1.3(b d)</a>。</p></li>
+<li><p><input type="checkbox" disabled>
+基于 specular path perturbation <a href="#%5B5%5D">[5]</a>
+理论，此时问题转化为：已知 <span class="math inline">\(\Delta
+p=p&#39;-p\)</span>，近似 <span class="math inline">\(\Delta
+x=x-x&#39;\)</span>，从而得到 <span class="math inline">\(x&#39;=x+\Delta x\)</span>. <span class="math display">\[
+\Delta x=J\Delta p+[\Delta p]^TH[\Delta p]
+\]</span> 其中，<span class="math inline">\(J(p,q,x,f)\)</span> 是一个
+3X3 Jacobian 矩阵，<span class="math inline">\(H(p,q,x,f)\)</span>
+是一个 3x3x3 tensor，<span class="math inline">\([\Delta p]\)</span>
+是重复 <span class="math inline">\(\Delta p\)</span> 三次的 1x1x3
+tensor。由于 specular path perturbation 需要使用到 <span class="math inline">\(f\)</span>​​
+的一阶、二阶、三阶导数，这里就使用到了预计算中近似的抛物面。</p></li>
+<li><p><input type="checkbox" disabled>
+cross-bilateral 是什么</p></li>
+<li><p><input type="checkbox" disabled>
+<span class="math inline">\(\eqref{glossy filtering}\)</span>
+式的计算开销太大，作者使用 two passes, effectively using four 1D
+separable filters 进行高效近似计算 <a href="#%5B7%5D">[7]</a></p></li>
+</ul>
+<h2 id="reference">Reference</h2>
+<p><a name="[1]">[1]</a> Morgan McGuire, Mike Mara, Derek
+Nowrouzezahrai, and David Luebke. 2017b. Realtime global illumination
+using precomputed light field probes. In Proceedings of the Symposium on
+Interactive 3D Graphics and Games. ACM, 2</p>
+<p><a name="[2]">[2]</a> Nasir Ahmed, T Raj Natarajan, and Kamisetty R
+Rao. 1974. Discrete cosine transform. IEEE Trans. Comput. 100, 1 (1974),
+90–93.</p>
+<p><a name="[3]">[3]</a> Rhaleb Zayer, Christian Rossl, and H-P Seidel.
+2005. Discrete tensorial quasi-harmonic maps. In International
+Conference on Shape Modeling and Applications. IEEE, 276–285.</p>
+<p><a name="[4]">[4]</a> Mark Meyer, Mathieu Desbrun, Peter Schröder,
+and Alan H Barr. 2003. Discrete differential-geometry operators for
+triangulated 2-manifolds. In Visualization and Mathematics III.
+Springer, 35–57.</p>
+<p><a name="[5]">[5]</a> Perturbation methods for interactive specular
+reflections. IEEE Transactions on Visualization and Computer Graphics 6,
+3 (2000), 253–264.</p>
+<p><a name="[6]">[6]</a> Bruce Walter, Stephen R Marschner, Hongsong Li,
+and Kenneth E Torrance. 2007. Microfacet Models for Refraction through
+Rough Surfaces. Rendering Techniques 2007 2007, 18th.</p>
+<p><a name="[7]">[7]</a> Eduardo SL Gastal and Manuel M Oliveira. 2011.
+Domain transform for edge-aware image and video processing. ACM
+Transactions on Graphics (TOG) (2011), 1–12.</p>
+<p><a name="[8]">[8]</a> <em>Simon Rodriguez, Thomas Leimkühler,
+Siddhant Prakash, Chris Wyman, Peter Shirley, and George Drettakis.
+2020. Glossy probe reprojection for interactive global
+illumination.</em> <em>ACM Trans. Graph.</em> <em>39, 6, Article 237
+(December 2020), 16 pages.
+DOI:https://doi.org/10.1145/3414685.3417823</em></p>
+]]></content>
+      <categories>
+        <category>Paper Notes</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting</title>
+    <url>/2022/07/17/Paper%20Notes/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/</url>
+    <content><![CDATA[<h2 id="summary">Summary</h2>
+<p><code>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting</code>
+<a href="#%5B1%5D">[1]</a></p>
+<p>解决 many-lights 下的直接光照的重要性采样问题。</p>
+<h2 id="background">Background</h2>
+<p>本论文将光源视为场景中的发光几何体，因此 many-lights
+下的渲染方程为：着色点 <span class="math inline">\(y\)</span> 在方向
+<span class="math inline">\(\vec{\omega}\)</span> 所反射的 radiance
+<span class="math inline">\(L\)</span> 是对所有发光表面 <span class="math inline">\(A\)</span> 的积分： <span class="math display">\[
+L(y,\vec{\omega}) = \int_A
+\rho(y,\vec{yx}\leftrightarrow\vec{\omega})L_e(x\rightarrow
+y)G(x\leftrightarrow y)V(x\leftrightarrow y) \space dA_x \tag{1}
+\label{render equation}
+\]</span> 其中，<span class="math inline">\(\vec{\omega}\)</span>
+是观察方向，与相机相关；<span class="math inline">\(\rho\)</span>
+与着色点 <span class="math inline">\(y\)</span> 的材质有关，论文中指
+BSDF；<span class="math inline">\(L_e\)</span> 是光源表面一点 <span class="math inline">\(x\)</span> 到着色点 <span class="math inline">\(y\)</span> 方向上发出的 radiance；<span class="math inline">\(G\)</span> 几何项，包含了 inverse squared distance
+和反射方向与入射方向的余弦项。</p>
+<p>对渲染方程的表示进行一些符号简化，被积函数简化为 <span class="math inline">\(f(x)\)</span>，积分微元 <span class="math inline">\(dx\)</span>，有渲染方程的简化形式： <span class="math display">\[
+L=\int_A f(x)\space dx,\quad where \space f(x)\equiv\rho(x)\cdot
+L_e(x)\cdot G(x)\cdot V(x) \tag{2} \label{simple render equation}
+\]</span></p>
+<ul>
+<li><strong>Importance Sampling(IS)</strong></li>
+</ul>
+<p>使用蒙特卡洛重要性采样方法估计 <span class="math inline">\(\eqref{simple render equation}\)</span> 式积分，从
+source PDF <span class="math inline">\(p(x_i)\)</span> 中进行 <span class="math inline">\(N\)</span> 次采样，得到 <span class="math inline">\(N\)</span> 个样本，<span class="math inline">\(\eqref{simple render equation}\)</span>
+积分的估计量为： <span class="math display">\[
+L \approx \langle L \rangle_{IS}^N =\frac{1}{N}\sum\limits_{i=1}^N
+\frac{f(x_i)}{p(x_i)} \tag{3} \label{IS MC}
+\]</span> 其中如果在 <span class="math inline">\(f(x)\)</span>
+非零时，<span class="math inline">\(p(x)\)</span> 都为正，IS
+则为无偏估计；并且可以通过选取与 <span class="math inline">\(f(x)\)</span> 相关的 <span class="math inline">\(p(x)\)</span> 形式，来降低方差。</p>
+<ul>
+<li><a name="MIS"><strong>Multiple Importance
+Sampling(MIS)</strong></a></li>
+</ul>
+<p>由于 <span class="math inline">\(f(x)\)</span>
+的复杂性（包含多项），直接采样与 <span class="math inline">\(f(x)\)</span>
+成比例（相关）的分布是不可实行的，而通常采样与 <span class="math inline">\(f(x)\)</span> 中单项成比例的分布，例如 <span class="math inline">\(\rho\)</span> BSDF、<span class="math inline">\(L_e\)</span> 等。因此，定义 <span class="math inline">\(M\)</span> 个采样策略 <span class="math inline">\(p_s\)</span> (概率分布)，MIS 从每个采样策略 <span class="math inline">\(s\)</span> 中采样出 <span class="math inline">\(N_s\)</span> 个样本，再将这些样本组合到一个
+weighted-estimator 中，如下： <span class="math display">\[
+L\approx \langle
+L\rangle_{MIS}^{M,N}=\sum\limits_{s=1}^M\frac{1}{N_s}\sum\limits_{i=1}^{N_s}w_s(x_i)\frac{f(x_i)}{p(x_i)}
+\tag{4}\label{MIS MC}
+\]</span> 其中，只要权重 <span class="math inline">\(w_s\)</span>
+可以组成一个归一化整体，MIS 就是无偏估计，即 <span class="math inline">\(\sum^M_{s=1}w_s(x)=1\)</span>。一种流行且较好的启发式选择为
+<span class="math inline">\(w_s(x)=\frac{N_s p_s(x)}{\sum_j
+N_jp_j(x)}\)</span>，等价于采样 <span class="math inline">\(M\)</span>
+个独立采样策略的混合分布。</p>
+<h3 id="resample-importance-samplingris">1. Resample Importance
+Sampling(RIS)</h3>
+<p>由 <span class="math inline">\(\eqref{MIS MC}\)</span> 可以看出，MIS
+是对着色项的线性组合的采样，而另一种可选的采样策略是对其中一些项的乘积进行近似成比例地采样，这就是
+RIS 实现的策略。RIS 从 source PDF <span class="math inline">\(p\)</span>
+中生成 <span class="math inline">\(M\geq 1\)</span> 个候选样本 <span class="math inline">\(\boldsymbol{x}={x_1,\cdots,x_M}\)</span>，<span class="math inline">\(p\)</span> 选择次佳但易于采样地分布，如 $p L_e
+$。然后从这个候选池中使用以下离散分布概率进行随机选取 <span class="math inline">\(z\in\{1,\cdots,M\}\)</span>， <span class="math display">\[
+p(z\mid
+\boldsymbol{x})=\frac{\mathrm{w}(x_z)}{\sum^M_{i=1}\mathrm{w}(x_i)}
+\quad with \quad \mathrm{w}(x)=\frac{\hat{p}(x)}{p(x)}
+\tag{5}\label{discrete PDF}
+\]</span> 其中，<span class="math inline">\(p(x)\)</span> 为易于采样的
+source PDF；<span class="math inline">\(\hat{p}(x)\)</span> 为期望得到的
+target PDF，例如无法直接采样的分布 <span class="math inline">\(\hat{p}\propto \rho\cdot L_e \cdot
+G\)</span>。对于 <strong>1-sample RIS</strong> 估计量，因此有 <span class="math inline">\(y\equiv x_z\)</span>，有 <span class="math display">\[
+L\approx \langle L \rangle^{1,M}_{RIS} =
+\frac{f(y)}{\hat{p}(y)}\cdot\left(\frac{1}{M}\sum\limits^M_{j=1}\mathrm{w}(x_j)\right)
+\tag{6} \label{1-sample RIS}
+\]</span></p>
+<blockquote>
+<p>对 <span class="math inline">\(\eqref{1-sample RIS}\)</span>
+的理解：RIS 一次采样相当于得到一个 target PDF <span class="math inline">\(\hat{p}\)</span> 的样本 <span class="math inline">\(y\)</span>，这个分布是可以采用多项乘积的形式。回顾重要性采样
+IS，要使得被积函数对应的估计量 <span class="math inline">\(\langle
+L\rangle\)</span> 无偏，需要估计量的形式为 <span class="math inline">\(f(y)/p_y(y)\)</span>，注意这里的 <span class="math inline">\(p_y(y)\)</span> 是 <span class="math inline">\(y\)</span> 的真实 PDF，而不是 target
+PDF。因此需要乘上括号部分，来近似 <span class="math inline">\(y\)</span>
+的真实
+PDF，但这种近似并不总是无偏的，会在某些情况下引入偏差，之后部分会有具体分析。</p>
+</blockquote>
+<p>多次执行 RIS，然后取平均，可以得到一个 N-sample RIS 估计量： <span class="math display">\[
+L \approx\langle
+L\rangle^{M,N}_{RIS}=\frac{1}{N}\sum\limits^N_{i=1}\left(\frac{f(y_i)}{\hat{p}(y_i)}\cdot
+\left(\frac{1}{M}\sum^M_{j=1}\mathrm{w}(x_{ij})\right)\right) \tag{7}
+\label{N-sample RIS}
+\]</span> 在 <span class="math inline">\(M,N\geq 1\)</span> 并且 <span class="math inline">\(f\)</span> 非零时，<span class="math inline">\(p,\hat{p}\)</span> 都为正，RIS
+则为无偏估计。理论上 <span class="math inline">\(M\)</span> 和 <span class="math inline">\(N\)</span>
+存在与方差有关的最优比，但实际中，这个比值难以事先预知。本文中采用简单形式
+<span class="math inline">\(N=1\)</span>，即 1-sample
+RIS。有算法流程：</p>
+<ol type="1">
+<li><p>预设 source PDF <span class="math inline">\(p\)</span>，文中实验将其设为在面光源上的面积采样分布；target
+PDF <span class="math inline">\(\hat{p}\)</span>，文中实验设置为
+unshadowed path contribution 部分，即 <span class="math inline">\(\rho
+\cdot L_e\cdot G\)</span>，不包含 visibility 项</p></li>
+<li><p>设置初始为空的权重列表 <span class="math inline">\(\textup{W}\)</span>，初始为 <span class="math inline">\(0\)</span> 的权重累积和 <span class="math inline">\(\textup{w}_{sum}\)</span>，初始为空的候选样本列表
+<span class="math inline">\(\boldsymbol{x}\)</span></p></li>
+<li><p>对 source PDF <span class="math inline">\(p\)</span> 进行 <span class="math inline">\(M\)</span> 次采样：</p>
+<ul>
+<li><p>第 <span class="math inline">\(i\)</span> 次采样的随机样本为
+<span class="math inline">\(x_i\)</span>，放入候选样本列表 <span class="math inline">\(\boldsymbol{x}\)</span></p></li>
+<li><p>计算样本 <span class="math inline">\(x_i\)</span> 的权重 <span class="math inline">\(\mathrm{w}_i=\Large
+\frac{\hat{p}(x_i)}{p(x_i)}\)</span>，并放入权重列表 <span class="math inline">\(\mathrm{W}\)</span></p></li>
+<li><p>累积权重和 <span class="math inline">\(\mathrm{w}_{sum}=\mathrm{w}_{sum}+\mathrm{w}_i\)</span></p></li>
+</ul></li>
+<li><p>对候选样本权重进行归一化：<span class="math inline">\(\mathrm{w}_i= \Large
+\frac{\mathrm{w}_i}{\mathrm{w}_{sum}}\)</span></p></li>
+<li><p>将归一化权重作为候选样本的概率分布，采样候选样本列表得到最终选出的样本
+<span class="math inline">\(y=x_z\)</span></p></li>
+<li><p>返回选出的样本 <span class="math inline">\(y=x_z\)</span>
+以及本次 RIS 的候选样本的权重累积和 <span class="math inline">\(\textup{w}_{sum}\)</span></p></li>
+</ol>
+<p>假设像素 <span class="math inline">\(q\)</span> 对应 target PDF <span class="math inline">\(\hat{p}(q)\)</span>，以及其渲染方程积分 <span class="math inline">\(f_q\)</span>，1-sample RIS 算法伪代码如下：</p>
+<p><a name="Algo 1"></a></p>
+<p><img src="/images/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting.assets/image-20220717215808514.png" alt="image-20220717215808514" style="zoom:50%;"></p>
+<center>
+算法 1
+</center>
+<p><span class="math inline">\(\eqref{1-sample RIS}\)</span>
+式的计算需要候选样本数量 <span class="math inline">\(M\)</span>，这是算法输入，是已知的；<span class="math inline">\(\mathrm{w}_{sum}\)</span> ，算法输出；<span class="math inline">\(\hat{p}(y)\)</span>，<span class="math inline">\(y\)</span> 是算法选出的样本，<span class="math inline">\(\hat{p}\)</span> 是预设 target PDF。</p>
+<h3 id="weighted-reservoir-samplingwrs">2. Weighted Reservoir
+Sampling(WRS)</h3>
+<p>WRS 是一类从一个 stream <span class="math inline">\(\{x_1,x_2,\cdots,x_M\}\)</span>
+中通过一遍操作来随机采样 <span class="math inline">\(N\)</span>
+个元素的算法，该 stream 数据中每个元素 <span class="math inline">\(x_i\)</span> 都关联一个权重 <span class="math inline">\(\textup{w}(x_i)\)</span>，<span class="math inline">\(x_i\)</span> 被选中的概率为 <span class="math display">\[
+P_i = \frac{\mathrm{w}(x_i)}{\sum^M_{j=1}\mathrm{w}(x_j)} \tag{8}
+\label{reservoir CDF}
+\]</span> Reservoir sampling 对每个元素只进行一次操作，仅需要 <span class="math inline">\(N\)</span> 个元素保留在内存中，并且 stream 的长度
+<span class="math inline">\(M\)</span> 不必事先预知。Reservoir sampling
+算法，分为有放回采样与无放回采样，由于蒙特卡洛积分积分的采样通常是相互独立的，因此本论文只考虑较为简单的有放回采样算法。</p>
+<p>Reservoir sampling 按照 input stream
+的次序来处理其中的元素，保存一个具有 <span class="math inline">\(N\)</span> 个样本的
+reservoir。<strong>在任何时刻，reservoir sampling 保持采样自 desired PDF
+的 reservoir 中的样本的概率分布仍然是 desired
+PDF</strong>。即当处理一个来自 stream 的新元素时，更新 reservoir
+来<strong>保持其中的样本分布的不变性</strong>，更新操作为：</p>
+<p>在处理了 m 个样本之后，样本 <span class="math inline">\(x_i\)</span>
+在 reservoir 出现的概率为 <span class="math inline">\(\textup{w}(x_i)/\sum^m_{j=1}\textup{w}(x_j)\)</span>。处理下一个新元素
+<span class="math inline">\(x_{m+1}\)</span>
+的更新规则为，使用下一个样本 <span class="math inline">\(x_{m+1}\)</span> 以以下概率随机替换 reservoir
+中样本 <span class="math inline">\(x_i\)</span> ： <span class="math display">\[
+\frac{\mathrm{w}(x_{m+1})}{\sum^{m+1}_{j=1}\mathrm{w}(x_j)}
+\]</span> 因此任意之前的样本 <span class="math inline">\(x_i\)</span> 在
+reservoir 内的概率(即已在 reservoir
+中，且不会被下一个样本替换掉的概率)为： <span class="math display">\[
+\frac{\mathrm{w}(x_i)}{\sum^m_{j=1}\mathrm{w}(x_j)}\left(1-\frac{\mathrm{w}(x_{m+1})}{\sum^{m+1}_{j=1}\mathrm{w}(x_j)}\right)=\frac{\mathrm{w}(x_i)}{\sum^{m+1}_{j=1}\mathrm{w}(x_j)}
+\]</span> 观察 <span class="math inline">\(\eqref{reservoir
+CDF}\)</span> 中给出的 reservoir CDF 可知，在处理过一个新的元素后
+reservoir 中元素的概率分布依然不变。WRS 算法如下：</p>
+<p><img src="/images/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting.assets/image-20220717215902454.png" alt="image-20220717215902454" style="zoom:50%;"></p>
+<h2 id="streaming-ris-with-spatiotemporal-reuse">Streaming RIS With
+Spatiotemporal Reuse</h2>
+<p>RIS 算法对多个 source PDF
+的样本进行重采样，重采样的概率分布结合了被积函数的(unshadowed) target
+PDF 以及源分布，而 target PDF 可以近似为渲染方程 <span class="math inline">\(\eqref{simple render equation}\)</span>
+的被积函数每一项对应分布的乘积形式，这种乘积形式要比 <a href="#MIS">MIS</a>
+的线性组合形式更接近被积函数的真实分布。因此，<strong>RIS
+最终选出的样本可近似看作一次 MIS
+采样(包含多种采样策略)的样本，且理论上更优。</strong></p>
+<p>WRS 算法能够高效地维护一个 reservoir，在保持 reservoir
+中原有样本所服从分布不变的情况下，不断纳入新的随机样本，使得 reservoir
+样本不断逼近目标估计量的期望值。</p>
+<p>理论上，对 RIS 应用 WRS 可以得到一个使 RIS
+样本不断逼近期望值的高效算法，当然由于本文的 target PDF 选取 unshadowed
+path contribution，最终会由于 visibility 无法继续提高 RIS
+样本。下面介绍如何应用 WRS 算法，从而得到 Streaming RIS 算法。</p>
+<h3 id="streaming-ris-using-reservoir-sampling">1. Streaming RIS Using
+Reservoir Sampling</h3>
+<p>RIS 算法为每个像素 <span class="math inline">\(q\)</span>
+独立地生成候选样本，再在候选样本中以 target PDF <span class="math inline">\(\hat{p}_q\)</span> 重新采样，选出最终的样本。对
+RIS 可以直接应用 WRS 算法，RIS 选出的样本及其对应的权重，可以直接用于
+WRS 算法更新其 reservoir。论文中，通过均匀采样 emitter
+的面积，并且使用无阴影的路径的贡献 <span class="math inline">\(\hat{p}(x)=\rho(x)\cdot L_e(x)\cdot G(x)\)</span>
+作为 target distribution，仅对 reservoir 中的 <span class="math inline">\(N\)</span> 个样本进行 trace shadow ray。Streaming
+RIS 算法如下，</p>
+<p><a name="Algo 3"></a></p>
+<p><img src="/images/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting.assets/image-20220717215920480.png" alt="image-20220717215920480" style="zoom:50%;"></p>
+<center>
+算法 3
+</center>
+<p>这里每次更新 reservoir ：候选样本 <span class="math inline">\(x_i\)</span> 及其权重 <span class="math inline">\(\eqref{discrete PDF}\)</span> 中的 <span class="math inline">\(\Large
+\textup{w}_{i}=\frac{\hat{p}(x_i)}{p(x_i)}\)</span>。</p>
+<h3 id="spatiotemporal-reuse">2. Spatiotemporal Reuse</h3>
+<h4 id="复用-reservoir">2.1 复用 reservoir</h4>
+<p>Reservoir
+样本累积了目前见过的所有样本信息，如果可以基于某些策略(如接下来的Spatiotemporal)，选择与当前像素<strong>样本分布相似</strong>的某些像素的
+reservoir，再与当前像素的 reservoir
+进行结合复用，就能大幅提高当前像素的采样率。</p>
+<p>一种易想到的简单复用方式使用 2-pass 算法：第一个 pass
+先为每一个像素生成其候选样本；第二个 pass
+再结合自身与其周围像素的候选样本，进行重采样。但这种方式带来的内存开销非常大，需要存储每个像素的候选样本，即
+input stream (如前述算法中 <span class="math inline">\(M\)</span>
+个)。</p>
+<p>为了规避内存开销问题，论文使用了 Reservoir sampling
+的一个重要性质，该性质可以在不访问其他 reservoir 的 input stream
+的条件下，结合多个 reservoir。如果多个 reservoir
+中样本分布相似，同样可以将多个 reservoir 输入到一个新的 reservoir
+中，这个新的 reservoir 汇集了所有输入 reservoir
+的样本信息，并且由于相似的样本分布，而得到采样率/质量更高的样本。</p>
+<p>以两个 reservoir 为例：每个 reservoir 当前的状态包含当前选择的样本
+<span class="math inline">\(y\)</span> 以及其 sum weight <span class="math inline">\(\textup{w}_{sum}\)</span>，作为一个新的 reservoir
+的输入，重采样出一个结合两个输入 reservoir
+的新样本和新权重。这种方式只需要访问 reservoir 的当前状态，避免了存储
+input stream 的开销，但结果在数学形式上等同于在两个 reservoir 的 input
+streams 重采样。</p>
+<p>复用 reservoir 只是与当前 reservoir
+的样本分布相似，但不完全相同，因此需要根据样本分布调整权重。假设 <span class="math inline">\(q\)</span> 为当前像素，<span class="math inline">\(q&#39;\)</span> 为复用像素，论文中将新的 reservoir
+中的样本权重使用 <span class="math inline">\(\hat{p}_q(r.y)/\hat{p}_{q&#39;}(r.y)\)</span>
+进行调整，采用 <a href="#Algo%203">算法 3</a> 中的符号得到最终新的权重为
+<span class="math inline">\(\hat{p}_q(r.y)\cdot r.W \cdot
+r.M\)</span>。对于任意数量的 reservoir 都可以以这种方式结合，下面是
+<span class="math inline">\(k\)</span> 个 reservoir 结合的算法，只有
+O(k) 的复杂度：</p>
+<p><a name="Algo 4"></a></p>
+<p><img src="/images/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting.assets/image-20220717215937128.png" alt="image-20220717215937128" style="zoom:50%;"></p>
+<center>
+算法 4
+</center>
+<p>这里新的 reservoir 更新：输入 reservoir 样本，其对应权重根据 <span class="math inline">\(\eqref{discrete PDF}\)</span> 理论上应为 <span class="math inline">\(\Large
+\frac{\hat{p}_q(r.y)}{p_q(r.y)}\)</span>，但 <span class="math inline">\(y\)</span> 的真实分布是未知的，这里使用 <span class="math inline">\(\hat{p}_q(r.y)\cdot r.\textup{W}\)</span>
+来近似，<span class="math inline">\(r.M\)</span>
+则是为了对不同候选样本数量的 reservoir 的加权。<strong>在复用 reservoir
+样本时，新的 reservoir 的 source PDF 就是输入 reservoir 样本的分布，即
+<span class="math inline">\(p_y(y)\)</span>。</strong></p>
+<p>下面介绍，选用那些像素的 reservoir 来增强当前像素。</p>
+<h4 id="spatial-reuse">2.2 Spatial Reuse</h4>
+<p>空间复用基于一种观察：相邻像素的 target PDFs
+通常存在显著联系，通常具有相似的 Geometry 和
+BSDF。因此可以结合相邻像素的 RIS 候选样本来增加自身的 RIS
+候选样本数量。</p>
+<p>空间复用相邻像素的 reservoir 的步骤如下：</p>
+<ol type="1">
+<li>使用 <a href="#Algo%203">算法 3</a> RIS(q) 为每个像素生成 <span class="math inline">\(M\)</span> 个候选样本，并将 reservoir 的结果存储在
+image-sized buffer 中。</li>
+<li>每个像素选取 <span class="math inline">\(k\)</span>
+个邻居像素，并使用 <a href="#Algo%204">算法 4</a> 结合 <span class="math inline">\(k\)</span> 个邻居像素的 reservoirs 以及自身的
+reservoir。</li>
+</ol>
+<p>每像素的复杂度为 <span class="math inline">\(O(k+M)\)</span>，但产生了 <span class="math inline">\(k\cdot M\)</span> 个候选样本。Spatial Reuse
+可以重复多次执行，其中每次都是上个 reuse pass 的输出。对于执行了 <span class="math inline">\(n\)</span>
+次空间复用迭代，假设每次迭代都复用不同的相邻像素，那么时间复杂度为 <span class="math inline">\(O(kn+M)\)</span>，但产生了 <span class="math inline">\(k^n\cdot M\)</span> 个候选样本。</p>
+<p>注意，虽然空间复用可以大幅增多候选样本，即采样率，进而提高图像质量，但这种提升不会随着迭代次数增加而一直增加下去。直至迭代次数多到相邻像素的像素信息被全部利用到，图像质量不再提升。</p>
+<h4 id="temporal-reuse">2.3 Temporal Reuse</h4>
+<p>上一帧的像素同样可以提供可复用的候选样本。当完成绘制一帧时，将当前帧的像素的
+reservoir 结果存入历史帧信息中。在下一帧时利用 motion vector
+找到像素的对应关系，复用对应像素的历史 reservoir。</p>
+<h4 id="visibility-reuse">2.4 Visibility Reuse</h4>
+<p>不幸的是，即使有无限数量的候选样本，RIS
+也无法达到无噪声的图像质量。尽管理论上，<span class="math inline">\(M\rightarrow \infin\)</span> 时，reservoir
+样本的分布趋向于 target PDF <span class="math inline">\(\hat{p}\)</span>，但 <span class="math inline">\(\hat{p}\)</span>
+并没有完美采样渲染方程的被积函数。因为，在实际中，<span class="math inline">\(\hat{p}\)</span> 通常设置为了无阴影的 path
+contribution，当 <span class="math inline">\(M\)</span> 不断增大时，由于
+visibility 项噪声会越来越明显，并且 visibility
+噪声会表现的非常严重。论文为了解决这一问题，同样对 visibility
+进行复用。</p>
+<p>在进行 spatial reuse 或者 temporal reuse 之前，先<strong>对每个像素的
+reservoir 选择的样本 <span class="math inline">\(y\)</span> 进行
+visibility 评估。如果 <span class="math inline">\(y\)</span>
+被遮挡，则丢弃该
+reservoir，即被遮挡的样本不会传递给其相邻像素。</strong>visibility
+评估需要对当前像素向复用的 reservoir 样本发射 shadow ray。</p>
+<h4 id="完整算法描述">2.5 完整算法描述</h4>
+<p>将上述过程全部考虑进来，得到完整的算法流程：</p>
+<ol type="1">
+<li>首先为每个像素生成 <span class="math inline">\(M\)</span> 个 light
+candidates，进行重采样，选出最终的样本</li>
+<li>对选出的样本进行 visibility 测试，从中丢弃掉被遮挡的样本</li>
+<li>结合每个像素的 reservoir 和上一帧的对应像素的 reservoir</li>
+<li>执行 <span class="math inline">\(n\)</span> 次空间复用迭代，利用附近
+<span class="math inline">\(k\)</span> 个像素的 reservoirs</li>
+</ol>
+<p>算法伪代码如下所示：</p>
+<p><a name="Algo 5"></a></p>
+<p><img src="/images/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting.assets/image-20220717215954040.png" alt="image-20220717215954040" style="zoom:50%;"></p>
+<h2 id="eliminating-bias-in-multi-distribution-ris">Eliminating Bias in
+Multi-Distribution RIS</h2>
+<p>虽然上一部分引入复用样本，提升了图片质量，但由于每个像素都具有不同的积分区域和
+target
+PDF，复用会引入潜在的偏差，导致蒙特卡洛积分成为有偏估计。下面通过分析
+RIS 权重，推导出偏差的源头。这里假设所有的候选样本都来自于同一源分布
+<span class="math inline">\(p\)</span> 。</p>
+<h3 id="分析-ris-权重">1. 分析 RIS 权重</h3>
+<p><span class="math inline">\(\eqref{1-sample RIS}\)</span> 式的
+1-sample RIS 可以重写为： <span class="math display">\[
+\langle
+L\rangle^{1,M}_{RIS}=f(y)\cdot\left(\frac{1}{\hat{p}(y)}\frac{1}{M}\sum\limits^M_{j=1}\mathrm{w}(x_j)\right)=f(y)\mathrm{W}(\boldsymbol{x},z)
+\tag{9}\label{regroup 1-sample RIS}
+\]</span> 其中 <span class="math inline">\(\boldsymbol{x}=\{x_1,x_2,\cdots,x_M\}\)</span>，source
+PDF 的 <span class="math inline">\(M\)</span> 次独立采样；<span class="math inline">\(\textup{W}\)</span> 是 RIS 选出的样本 <span class="math inline">\(y\equiv x_z\)</span>
+对应的权重，挑选过程是随机，可知是个随机变量。</p>
+<blockquote>
+<p>理解 <span class="math inline">\(y\)</span> 与 <span class="math inline">\((\boldsymbol{x},z)\)</span> 以及 <span class="math inline">\(\textup{W}(\boldsymbol{x},z)\)</span>：首先 <span class="math inline">\((\boldsymbol{x},z)\)</span> 表示从 <span class="math inline">\(M\)</span> 次独立采样得到的 <span class="math inline">\(M\)</span> 个样本中，随机挑选出第 <span class="math inline">\(z\)</span> 个。因此 <span class="math inline">\(\boldsymbol{x}\)</span> 是 <span class="math inline">\(M\)</span> 个独立同分布于 source PDF 的 <span class="math inline">\(M\)</span> 维随机变量，有 <span class="math inline">\(p(\boldsymbol{x})=\prod\limits^M_{i=1}p_i(x_i)\)</span>；<span class="math inline">\(z\)</span> 服从一个离散分布，有 <span class="math inline">\(\eqref{discrete PDF}\)</span> 描述的条件形式。其次
+<span class="math inline">\(y\)</span> 是 RIS
+算法得到的样本，虽然采样过程已知，但 <span class="math inline">\(y\)</span> 的真实概率密度没有解析形式。但根据 RIS
+算法，<span class="math inline">\(y\)</span> 与 <span class="math inline">\((\boldsymbol{x},z)\)</span> 有关，但对于一个样本
+<span class="math inline">\(y\)</span>，会有很多种 <span class="math inline">\((\boldsymbol{x},z)\)</span> 的组合，例如 <span class="math inline">\(x_1=y\)</span>，<span class="math inline">\((x_2,\cdots,x_M)\)</span> 随机选择，同理也可以有
+<span class="math inline">\(x_2=y\)</span>，因为 <span class="math inline">\(\boldsymbol{x}\)</span> 是 <span class="math inline">\(M\)</span> 次独立采样，每次采样都有可能得到样本
+<span class="math inline">\(y\)</span>。</p>
+<p>对于 <span class="math inline">\(\textup{W}\)</span>，虽然文中公式形式为 <span class="math inline">\(\textup{W}(\boldsymbol{x},z)\)</span>，但实际意义应该是，RIS
+采样得到样本 <span class="math inline">\(y\)</span> 时对应的权重，即
+<span class="math inline">\(x_z=y\)</span> 的权重。换句话说，给定样本
+<span class="math inline">\(y\)</span>
+时的权重，<strong>权重更精确的形式</strong>是： <span class="math display">\[
+\mathop{\textup{W}}\limits_{x_z=y}(\boldsymbol{x},z)=\frac{1}{\hat{p}(y)}\frac{1}{M}\sum\limits^M_{j=1}\textup{w}(x_j)
+\tag{10} \label{RIS weight}
+\]</span> 即在 <span class="math inline">\(x_z=y\)</span>
+的条件下的权重。</p>
+</blockquote>
+<p>首先猜想如何使得 RIS 估计量是个无偏估计？虽然 <span class="math inline">\(y\)</span> 的真实分布是未知的，但根据 <span class="math inline">\(\eqref{IS MC}\)</span> 式的重要性采样理论，这里的
+<span class="math inline">\(\textup{W}(\boldsymbol{x},z)\)</span>
+需要充当 <span class="math inline">\(1/p(y)\)</span>
+的作用才能得到无偏估计，注意这里的 <span class="math inline">\(p(y)\)</span> 指的是 <span class="math inline">\(y\)</span> 的真实 PDF，而不是 source
+PDF，为了区分，我们重写为 <span class="math inline">\(p_y(y)\)</span>。
+如 <span class="math inline">\(\eqref{RIS weight}\)</span>
+式描述，对于给定的 RIS 样本 <span class="math inline">\(y\)</span>，可能有很多种 <span class="math inline">\((\boldsymbol{x},z)\)</span>，因此 <span class="math inline">\(\textup{W}(\boldsymbol{x},z)\)</span>
+是一个随机变量，要想使得 RIS 无偏，则需要 <span class="math inline">\(\textup{W}(\boldsymbol{x},z)\)</span> 的期望值等于
+<span class="math inline">\(1/p_y(y)\)</span>。</p>
+<p><a href="#Algo%204">算法 4</a> 中将多个 reservoir 整合为一个新的
+reservoir 时，每个 reservoir 的权重根据 <span class="math inline">\(\eqref{discrete PDF}\)</span> 理论上应为 <span class="math inline">\(\Large \frac{\hat{p}(y)}{p_y(y)}\)</span>，而算法
+4 使用的近似为 <span class="math inline">\(\hat{p}(y)\cdot
+\textup{W}\)</span>，这里则是用了 <span class="math inline">\(\textup{W}\)</span> 作为 <span class="math inline">\(1/p_y(y)\)</span> 的估计量。额外的 <span class="math inline">\(M\)</span> 则是为了对不同候选样本数量的 reservoir
+进行的加权。</p>
+<h3 id="biased-ris">2. Biased RIS</h3>
+<p>我们将第 <span class="math inline">\(i\)</span>
+次采样所服从分布的概率密度写为 <span class="math inline">\(p_i(x_i)\)</span>，候选样本的联合概率密度有 <span class="math display">\[
+p(\boldsymbol{x})=\prod\limits^M_{i=1}p_i(x_i)
+\]</span> <span class="math inline">\(\eqref{discrete PDF}\)</span>
+式中候选样本的概率密度重写为 <span class="math display">\[
+p(z|\boldsymbol{x})=\frac{\textup{w}_z(x_z)}{\sum^M_{i=1}\textup{w}_i(x_i)}
+\quad where \space \space
+\textup{w}_i(x_i)=\frac{\hat{p}(x_i)}{p_i(x_i)}
+\]</span> 候选样本与选取的样本索引 <span class="math inline">\(z\)</span> 的联合概率密度为 <span class="math display">\[
+p(\boldsymbol{x},z)=p(\boldsymbol{x})\cdot p(z\mid
+\boldsymbol{x})=\left(\prod\limits^M_{i=1}p_i(x_i)\right)\cdot
+\frac{\mathrm{w}_z(x_z)}{\sum^M_{i=1}\mathrm{w}_i(x_i)} \tag{11}
+\label{joint PDF}
+\]</span> 对于给定样本值 <span class="math inline">\(y\)</span>，可能有非常多的 <span class="math inline">\((\boldsymbol{x},z)\)</span> 组合，对于采样出值为
+<span class="math inline">\(y\)</span> 的样本 <span class="math inline">\(x_i\)</span> 要满足 <span class="math inline">\(p_i(y)=p(\boldsymbol{x},i)&gt;0\)</span>，因此所有可能情况有：
+<span class="math display">\[
+Z(y)=\{i\mid 1\leq i\leq M \wedge p_i(y)&gt;0 \} \tag{12} \label{all z}
+\]</span> 因此最终输出 <span class="math inline">\(y\)</span> 的 PDF
+可以由 <span class="math inline">\(\eqref{joint PDF}\)</span>
+的联合概率密度和 <span class="math inline">\(\eqref{all z}\)</span>
+的所有可能取值得到 <span class="math display">\[
+p_y(y)=\sum\limits_{i\in Z(y)}\underbrace{\int\cdots\int}_{M-1}
+p(\boldsymbol{x}^{i\rightarrow y},i) \space \underbrace{dx_1\cdots
+dx_M}_{M-1} \tag{13} \label{y PDF}
+\]</span> $p(^{iy},i) $ 是参照 <span class="math inline">\(\eqref{joint
+PDF}\)</span> 代入 <span class="math inline">\(z=i,x_i=y\)</span> 得到的
+<span class="math inline">\((x_1,\cdots,x_{i-1},y,x_{i+1},\cdots,x_M)\)</span>
+的联合概率密度，对每种可能取值下的联合概率密度求 <span class="math inline">\(y\)</span> 的边缘概率密度 <span class="math inline">\(p_i(y)\)</span>，并求和得到 <span class="math inline">\(p_y(y)\)</span>。</p>
+<p>验证 RIS 是否无偏，需要知道 <span class="math inline">\(\eqref{RIS
+weight}\)</span> 中描述的权重的期望是否为 <span class="math inline">\(1/p_y(y)\)</span>，求解其期望如下： <span class="math display">\[
+\mathop{\mathbb{E}}\limits_{x_z=y}\left[\textup{W}(\boldsymbol{x},z)\right]=\frac{1}{p_y(y)}\frac{|Z(y)|}{M}
+\tag{14} \label{weight expectation}
+\]</span> 由 <span class="math inline">\(\eqref{all z}\)</span>
+可知，<strong>只有在所有候选样本分布都不为 0 时，上式的权重期望才为
+<span class="math inline">\(1/p_y(y)\)</span>，RIS
+才是无偏的</strong>。</p>
+<p>如果部分积分区域上的 source PDF 为 0，则有 <span class="math inline">\(\large\frac{|Z(y)|}{M} &lt; 1\)</span>，
+此时，重要性采样的 inverse PDF
+会偏小，积分结果会偏小，带来能量损失。</p>
+<h3 id="unbiased-ris">3. Unbiased RIS</h3>
+<p>上一节给出了 RIS 有偏的情况，即会有部分样本的 source PDF 为
+0。这是由于 visibility 项导致的，我们在复用其他像素的 reservoir
+时，并没有考虑这些 reservoir 样本是否对当前像素可见。同样，在执行 <a href="#Algo%203">算法 3</a> streaming RIS 时，会根据 shadow ray
+丢弃掉部分不可见候选样本，但在复用阶段，这些被丢弃的样本可能对当前像素是可见的，这就损失了部分能量。</p>
+<p>因此若想得到无偏 RIS 则需要对 <span class="math inline">\(\eqref{RIS
+weight}\)</span> 和 <span class="math inline">\(\eqref{weight
+expectation}\)</span> 的候选样本的总数 <span class="math inline">\(M\)</span>
+进行调整，调整为当前像素可见的候选样本总数，设置 <span class="math inline">\(m(x_z)=\frac{1}{M}\)</span>，新的权重及其期望形式为
+<span class="math display">\[
+\begin{align}
+\mathop{\textup{W}}\limits_{x_z=y}(\boldsymbol{x},z)&amp;=\frac{1}{\hat{p}(x_z)}\left[m(x_z)\sum\limits^M_{j=1}\textup{w}(x_j)\right]
+\\
+\mathop{\mathbb{E}}\limits_{x_z=y}\left[\textup{W}(\boldsymbol{x},z)\right]&amp;=\frac{1}{p_y(y)}\sum\limits_{i\in
+Z(y)}m(x_z)
+\end{align}
+\]</span> 因此当 <span class="math inline">\(\sum\limits_{i\in
+Z(y)}m(x_z)=1\)</span> 时，RIS 为无偏估计。如何保证这一条件？</p>
+<h3 id="a-practical-algorithm-for-unbiased-reuse">4. A Practical
+Algorithm for Unbiased Reuse</h3>
+<p>本文使用光源分布作为 source PDF，候选样本以及选出的 reservoir
+样本都是光源面上一点。并且对于直接光照采样，只会采样着色点可见光源，即
+<span class="math inline">\(\eqref{weight expectation}\)</span>
+中使用的候选样本分布都不为
+0，因此对于初始候选样本重采样的过程是无偏的。但对于reservoir
+重用过程，新的 reservoir 的 source PDF 变成了，每个 reservoir
+样本的分布，这个是未知的，因此重用过程的 source PDF
+可能互不相同。重用过程引入 bias 的原因是：尽管复用 reservoir
+对其像素可见，但对于当前像素可能不可见，这就导致了新 reservoir 的部分
+source PDF 为 0，为 <span class="math inline">\(\eqref{weight
+expectation}\)</span> 引入了 bias。</p>
+<p>论文中提出一种无偏 RIS 算法，该算法基于一种观察：尽管复用 reservoir
+样本 PDF (即新 reservoir 的 source
+PDF)不可知，但当样本对当前像素不可见时，其 PDF 为 0。因此可以在复用
+reservoir 样本之前，先进行 visibility 测试，如果不可见，设置其 PDF 为
+0，即丢弃掉该样本，也就是 visibility
+reuse。相比有偏算法，无偏算法开销很大，因为需要对每个复用 reservoir
+样本发射一条 shadow ray。</p>
+<h2 id="design-and-implementation">Design and Implementation</h2>
+<p>作者为有偏与无偏算法选用不同的参数配置，以达到两种算法的开销近似。</p>
+<p><strong><span class="math inline">\(M=32\)</span>
+个初始候选样本的生成</strong>：根据三角面片发光的 power
+重要性采样选择一个三角形，然后在三角形上均匀采样一个点 <span class="math inline">\(x\)</span>，即 source PDF <span class="math inline">\(p(X)\propto
+L_e(x)\)</span>。如果有环境光贴图，那么 25%
+的候选样本由重要性采样环境光贴图生成。重要性采样发光三角形与环境光贴图都是离散采样，采用
+alias table <a href="#%5B2%5D">[2]</a>。同时，作者也测试了通过预计算为场景的发光三角形生成
+VPL 集合，虽然能够提高性能，但有 visual artifact。</p>
+<p><strong>Target PDF</strong>：在重采样步骤中，需要 target PDF
+对选出的样本进行加权，作者使用 unshadowed path contribution 作为 target
+PDF，即 <span class="math inline">\(\hat{p}\propto \rho\cdot L_e\cdot
+G\)</span>。作者为场景所有几何使用统一的材质，Lambertian diffuse 和
+dielectric GGX microfacet
+。而对于复杂的材质模型，为每个候选样本计算会更耗时。</p>
+<p><strong>Neighbor Selection</strong>：对于 Spatial Reuse，在 30-pixel
+半径范围内采样 <span class="math inline">\(k\)</span>
+个像素进行复用，无偏选用 <span class="math inline">\(k=3\)</span>，有偏选用 <span class="math inline">\(k=5\)</span>。对于 Temporal Reuse，则使用 motion
+vector 找到历史帧对应的像素。</p>
+<p><strong>Biased RIS
+降低偏差</strong>：对于有偏算法，重用来自不同几何/材质的像素会增加偏差，因此作者使用一种简单的启发式策略拒绝这部分像素。比较重用像素与当前像素的到相机距离、normal
+夹角，拒绝超过预设阈值的像素(10% 当前像素的深度和 25°)。</p>
+<p><strong>Evaluated Sample Count</strong>：对于 <a href="#Algo%205">算法 5</a> ，每个像素存储 <span class="math inline">\(N\)</span> 个 reservoir，无偏算法采用 <span class="math inline">\(N=1\)</span>，有偏算法采用 <span class="math inline">\(N=4\)</span>。</p>
+<p><strong>Reservoir storage and temporal
+weighting</strong>：每个像素只存储选出的样本 <span class="math inline">\(y\)</span> 及其权重 <span class="math inline">\(W\)</span>，候选样本的数量 <span class="math inline">\(M\)</span>。对于 temporal
+reuse，对当前像素产生贡献的候选样本数量会无限制增加，因为每一帧都结合了历史帧的
+reservoir。在重采样过程中，这样会导致 temporal sample
+加权高度不成比例，作者将历史帧的候选样本数量限制在当前帧 <span class="math inline">\(20\cross M\)</span>
+内，这样就限制了时序信息的影响。</p>
+<h2 id="reference">Reference</h2>
+<p><a name="[1]">[1]</a> Benedikt Bitterli, Chris Wyman, Matt Pharr,
+Peter Shirley, Aaron Lefohn, and Wojciech Jarosz. 2020. Spatiotemporal
+reservoir resampling for real-time ray tracing with dynamic direct
+lighting. <i>ACM Trans. Graph.</i> 39, 4, Article 148 (August 2020), 17
+pages. DOI:https://doi.org/10.1145/3386569.3392481</p>
+<p><a name="[2]">[2]</a> Alastair J Walker. 1974. New fast method for
+generating discrete random numbers with arbitrary frequency
+distributions. Electronics Letters 10, 8 (1974), 127–128.</p>
+<h2 id="appendix">Appendix</h2>
+<h3 id="重要性采样为何要到-resample-importance-sampling">1.
+<a name="App 1">重要性采样为何要到 Resample Importance Sampling</a></h3>
+<p>蒙特卡洛积分估计理论上是进行越多的采样次数，越接近
+groud-truth，但实际中要限制开销，只能以有限的采样次数来进行积分估计。因此，采样分布如果能够更倾向于采样被积函数较重要的区域，则会更快达到收敛，这就是重要性采样
+(IS) 的思想。<span class="math inline">\(\eqref{IS MC}\)</span>
+式描述的重要性采样(IS)是蒙特卡洛积分的最简单的无偏估计，因为 IS
+只采样了一种分布，例如 cosine-weighted sample hemisphere
+就是根据渲染方程 cosine 项的特征得到的采样方法。</p>
+<p>但通常渲染方程被积函数包含多项，如 <span class="math inline">\(\eqref{simple render equation}\)</span> 中的 <span class="math inline">\(\rho,L_e,G\)</span> 等。于是又有了，<span class="math inline">\(\eqref{MIS MC}\)</span>
+式描述的多重重要性采样，MIS
+使用了多种采样策略，每种采样策略都进行了一次重要性采样，最后将多次重要性采样结合在一起。虽说，MIS
+考虑了多种分布，但其估计量形式相当于是<strong>对多种分布的线性组合</strong>，而对于渲染方程而言，其被积函数是多项的乘积形式，因此不能更好地采样被积函数的重要性区域。</p>
+<p>对于多种分布的乘积形式，是无法直接采样的。但可以使用 Resample
+Importance Sampling(RIS) <span class="math inline">\(\eqref{1-sample
+RIS}\)</span> 来近似成比例地采样多种分布乘积形式。</p>
+<h3 id="ris-权重期望">2. RIS 权重期望</h3>
+<p><span class="math display">\[
+\begin{align}
+\mathop{\mathbb{E}}\limits_{x_z=y}\left[\textup{W}(\boldsymbol{x},z)\right]&amp;=\underbrace{\int
+\cdots \int}_M\frac{ \textup{W}(\boldsymbol{x},z,x_z=y)\cdot
+p(\boldsymbol{x},z,x_z=y)}{p_z(x_z=y) \space } \space dx_1\cdots dx_Mdz
+\\
+&amp;\overset{\eqref{y PDF}}{=}\sum\limits_{i\in
+Z(y)}\underbrace{\int\cdots\int}_{M-1} \frac{
+\textup{W}(\boldsymbol{x}^{i\rightarrow y},i)\cdot
+p(\boldsymbol{x}^{i\rightarrow y},i)}{p_y(y) } \space dx_1\cdots dx_M \\
+&amp;= \sum\limits_{i\in Z(y)} \frac{\underbrace{\int\cdots\int}_{M-1}
+\textup{W}(\boldsymbol{x}^{i\rightarrow y},i)\cdot
+p(\boldsymbol{x}^{i\rightarrow y},i)\space dx_1\cdots dx_M}{p_y(y)} \\
+&amp;= \frac{1}{p_y(y)}\cdot \sum\limits_{i\in Z(y)}
+\underbrace{\int\cdots\int}_{M-1}
+\textup{W}(\boldsymbol{x}^{i\rightarrow y},i)\cdot
+p(\boldsymbol{x}^{i\rightarrow y},i)\space dx_1\cdots dx_M \\
+&amp;\overset{代入 \eqref{RIS weight},\eqref{joint
+PDF}}{=}  \frac{1}{p_y(y)}\sum\limits_{i\in Z(y)}\int\cdots\int
+\left(\frac{1}{\hat{p}(x_i)}\frac{1}{M}\sum\limits^M_{j=1}\textup{w}(x_j)\right)
+\left(\prod\limits^M_{j=1}p_j(x_j)\right)
+\frac{\textup{w}_i(x_i)}{\sum^M_{j=1}\textup{w}_j(x_j)} \space
+dx_1\cdots dx_M \\
+&amp;= \frac{1}{p_y(y)}\sum\limits_{i\in Z(y)}\int\cdots\int
+\left(\frac{1}{\hat{p}(x_i)}\frac{1}{M}\right)
+\left(\prod\limits^M_{j=1}p_j(x_j)\right) \textup{w}_i(x_i) \space
+dx_1\cdots dx_M \\
+&amp;= \frac{1}{p_y(y)}\sum\limits_{i\in
+Z(y)}\left(\frac{p_i(x_i)}{\hat{p}(x_i)}\frac{\textup{w}_i(x_i)}{M}\underbrace{\int\cdots\int
+\prod\limits^M_{j\neq i}p_j(x_j) \space dx_1\cdots dx_M}_1\right) \\
+&amp;=\frac{1}{p_y(y)}\sum\limits_{i\in
+Z(y)}\left(\frac{p_i(x_i)}{\hat{p}(x_i)}\frac{\textup{w}_i(x_i)}{M}\right)
+\\
+&amp;= \frac{1}{p_y(y)}\sum\limits_{i\in Z(y)}\frac{1}{M} \\
+&amp;= \frac{1}{p_y(y)}\frac{|Z(y)|}{M}
+\end{align}
+\]</span></p>
+]]></content>
+      <categories>
+        <category>Paper Notes</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Scene Graph and Draw Call Grouping Strategy</title>
+    <url>/2022/07/16/Render%20Engine/Scene%20Graph%20and%20Draw%20Call%20Grouping%20Strategy/</url>
+    <content><![CDATA[<h3 id="summary">Summary</h3>
+<p>本文介绍了表示场景的 Scene Graph ，以及场景加载过程。基于 Scene Graph
+组织 draw call 的策略。</p>
+<h3 id="scene-graph">Scene Graph</h3>
+<p>Scene Graph
+表示场景中物体的层级结构，是场景物体的组织形式。在本渲染器中，Scene
+Graph
+主要由表示层级结构的基类<code>UltraNode</code>与组织场景物体的基类<code>SceneObject</code>组成。</p>
+<h4 id="场景层级结构">1. 场景层级结构</h4>
+<p><code>UltraNode</code>的子类<code>SceneNode</code>构建场景中的树形层级结构中的节点。除了表示层级结构，节点主要功能之一是支持变换，其管理的变换信息（旋转、平移、缩放）有：</p>
+<ul>
+<li>相对于父节点坐标系的局部变换，对应成员有<code>mRelativePos</code>、<code>mRelativeRot</code>、<code>mRelativeScale</code></li>
+<li>相对于根节点坐标系的世界变换，对应成员有<code>mStackToRootPos</code>、<code>mStackToRootRot</code>、<code>mStackToRootScale</code>
+以及将旋转、平移、缩放组合一起的变换矩阵<code>mStackToRootTransform</code></li>
+</ul>
+<p><strong>变换的更新逻辑</strong>：节点提供变换接口，如
+translate、rotate、scale
+等，这些接口都提供参数来表示此次变换相对于哪个坐标系，最后都会改变局部变换信息。下面以
+rotate 为例说明，假设旋转参数 rot，相对坐标系为 relative：</p>
+<ul>
+<li><p>relative 是局部坐标系：mRelativeRot 是从 local 到 parent
+的四元数旋转，因此先在 local space 应用 rot，有 <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">mRelativeRot *= rot</span><br></pre></td></tr></table></figure></p></li>
+<li><p>relative 是父节点坐标系：因此先应用 mRelativeRot (local 到
+parent)，有 <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">mRelativeRot = rot * mRelativeRot;</span><br></pre></td></tr></table></figure></p></li>
+<li><p>relative 是世界坐标系：因此先应用 local 到 world 的变换，再应用
+rot，再 world 到 local 的变换，有</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">mRelativeRot = mRelativeRot * glm::<span class="built_in">inverse</span>(localToWorldRot) * rot * localToWorldRot;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p><strong>世界变换</strong>相关成员的更新在其对应 GetXxx
+函数中，如果检测到局部变换发生变化或者父节点局部变换发生变化时进行重新计算。</p>
+<h4 id="场景物体的组织">2. 场景物体的组织</h4>
+<p><code>SceneObject</code> 的子类组织场景中的物体，如
+mesh、光源、相机等。<code>SceneObject</code> 需要将物体 attach
+到场景的节点中才会被渲染。目前实现的有组织 mesh 数据的
+<code>MeshEntity</code>，表示投影相机的 <code>FrustumObject</code>。</p>
+<p><strong>MeshEntity</strong>：该类构建一个模型数据，由继承自
+<code>RenderableInterface</code> 的 <code>PrimitiveEntity</code>
+基本单元组成，表示使用一种材质的子 mesh。在场景加载过程中划分成
+PrimitiveEntity，在渲染时通过 SceneManager 收集。</p>
+<p><strong>FrustumObject</strong>：相机的父类，一共有 Orthogonal 和
+Perspective
+两种相机。其包含了投影变换的信息，而相机的旋转、平移、缩放等信息由其
+attach 到的场景节点表示，注意相机的 view transform
+表示从世界到相机空间的变换，而其 attach 到的节点的世界变换为从 local
+到世界的变换，local 即相机空间，因此求逆得到 view
+transform。相机实现了两种操作方式，ORBIT 与 FPS，在
+<code>CameraMovement</code> 类中：</p>
+<ul>
+<li><p>ORBIT：以目标为中心，根据鼠标操作进行旋转，旋转限制
+lock-y，即左右旋转时永远绕世界坐标系 y 轴，旋转过程如下，
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="type">float</span> dist = <span class="built_in">GetDistToTarget</span>();	<span class="comment">// 相机离目标距离</span></span><br><span class="line"><span class="comment">// 将相机放置目标位置</span></span><br><span class="line">mCamera-&gt;<span class="built_in">GetParentNode</span>()-&gt;<span class="built_in">SetRelativePosition</span>(mTargetCenter + mOffset);</span><br><span class="line"><span class="comment">// 相对于世界坐标系 y 轴旋转</span></span><br><span class="line">mCamera-&gt;<span class="built_in">GetParentNode</span>()-&gt;<span class="built_in">Yaw</span>(mouseMotion.x * rotSpeed.x, TransformSpace::TRANS_WORLD);	<span class="comment">// y</span></span><br><span class="line"><span class="comment">// 相对于局部坐标系 x 轴旋转</span></span><br><span class="line">mCamera-&gt;<span class="built_in">GetParentNode</span>()-&gt;<span class="built_in">Pitch</span>(mouseMotion.y * rotSpeed.y, TransformSpace::TRANS_LOCAL);<span class="comment">// x</span></span><br><span class="line"><span class="comment">// 平移保持与目标的距离</span></span><br><span class="line">mCamera-&gt;<span class="built_in">GetParentNode</span>()-&gt;<span class="built_in">Translate</span>(<span class="built_in">Vector3f</span>(<span class="number">0.0f</span>, <span class="number">0.0f</span>, <span class="number">1.0f</span>) * dist, 		</span><br><span class="line">                           		TransformSpace::TRANS_LOCAL);</span><br></pre></td></tr></table></figure></p></li>
+<li><p>FPS：第一人称视角的运动方式，旋转限制 lock-y</p></li>
+</ul>
+<h4 id="场景加载">3. 场景加载</h4>
+<p>场景加载由 <code>AssetLoader</code> 的子类完成，基于第三方库
+gltf_loader 或 assimp
+实现加载接口。场景节点按照层级结构进行创建，并加载其变换信息。节点下的
+mesh 数据根据材质种类创建为不同的
+<code>PrimitiveEntity</code>，材质的加载包括材质参数的加载以及贴图资源的加载，压缩贴图
+DDS 使用 gli 库，其他贴图使用 FreeImage。</p>
+<p>由于还没做好场景 UI
+界面，因此临时实现将场景层级信息输出到文件进行查看。打开宏
+<code>IS_LOG_HIERARCHY_SCENE</code>，场景的层级节点信息会 log 到文件
+"intermediate/hierarchy_log.txt"，部分层级如下所示：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">|-vk_root</span><br><span class="line">|**[trans: <span class="comment">// ...变换矩阵省略</span></span><br><span class="line">|**[<span class="built_in">pos</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">scale</span>(<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>), <span class="built_in">rot</span>(<span class="number">0</span>,<span class="number">-0</span>,<span class="number">0</span>)</span><br><span class="line">|</span><br><span class="line">|----|-scene_root</span><br><span class="line">|    |**[trans: <span class="comment">// ...变换矩阵省略</span></span><br><span class="line">|    |**[<span class="built_in">pos</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">scale</span>(<span class="number">0.0128205</span>,<span class="number">0.0128205</span>,<span class="number">0.0128205</span>), <span class="built_in">rot</span>(<span class="number">-90</span>,<span class="number">0</span>,<span class="number">0</span>)</span><br><span class="line">|    |</span><br><span class="line">|    |----|<span class="number">-5</span>a174a9db4f94280a298e075478d761a.fbx</span><br><span class="line">|         |**[trans: <span class="comment">// ...变换矩阵省略</span></span><br><span class="line">|         |**[<span class="built_in">pos</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">scale</span>(<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>), <span class="built_in">rot</span>(<span class="number">90</span>,<span class="number">-0</span>,<span class="number">0</span>)</span><br><span class="line">|         |</span><br><span class="line">|         |----|-RootNode</span><br><span class="line">|              |**[trans: <span class="comment">// ...变换矩阵省略</span></span><br><span class="line">|              |**[<span class="built_in">pos</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">scale</span>(<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>), <span class="built_in">rot</span>(<span class="number">0</span>,<span class="number">-0</span>,<span class="number">0</span>)</span><br><span class="line">|              |</span><br><span class="line">|              |----|-Diorama</span><br><span class="line">|                   |**[trans: <span class="comment">// ...变换矩阵省略</span></span><br><span class="line">|                   |**[<span class="built_in">pos</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">scale</span>(<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>), <span class="built_in">rot</span>(<span class="number">0</span>,<span class="number">-0</span>,<span class="number">0</span>)</span><br><span class="line">|                   |               </span><br><span class="line">|                   |----|-Floor_Junk_Cluster_01_Clip2</span><br><span class="line">|                        |**[trans: <span class="comment">// ...变换矩阵省略</span></span><br><span class="line">|                        |**[<span class="built_in">pos</span>(<span class="number">-3.94234</span>,<span class="number">0</span>,<span class="number">8.75777</span>), <span class="built_in">scale</span>(<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>), <span class="built_in">rot</span>(<span class="number">0</span>,<span class="number">21.1553</span>,<span class="number">0</span>)</span><br><span class="line">|                        |</span><br><span class="line">|                        |----|-Floor_Junk_Cluster_01_Clip2_Metal_Aluminium_0</span><br><span class="line">|                             |**[trans: <span class="comment">// ...变换矩阵省略</span></span><br><span class="line">|                             |**[<span class="built_in">pos</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">scale</span>(<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>), <span class="built_in">rot</span>(<span class="number">0</span>,<span class="number">-0</span>,<span class="number">0</span>)</span><br><span class="line">|                              </span><br><span class="line">|----|-DefaultCamera</span><br><span class="line">     |**[trans: <span class="comment">// ...变换矩阵省略</span></span><br><span class="line">     |**[<span class="built_in">pos</span>(<span class="number">0</span>,<span class="number">0</span>,<span class="number">0</span>), <span class="built_in">scale</span>(<span class="number">1</span>,<span class="number">1</span>,<span class="number">1</span>), <span class="built_in">rot</span>(<span class="number">0</span>,<span class="number">-0</span>,<span class="number">0</span>)</span><br></pre></td></tr></table></figure>
+<p><strong>Mesh 数据的组织方式</strong>：目前只有静态
+mesh，即不会发生变形的 mesh。在加载资源过程中，按照如下方式组织 mesh
+数据：</p>
+<ul>
+<li>将所有 mesh 数据加载到连续区域的 buffer 中。目前所有 mesh
+共享同一连续区域，之后如果支持动态 mesh 后，可能会根据 mesh
+类型划分。</li>
+<li>mesh 的数据结构：不直接包含 mesh 原数据，而是保存其 mesh 数据在
+buffer 区域中的位置描述，由 <code>PrimitiveEntity</code> 持有，
+<ul>
+<li>buffer location: mesh 数据所在 buffer 的起始地址</li>
+<li>offset: mesh 数据在 buffer 中相对于其实地址的偏移量</li>
+<li>size: mesh 数据的大小</li>
+</ul></li>
+</ul>
+<h3 id="draw-call-组织策略">Draw Call 组织策略</h3>
+<p>对于一个复杂场景而言，具有很多种类的材质、mesh，往往需要很大量的 draw
+call 进行绘制，但 draw call
+的固有开销又限制了实时条件下硬件能支持的最大数量。在 Nvidia 有关 Draw
+Call 优化 <a href="#%5B1%5D">[1]</a> 的演讲中有提到，draw call
+会有固有的驱动层的参数验证开销，这在当时是最大的瓶颈，而这种验证开销是由管线状态改变导致的，下面是不同管线状态改变相对开销对比：</p>
+<p><img src="/images/Scene Graph and Draw Call Grouping Strategy.assets/image-20220716235751202.png" alt="管线状态开销示意" style="zoom:30%;"></p>
+<p>可以看出 render target、shader、texture 的开销依次降低，想要支持的
+draw call 数量更大，就要减少这些状态改变。其中提高一些策略：</p>
+<ul>
+<li>使用 texture array 可以一次性配置好所有 texture，减少 texture
+binding 的改变</li>
+<li>使用 SSBO 存储整个场景的 uniform 数据，减少 UBO binding 的改变</li>
+<li>使用 indirect draw，可以一次性下发一批 draw
+call，让验证一次完成，减少 draw call 的验证开销</li>
+</ul>
+<p>下面介绍上述 draw call 策略的实现</p>
+<h4 id="绘制时由-mesh-数据结构到-render-proxy">1. 绘制时由 mesh
+数据结构到 render proxy</h4>
+<p>绘制不直接接触 mesh 数据结构，而是使用为每个 render object 构建的
+render proxy。在初始化场景渲染信息时，遍历场景结点的 render object 创建
+render proxy，并加入场景的 render proxy list 中。一个 render object
+可能是一个完整的物体，例如车，而车可能包含多个使用不同材质的
+mesh。render proxy 对其拥有的所有 mesh 进行组织，根据材质不同，划分出
+meshBatch。每个 meshBatch 保持的是 render object 的一种材质的所有 mesh
+信息。因此一个 render object 的 render proxy 包含：</p>
+<ul>
+<li>&lt;mat0, meshBatch0&gt;，&lt;mat1, meshBatch1&gt;，... ...</li>
+<li>其所属场景节点的 <code>node ID</code></li>
+<li><code>proxyIndex</code>：render proxy 在场景的 render proxy list
+的索引位置</li>
+</ul>
+<p>来自相同的场景结点的 render proxy 可以使用同一个 UBO
+传递变换矩阵。不同场景结点的 render proxy具有不同的变换，需要使用不同的
+UBO。而不同材质又需要不同的材质 UBO、不同的 texture
+等等。如果按照最直接的 indexed draw call，不同材质、不同场景结点的
+render proxy 必须使用不同的 draw call，这会使得 draw call
+数量非常多。</p>
+<h4 id="将大量-render-proxy-组织到少量-render-group-中">2. 将大量 render
+proxy 组织到少量 render group 中</h4>
+<p>本渲染器使用 <code>MeshMaterialRenderGroup</code> 实现组织 draw call
+策略，根据开启的策略，将 render proxy 组织成 render group，一个 render
+group 即表示了一个 index draw call。下面介绍使用 SSBO、texture array
+来从所有的 render proxy 构建出场景的 render group 列表。</p>
+<h5 id="组织策略">2.1 组织策略</h5>
+<p><strong>Scene SSBO</strong>：对于场景节点变换矩阵等节点数据，使用
+SSBO 存储场景结点变换数据，存储位置为节点的 node ID。</p>
+<p><strong>Group Mat
+SSBO</strong>：对于不同材质的参数、贴图，如果材质可以合并（参数种类相同，贴图格式、大小相同），则合并到同一个
+render group。使用 SSBO 存储材质的参数，合并多个材质的贴图为 texture
+array。材质参数在 SSBO 中的位置为material index。每种材质贴图在 texture
+array 中的位置也需要一个索引。</p>
+<p><strong>Group Instance SSBO</strong>：由于一个场景节点可能会有多个
+render proxy，因此还需要使用一个 SSBO 来存储 render proxy 所使用的 node
+ID 与 material index，分别索引 Scene SSBO与Group Mat SSBO，获取 render
+proxy 的变换、材质数据。</p>
+<p>最后配置 render group 的 draw call 使得内置变量
+<code>gl_InstanceIndex</code> 能够索引 Group Instance SSBO，也就是
+render proxy 在场景的 render proxy 列表中的索引。</p>
+<h5 id="实现-render-group-的组织">2.2 实现 render group 的组织</h5>
+<p>经过场景中的所有 render proxy 得到很多材质和 meshBatch 的组合，例如
+&lt;mat0, meshBatch0&gt;，&lt;mat0, meshBatch1&gt; ，&lt;mat1,
+meshBatch0&gt;，&lt;mat1, meshBatch2&gt;
+等等。依次尝试将每个组合合并到现有 render group
+中，如果没有找到可以合并的 render group，则为该组合创建一个新的 render
+group。对于输入 mat+meshBatch 组合遍历现存的每个 render
+group，如果同时满足以下条件则可以合并：</p>
+<ul>
+<li>输入 mat+meshBatch 组合的材质种类是否与当前 render group
+的材质种类相同，不相同则不可合并。</li>
+<li>输入 mat+meshBatch 组合的材质贴图格式、大小等是否与当前 render group
+的材质相同，不相同则不可合并。</li>
+</ul>
+<p>当一个输入 mat+meshBatch 组合可以合并到目标 render group
+时，进行合并操作，为目标 render group 生成一个
+<code>group instance</code>：</p>
+<ul>
+<li><p>材质信息存入目标 render group 的材质列表中。该材质位于 render
+group 中的位置作为索引 material
+index。由于多个材质可能引用同一贴图，贴图在 texture array
+中的索引与材质索引可能不同，因此还需要存储不同贴图的索引，如 baseColor
+贴图索引、normal map 索引。以及存储材质参数，如 base color
+因子等。这些材质数据都存储在 <strong>Group Mat SSBO</strong>
+的一个元素中，如下例结构体：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">MaterialUniformBufferParams</span></span><br><span class="line">&#123;</span><br><span class="line">    Vector4f BaseColorFactor;</span><br><span class="line">    <span class="type">float</span> RoughnessFactor;</span><br><span class="line">    <span class="type">float</span> MetallicFactor;</span><br><span class="line">    <span class="type">float</span> OcculusionStrength;</span><br><span class="line"></span><br><span class="line">    <span class="type">uint32_t</span> BaseColorTexIndex;</span><br><span class="line">    <span class="type">uint32_t</span> OccuRoughMetalTexIndex;</span><br><span class="line">    <span class="type">uint32_t</span> NormalMapIndex;</span><br><span class="line">    <span class="type">uint32_t</span> EmissiveMapIndex;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+<li><p>meshBatch 信息存入目标 render group。如果已有相同的 meshBatch
+则为对应 group instance 增加一个 instance 数据，即输入的 meshBatch
+对应的 <code>&#123;node index、material index&#125;</code>。如果不存在相同的
+meshBatch，则为输入的 meshBatch 新增一个 group
+instance。这些信息都存储于 <strong>Group Instance SSBO</strong>
+的一个元素中，如下例结构体：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="keyword">struct</span> <span class="title class_">MeshInstanceData</span></span><br><span class="line">&#123;</span><br><span class="line">    <span class="type">uint32_t</span> NodeIndexInScene;</span><br><span class="line">    <span class="type">uint32_t</span> MatIndex;</span><br><span class="line">&#125;;</span><br></pre></td></tr></table></figure></li>
+<li><p>render group 的 group instance 创建完成，组织 draw call
+信息，得到有效的 <code>gl_InstanceIndex</code> ，用以索引 <strong>Group
+Instance SSBO</strong>。初始化 instanceOffset 为 0，按照 meshBatch 在
+render group 中的顺序，依次进行：</p>
+<ul>
+<li>当前 meshBatch 的 group instance 的数量作为 instanceCount，当前的
+instanceOffset 作为 firstInstance</li>
+<li>instanceOffset = instanceOffset+instanceCount</li>
+</ul></li>
+</ul>
+<p>经过以上步骤，可以通过 <code>gl_InstanceIndex</code> 索引
+<strong>Group Instance SSBO</strong>，得到当前绘制 mesh 对应的 node
+index 和 material index。node index 用来索引 <strong>Scene SSBO</strong>
+获取当前 mesh 对应的场景 node 数据，如 model to world 变换。material
+index 用来索引 <strong>Group Mat SSBO</strong> 得到当前 mesh
+对应的材质参数，以及材质贴图在 texture array 中的索引。</p>
+<h4 id="不同条件下的性能比较">3. 不同条件下的性能比较</h4>
+<p>本渲染器目前的场景比较简单：只有静态
+mesh，无实时交互，只有单线程，并且场景全部加载。因此直接使用 FPS
+进行性能比较。三个相关宏：</p>
+<ul>
+<li><p><code>IS_SHARE_VTX_IDX_BUFFER</code>：是否整个场景公用同一个
+index/vertex buffer</p></li>
+<li><p><code>IS_USING_MERGE_MATERIAL</code>：是否合并材质，使用 texture
+array</p></li>
+<li><p><code>IS_USING_INDIRECT_DRAW</code>：是否开启 indirect
+draw，</p></li>
+</ul>
+<p>测试场景一共创建了 170 个 mesh render proxies。</p>
+<ul>
+<li>关闭所有选项使用最直接的 index draw call：组织为 170 个 render
+group，每个 render group 需要一次 index draw call，FPS 为 65 左右</li>
+<li>只开启 <code>IS_SHARE_VTX_IDX_BUFFER</code> 使得 170 次 index draw
+call 都使用同一个 index/vertex buffer，FPS 无明显变化</li>
+<li>只开启 <code>IS_USING_MERGE_MATERIAL</code>，将材质可以合并的 mesh
+合并为一个 render group，一共得到 6 个 render group。每个 render group
+使用一次 index draw call，同时使用一个 index/vertex buffer，FPS 提高到
+142 左右
+<ul>
+<li>同时开启 <code>IS_USING_MERGE_MATERIAL</code> 和
+<code>IS_SHARE_VTX_IDX_BUFFER</code>，即 6 次 index draw call 共享同一个
+index/vertex buffer。FPS 无明显改变。</li>
+</ul></li>
+<li>只开启 <code>IS_USING_INDIRECT_DRAW</code>，这时
+IS_SHARE_VTX_IDX_BUFFER 也会同时开启。将所有 index draw call
+参数存到一个 indirect buffer 中，使用一次 indirect draw 将所有 index
+draw call 提交。因为没有合并材质，因此共生成 170 个 render group，即 170
+个 index draw call，每个 render group 在一个 indirect draw 中提交。FPS
+为 68 左右，比最直接的 index draw call
+有些许提高。本测试场景瓶颈在材质种类数量，而不在节点数量，因此不合并材质
+indirect draw 发挥不了作用</li>
+<li>同时开启 <code>IS_USING_INDIRECT_DRAW</code> 和
+<code>IS_USING_MERGE_MATERIAL</code>，一共生成 6 个 render group，即 6
+个 index draw call，在一次 indirect draw 中提交。FPS 为 650
+左右，相比于最直接的 index draw call，提升了 10
+倍。就算对于仅合并材质的情况，即使用 6 次 index draw call，也有将近 4.5
+倍提升。</li>
+</ul>
+<h3 id="reference">Reference</h3>
+<p><a name="[1]">[1]</a>
+https://developer.nvidia.com/content/how-modern-opengl-can-radically-reduce-driver-overhead-0</p>
+]]></content>
+      <categories>
+        <category>Render Engine</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Vulkan Render Design</title>
+    <url>/2022/07/16/Render%20Engine/Vulkan%20Render%20Design/</url>
+    <content><![CDATA[<h3 id="summary">Summary</h3>
+<p>本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。</p>
+<h3 id="vulkan-管线管理策略">Vulkan 管线管理策略</h3>
+<p>Vulkan 包含三种管线
+graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提
+OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API
+调用来进行切换的，属于 high-level 的 API 设计。而Vulkan 使用
+<strong>PSO(pipeline state object)</strong> 来描述管线状态，类型为
+<code>VkPipeline</code>，这个类型的对象需要用户自己创建。</p>
+<p>PSO 只是描述管线的各种状态，状态相同的管线可以使用同一个
+PSO，不相容的状态则需要创建新的 PSO。因此对于 PSO
+的管理采用将当前状态进行 hash 处理，如果存在当前状态 hash 的 PSO
+则直接使用，否则创建新的 PSO 并记录到 unordered_map 中。这部分工作由类
+<code>VulkanPipelineStateManager</code> 完成，目前的 hash
+算法只是简单的移位与异或，留待之后更改。</p>
+<p>创建 PSO 的 API 有三个，<a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateGraphicsPipelines.html"><code>vkCreateGraphicsPipelines</code></a>
+创建 graphics PSO，<a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateComputePipelines.html"><code>vkCreateComputePipelines</code></a>
+创建 compute PSO， <a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/vkCreateRayTracingPipelinesKHR.html"><code>vkCreateRayTracingPipelinesKHR</code></a>
+创建 raytracing PSO。创建 PSO 需要传入描述管线状态的结构体，管线状态的
+hash 也主要对这些结构体中的字段进行。另一个 cache
+参数，是允许用户将执行过程中创建的 PSO 保存到文件，然后下次启动加载到
+cache 参数中，Vulkan 可以通过 cache
+来减少创建过程中需要的底层开销，可以提高运行时帧数的稳定性。</p>
+<p>对于 PSO 的封装有类 <code>VulkanPipeline</code> 及其三个子类
+<code>VulkanGraphicsPipelineState</code>、<code>VulkanComputePipeline</code>
+以及 <code>VulkanRayTracingPipeline</code>。下面以 graphics PSO
+为例，介绍管线的创建流程。</p>
+<h3 id="graphics-pso-的创建">Graphics PSO 的创建</h3>
+<h4 id="vulkan-graphics-pipeline-介绍">1. Vulkan Graphics Pipeline
+介绍</h4>
+<p>创建 Vulkan Graphics PSO 的描述封装在结构体 <a href="https://www.khronos.org/registry/vulkan/specs/1.3-extensions/man/html/VkGraphicsPipelineCreateInfo.html"><code>VkGraphicsPipelineCreateInfo</code></a>
+中，下面简要介绍它的成员：</p>
+<ul>
+<li><code>VkPipelineShaderStageCreateInfo*</code> ：管线使用的 shader
+信息数组，每个元素包含使用的 shader
+对象(VkShaderModule)、入口函数、shader 阶段(vertex/fragment
+...)等。</li>
+<li><code>VkPipelineVertexInputStateCreateInfo*</code>：每个元素描述顶点包含的输入属性(vertex
+shader)，即
+location、binding、数据格式以及相对于顶点起始位置的偏移量。</li>
+<li><code>VkPipelineInputAssemblyStateCreateInfo</code>：描述图元数据的拓扑结构(VkPrimitiveTopology)，如<br>
+POINT_LIST、TRIANGLE_LIST 等。</li>
+<li><code>VkPipelineTessellationStateCreateInfo</code>：曲面细分阶段的配置参数，例如控制点数量</li>
+<li><code>VkPipelineViewportStateCreateInfo</code>：用来描述当前渲染的
+viewport 和 scissor 的区域，视口和裁剪可能变化较频繁，可以设置为 dynamic
+state，创建管线时不设置，在渲染前使用 command 动态设置。</li>
+<li><code>VkPipelineRasterizationStateCreateInfo</code>：描述光栅化阶段的配置参数，几何绘制模式(填充/线框)，正面的顶点环绕方向，剔除面(正面剔除还是背面剔除)。是否开启
+depth bias，对 depth buffer
+中的深度加上一个偏移量，可以在避免自遮挡时使用</li>
+<li><code>VkPipelineMultisampleStateCreateInfo</code>：描述光栅化阶段的采样数，1
+表示无超采样。</li>
+<li><code>VkPipelineDepthStencilStateCreateInfo</code>：描述是否开启深度测试、模板测试，以及深度测试的操作、模板测试的操作。</li>
+<li><code>VkPipelineColorBlendStateCreateInfo</code>：描述 frame buffer
+中每个 render target 的 blend 操作，包含 blend 参数、blend
+计算方式等。</li>
+<li><code>VkPipelineDynamicStateCreateInfo</code>：描述管线状态中哪些是可以使用
+command 指定的动态状态，其他则是创建管线时就确定的。</li>
+<li><code>VkPipelineLayout</code>：包含管线中着色器的输入资源描述</li>
+<li><code>VkRenderPass</code>：管线所使用的 render pass，包含了 render
+pass 的 render target 的描述。</li>
+</ul>
+<h5 id="vulkan-render-pass">1.1 Vulkan Render Pass</h5>
+<p>Vulkan Render Pass 也是一种描述，因此同样使用 hash
+方式进行自动创建，主要包含三部分：</p>
+<ul>
+<li>描述其使用到的所有 attachment 的描述
+<code>VkAttachmentDescription</code>，一个 attachment 即为一个 image
+view，用于访问 vulkan texture。进入 renderpass 之前、renderpass
+之内、renderpass 结束时的 image layout；加载与存储时的操作；attachment
+格式，采样数。</li>
+<li>描述其内部的 subpass，并且至少包含一个 subpass。每个 subpass
+描述包含其 color/resolve/depth attachment 的引用描述，即 framebuffer 中
+attachment index、image layout</li>
+<li>subpass 之间的依赖</li>
+</ul>
+<p>Vulkan Render Pass 特殊之处在于其是由 subpass
+来描述内部多个子阶段的，绘制指令也会被记录在一个当前激活的 subpass
+中。subpass 的设计是为了能够高效利用某些 tile-based 架构的移动端 GPU，即
+fragment shader 的执行是以 tile 为单位的，因此之后的 subpass
+可以直接读到上一个 subpass 写入 attachment 的数据，而不需要等到整个
+render pass 执行完。</p>
+<p><a href="#%5B1%5D">[1]</a> 以由两个 pass 组成的 deferred shading
+为例，第一个 pass 为了绘制 G-Buffer，第二个 pass 基于 G-Buffer
+进行光照计算，得到最终绘制结果。可以设置 render pass 包含两个
+subpass，第一个 subpass 绘制 G-Buffer，第二个 subpass 将第一个 subpass
+的 G-Buffer 作为
+<code>input attachment</code>，执行光照计算。流程如下述伪代码：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function">cmdBeginRenderPass</span></span><br><span class="line"><span class="function">	<span class="title">cmdBindPipeline</span><span class="params">(pipeline0)</span></span></span><br><span class="line"><span class="function">	... <span class="comment">// bind vertex/index buffer or descriptor set of shader resource</span></span></span><br><span class="line"><span class="function">	cmdDraw</span></span><br><span class="line"><span class="function">	cmdNextSubpass</span></span><br><span class="line"><span class="function">	<span class="title">cmdBindPipeline</span><span class="params">(pipeline1)</span></span></span><br><span class="line"><span class="function">	... <span class="comment">// bind vertex/index buffer or descriptor set of shader resource</span></span></span><br><span class="line"><span class="function">	cmdDraw</span></span><br><span class="line"><span class="function">cmdEndRenderPass</span></span><br></pre></td></tr></table></figure>
+<p>注意两个 subpass 使用的是两个 PSO，因为 geometry pass 的 shader 与
+deferred shading 的 shader，以及其 shader 输入肯定不同。在第二个 subpass
+使用到的 pipeline1 的 shader 则可以使用如下方式来声明 input
+attachment，</p>
+<figure class="highlight glsl"><table><tr><td class="code"><pre><span class="line"><span class="keyword">layout</span> (input_attachment_index = <span class="number">0</span>, set = <span class="number">0</span>, <span class="keyword">binding</span> = <span class="number">0</span>) <span class="keyword">uniform</span> subpassInput inputColor;</span><br><span class="line"><span class="keyword">layout</span> (input_attachment_index = <span class="number">1</span>, set = <span class="number">1</span>, <span class="keyword">binding</span> = <span class="number">1</span>) <span class="keyword">uniform</span> subpassInput inputDepth;</span><br></pre></td></tr></table></figure>
+<p><code>subpassLoad(inputColor)</code> 则会读取上个 subpass 在
+inputColor 同样区域写入的数据。</p>
+<h5 id="vulkan-pipeline-layout">1.2 Vulkan Pipeline Layout</h5>
+<p>shader 中的输入参数需要对应描述符 <code>VkDescriptorSetLayout</code>
+对其描述，而 vulkan pipeline layout 则包含了整个管线的所有 shader
+输入参数的描述符。上述 set=0、set=1 则分别表示了索引 0、1 的
+VkDescriptorSetLayout
+对象，相当于整个管线的描述符分到了两个描述符堆上。一个输入资源的描述符
+<code>VkDescriptorSetLayoutBinding</code>，包含了
+binding、资源类型(如上例中的
+<code>VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT</code>)、当为数组时的数组长度以及被哪些
+shader 阶段使用。</p>
+<p>Vulkan Pipeline Layout 只是对管线 shader
+输入的描述，相当于函数签名中形参，真正使用的数据资源，如
+sampler、texture、buffer 等，需要使用 command 在 draw call
+之前指定。因此 Vulkan Pipeline Layout 同样使用 hash 自动创建。</p>
+<p>特别注意，描述符堆是从 descriptorPool 中使用 VkDescriptorSetLayout
+创建得到的，每个描述符堆 <code>VkDescriptorSet</code> 同时只能由一个
+command buffer 使用，因此描述符堆的申请使用与停止使用应该由 command
+buffer 完成。类 <code>VulkanDescriptorPoolManager</code>
+维护已经创建的描述符堆以及其使用状态，command buffer
+在更新描述符资源之前请求使用，如果没有可用的 descriptorSet
+则新创建。command buffer 具有自己执行是否完成的 fence，类
+<code>VulkanCommandBufferManager</code> 更新 command buffer 状态时，如果
+command buffer 中的指令已经完成，则归还其使用的描述符堆。</p>
+<h4 id="从上层到渲染层的管线创建">2. 从上层到渲染层的管线创建</h4>
+<p>本渲染器的最初设计是面向多平台的，设置了平台无关层，只是目前只有
+Vulkan 的渲染层，因此平台无关层更偏向于
+Vulkan。下面介绍与管线创建相关的平台无关层的类。</p>
+<ul>
+<li><code>GPIRenderPassInfo</code>：对标 vulkan render pass
+的描述，但不仅仅包含了对 render pass 的描述，还包含 render pass
+中使用到的 render target ，因此 render pass 对应的 frame buffer
+的创建所需参数也是从该类型中获取。</li>
+<li><code>GPIGfxPipelineStateInitializer</code>：对标 Graphics PSO
+的配置参数。</li>
+</ul>
+<p>抽象类 <code>GraphicsBridge</code>
+定义了一系列到渲染层的接口，不同的平台实现其接口。例如，设置 render pass
+以及管线的接口 <code>GPIBeginRenderPass</code>
+、<code>GPISetGfxPipelineState</code>。下面是管线创建的上层逻辑的伪代码：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">GPIRenderPassInfo basePassInfo;</span><br><span class="line"><span class="comment">// ... // config basePass info</span></span><br><span class="line">gGfxBridge-&gt;<span class="built_in">GPIBeginRenderPass</span>(basePassInfo);</span><br><span class="line">&#123;</span><br><span class="line">    GPIGfxPipelineStateInitializer PSOInitializer;</span><br><span class="line">    <span class="comment">// ... // config PSOInitializer</span></span><br><span class="line">    gGfxBridge-&gt;<span class="built_in">GPISetGfxPipelineState</span>(PSOInitializer, basePassInfo);</span><br><span class="line">    <span class="comment">// ... // config the resources of descriptor set</span></span><br><span class="line">    gGfxBridge-&gt;<span class="built_in">GPIDrawPrimitive</span>();</span><br><span class="line">&#125;</span><br><span class="line">gGfxBridge-&gt;<span class="built_in">GPIEndRenderPass</span>();</span><br></pre></td></tr></table></figure>
+<p><code>GPIBeginRenderPass</code> 会根据参数 basePassInfo 来生成 vulkan
+render pass 的配置，以及 frame buffer 的资源参数，通过 hash
+的方式查找是否存在对应配置的 render pass 与 frame
+buffer，不存在则创建。同理 <code>GPISetGfxPipelineState</code> 根据
+PSOInitializer 与 basePassInfo 参数以 hash 方式查找 PSO，并绑定到当前
+command buffer。</p>
+<p>同时 <code>GPIBeginRenderPass</code>
+还做了一些开始管线前的准备工作，比如向
+<code>VulkanCommandBufferManager</code> 申请 command buffer，以及将
+render pass 需要的 render target 调整到其所指定的输入 layout 等。</p>
+<h3 id="shader-的管理与配置">Shader 的管理与配置</h3>
+<p>上述管线创建过程中，还需要 shader 的配置。<code>UltraShader</code>
+基类定义了 shader 相关描述，如 shader 源码文件路径、shader
+编译相关配置、shader 输入参数描述等。不同 shader
+继承自此基类，声明自己的参数，其中输入参数会被用于管线创建
+<code>VkPipelineLayout</code>
+资源描述。而编译相关配置则包括一些全局编译配置，如平台、优化参数等，以及一些宏定义，用以开启或关闭某些代码。</p>
+<h5 id="shader-源码编译与加载">1. Shader 源码编译与加载</h5>
+<p>本渲染器的 shader 编译与加载由类 <code>ShaderCompilerManager</code>
+完成。该类基于 shaderc，但为了在 renderdoc 能够源码级调试 shader，在
+debug 时使用 glslangValidator 编译。目前编译触发条件，有两种：</p>
+<ul>
+<li>加载过程中，shader 文件及其 include
+文件的时间戳要比记录文件中的更新。或者 shader 的一些配置发生改变。</li>
+<li>运行过程中，shader 的一些配置(如宏定义)发生改变。<a href="#todo">TODO</a> 运行过程中文件的改动主动触发编译</li>
+</ul>
+<p>Shader 文件的后缀分为作为头文件的 .glsl 以及表示不同阶段的源码文件如
+.ver、.frag、.comp 等。编译过程中会记录源码文件以及其 include
+文件的时间戳，用以辨别是否有更改。同时将 shader 编译配置进行
+hash，作为编译输出文件的文件名一部分，用以辨别当前 shader
+编译配置是否已经编译过。这些信息都会记录在 "intermediate/Shaders/
+ShaderFileCache.json" 文件中，该文件在启动时加载。</p>
+<p>由于 include 文件会有多级 include，因此只有加载了 shader
+源码将所有层级的 include 文件进行时间戳比对才能确定是否需要编译此
+shader，因此这一模式只能在加载过程中应用。在运行时需要采用主动触发编译，目前主动触发编译只有实现了
+shader 的编译配置发生改变，文件发生改变主动触发编译留待之后实现。</p>
+<h5 id="shader-输入参数描述">2. Shader 输入参数描述</h5>
+<p>模板类 <code>TShaderResourceParameter</code> 可以容纳各种类型的
+shader
+参数描述，同时可以绑定实际的资源。但这些目前都需要大量的手写代码完成，手动与
+shader 代码里的声明对齐，手动绑定资源。更合理的做法应该是，</p>
+<ul>
+<li>实现 C++ 反射宏，使用宏能够更快速声明 shader 参数描述</li>
+<li>shader 编译过程应该利用 shader
+反射生成包含输入资源描述的头信息。shader 参数在 C++
+中使用相同的名称，使用头信息中的名称进行自动配置参数描述(layout信息等)，并进行验证。</li>
+</ul>
+<p>这些留待之后实现。</p>
+<h3 id="todo">TODO</h3>
+<p>由于时间有限，有很多搁置的策略未实现。</p>
+<ul>
+<li>描述符堆目前未实现同时多个堆策略</li>
+<li>shader 编译流程生成 layout 头信息，使用 C++ 反射宏进行绑定</li>
+<li>多线程渲染</li>
+</ul>
+<h3 id="reference">Reference</h3>
+<p><a name="[1]">[1]</a>
+https://www.saschawillems.de/blog/2018/07/19/vulkan-input-attachments-and-sub-passes/</p>
+]]></content>
+      <categories>
+        <category>Render Engine</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Compute Shader 基础</title>
+    <url>/2022/07/17/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/</url>
+    <content><![CDATA[<h3 id="基础概念">基础概念</h3>
+<h4 id="gpu-中的概念">1. GPU 中的概念</h4>
+<h5 id="处理器核心的层级概念">1.1 处理器核心的层级概念</h5>
+<p>GPU 具有非常多的处理器核心，在 Nvidia 中称为 Streaming
+Multiprocessor(SM)，AMD 称为 Compute Unit(CU)，以下使用 SM。在 SM
+内部包含最基本的处理单元 lane，lane 可以近似理解为一个线程。SM
+进行调度执行任务时，最小单位并不是 lane，而是 Warp(Nvidia 中的称呼，AMD
+称为 wavefront)。一个 Warp 包含一定数量的 lane，在 Nvidia 中是 32，AMD
+是 64。不同的架构，一个 SM 中包含的 warp 数量不同，目前的 Nvidia GPU
+中一个 SM 包含 4 个 warp，即 128 个 lane(shader core、cuda core等)。GPU
+显卡型号不同，GPU 包含的 SM 数量也不同，3080Ti 包含 80 个 SM。</p>
+<p>在同一个 Warp 中的所有 lane
+执行相同的指令，但可以处理不同的数据，这样就构成了现代 GPU 的 SIMD
+机制。但一个 Warp 中的所有 lane 并不总是同时处于运行状态，即 active
+lane；也并不总是同时处于非运行状态，即 inactive lane。例如：</p>
+<ul>
+<li><p>下发的任务组包含的任务数量较少或者不是 warp
+大小的整数倍，不足以填满整个 warp 的 lane，那么未分配任务的 lane 则处于
+inactive 状态。下发的任务组在 vulkan 中称为 local workgroup(D3D 中的
+thread group) 大小。</p></li>
+<li><p>Dynamic Branching 会导致 lane
+的执行路径不止一条，即不止一套指令，这一定程度上破坏了 SIMD
+机制。例如，代码中包含 if-else 语句，不满足 if 条件的 lane 由于 lockstep
+运行方式需要等待其它所有满足 if 条件的 lane 执行 if 部分，等待中的 lane
+则处于 inactive 状态。反之，满足 if 条件的 lane 也会等待不满足 if 条件的
+lane 执行 else 部分。 但 if-else 并不总是导致这种指令分歧，对于非常简单
+if-else，GPU 能够使用同一套指令实现，例如如下代码</p>
+<figure class="highlight glsl"><table><tr><td class="code"><pre><span class="line"><span class="type">uint</span> d = buff_array[...]; </span><br><span class="line"><span class="type">uint</span> c;</span><br><span class="line"><span class="keyword">if</span>(d &lt; some_value)&#123;</span><br><span class="line">   c = <span class="number">0</span>;</span><br><span class="line">&#125;<span class="keyword">else</span>&#123;</span><br><span class="line">   c = <span class="number">1</span>; </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+<p>可能会被转换为下述伪代码描述的指令，注意
+<code>cmp_and_choose</code></p>
+<figure class="highlight plaintext"><table><tr><td class="code"><pre><span class="line">register_a = 0;</span><br><span class="line">register_b = 1; </span><br><span class="line">register_d = load_from(buff_ptr_offset);</span><br><span class="line">register_some_value = ... ;</span><br><span class="line">register_c = cmp_and_choose(register_d, register_some_value, register_a, register_b);</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p>因此，在执行之前，先将每个 local workgroup 中的线程划分为以 warp
+为单位的子组，之后 GPU 以 warp 为单位进行调度执行。</p>
+<h5 id="存储类型与数据同步">1.2 存储类型与数据同步</h5>
+<p>以上描述的 SM、warp、lane
+具有不同类型的存储，下面根据速度由快到慢依次说明，这里的参数数据以
+3080Ti (Ampere-GA102架构)为例 <a href="#%5B1%5D">[1]</a></p>
+<ul>
+<li><p>register：每个 SM 具有256KB 大小的寄存器区。</p></li>
+<li><p>shared memory/L1 cache：一个 SM 中的所有线程可以访问该 SM
+具有有限大小的 shared memory。shared memory
+本质上是一个较小的读写缓存区，GA102 架构中为
+128KB，但其中只有一部分可被程序员使用，其他用作缓存或其他用途，例如 48KB
+用作 shared memory。</p></li>
+<li><p>global memory(VRAM)：global memory 即 GPU
+显存。如果寄存器存储或者shared memory
+的使用大小溢出，则会将其中的数据写入显存中，这一点和 CPU
+的高速缓存-内存机制类似。</p></li>
+</ul>
+<p>这三种类型的存储除了存取速度差距大之外，还有工作机制上的区别：</p>
+<ul>
+<li>首先，一个 SM 的 shared memory 对另一个 SM 上的线程是不可见的，即
+shared memory 只用于同一 SM 的线程的数据同步与共享。</li>
+<li>其次，shared memory 与 register 虽然都属于 SM，但只有 shared memory
+中的数据可以在 SM 中的 lane 之间共享。register
+一般用于暂存指令执行过程的输入输出，lane/线程执行中用到的 register
+相当于是私有的，对于其他线程是不可见的。因此，一般情况下，同一 SM
+中的线程共享数据需要额外花费 register 到缓存(shared memory)
+的传输时间，以及占用了带宽。</li>
+<li>最后，对于同一 SM 中正在执行的线程之间，GPU
+提供了直接通过寄存器共享数据的机制。缓存与寄存器的存取速度相差很多，因此这会带来更高效的数据同步。各大图形
+SDK 也对此实现了相应 API，如后续描述的 vulkan 中的 subgroup 概念。</li>
+</ul>
+<h4 id="vulkan-中的概念">2. Vulkan 中的概念</h4>
+<p>以上讲述了，一些硬件层面的概念，包括
+SM(处理器核心)、Warp(处理器核心中同时执行的线程组)、Lane(相当于线程)。在图形
+SDK 中，有相应的软件层面的概念。</p>
+<ul>
+<li><p>invocation：一个下发的并行任务，对应一个线程。</p></li>
+<li><p>local workgroup：在同一 SM 上执行的 invocation 组，面向一个
+SM。声明在 compute shader 中，如</p>
+<figure class="highlight glsl"><table><tr><td class="code"><pre><span class="line"><span class="keyword">layout</span>(<span class="keyword">local_size_x</span> = X, <span class="keyword">local_size_y</span> = Y, <span class="keyword">local_size_z</span> = Z) <span class="keyword">in</span>;</span><br></pre></td></tr></table></figure>
+<p>上述声明表示，当前 compute shader 描述的 invocation 的 local
+workgroup 大小为 <span class="math inline">\(X\cross Y \cross
+Z\)</span></p></li>
+<li><p>subgroup：local workgroup 中同时并行执行的 invocation
+组，对应一个 Warp。如上述 Warp，subgroup 中的 invocation 同样有 active
+和 inactive 两种状态，且具有相同的机制。</p></li>
+<li><p>global workgroup：一次下发并行任务的 API 调用生成的所有
+invocation，面向整个 GPU。通过 <code>vkCmdDispatch</code> 指定 local
+workgroup 的维度与对应维度大小，如下 <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="function"><span class="type">void</span> <span class="title">vkCmdDispatch</span><span class="params">(VkCommandBuffer cmdBuf, <span class="type">uint32_t</span> groupCountX, <span class="type">uint32_t</span> groupCountY, <span class="type">uint32_t</span> groupCountZ)</span></span>;</span><br></pre></td></tr></table></figure></p>
+<p>上述调用表面 global workgroup 中具有 (groupCountX x groupCountY x
+groupCountZ) 个 local workgroup，因此共有 (groupCountX x groupCountY x
+groupCountZ) x <span class="math inline">\(X\cross Y \cross Z\)</span>
+个 invocation/线程。</p></li>
+</ul>
+<p>Compute shader 的执行过程可以简要描述为：<code>vkCmdDispatch</code>
+命令生成了一批 local workgroup，GPU 会将这批 local workgroup 划分到某些
+SM 上执行，GPU 上的所有 SM 以并行形式执行。在 local workgroup
+执行期间，一般不会离开其执行于的 SM。local workgroup 包含多个
+invocation，GPU 的最小调度单位是 Warp，因此一个 local workgroup
+会先被划分为一组 subgroup，每个 subgroup 的 invocation
+可以并行执行。</p>
+<p>global workgroup 中 local workgroup 的数量可以超过 GPU 中 SM
+的数量，因此会有多个 local workgroup 被分配到同一个 SM 上执行。同一 SM
+上的 subgroup 会在执行过程中发生切换，例如，在一个 subgroup
+等待比较耗时内存访问操作完成时，为了隐藏延迟，会切换执行另一个
+subgroup，这种切换也可能会发生在同一 SM 上的不同 local workgroup 的
+subgroup 之间。假设 invocation 使用寄存器资源或 shared memory
+过多，不足以满足切换的 subgroup，那么会有寄存器数据备份至缓存或 shared
+memory 备份至显存的操作，这样会带来性能上的影响。同样，local workgroup
+的 subgroup 数量也可以超过一个 SM 中的 Warp 数量。</p>
+<h4 id="compute-shader-中的内置变量">3. Compute Shader 中的内置变量</h4>
+<p>Compute Shader 没有 in/out 参数，只能使用 SSBO/Texture
+资源进行读写。对于 Texture，compute shader 只能使用 image
+类型，不支持采样且一个 image 类型参数只能使用一个 level。在访问 image
+时，只能使用整数索引。</p>
+<p>Compute Shader
+经常用于处理高维数据，如贴图。有一些内置变量可以作为高维数据的索引，</p>
+<ul>
+<li><p><code>uvec3 gl_NumWorkGroups</code>：传递给 dispatch 函数的 group
+数量，即 (groupCountX, groupCountY, groupCountZ)</p></li>
+<li><p><code>uvec3 gl_WorkGroupID</code>：当前 invocation 所属的 local
+workgroup 的编号，范围 [0, gl_NumWorkGroups.XYZ)</p></li>
+<li><p><code>uvec3 gl_LocalInvocationID</code>：当前 invocation 在其
+local workgroup 内的编号，范围是 [0, gl_WorkGroupSize.XYZ)，其中
+gl_WorkGroupSize=(local_size_x, local_size_y, local_size_z)</p></li>
+<li><p><code>uvec3 gl_GlobalInvocationID</code>：当前 invocation 在
+global workgroup 中的编号，等于</p>
+<figure class="highlight glsl"><table><tr><td class="code"><pre><span class="line"><span class="built_in">gl_WorkGroupID</span> * <span class="built_in">gl_WorkGroupSize</span> + <span class="built_in">gl_LocalInvocationID</span></span><br></pre></td></tr></table></figure></li>
+<li><p><code>uint gl_LocalInvocationIndex</code>：相当于
+gl_LocalInvocationID 的一维形式，等于</p>
+<figure class="highlight glsl"><table><tr><td class="code"><pre><span class="line"><span class="built_in">gl_LocalInvocationIndex</span> =</span><br><span class="line">          <span class="built_in">gl_LocalInvocationID</span>.z * <span class="built_in">gl_WorkGroupSize</span>.x * <span class="built_in">gl_WorkGroupSize</span>.y +</span><br><span class="line">          <span class="built_in">gl_LocalInvocationID</span>.y * <span class="built_in">gl_WorkGroupSize</span>.x + </span><br><span class="line">          <span class="built_in">gl_LocalInvocationID</span>.x;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<p>与 subgroup 相关的内置变量：</p>
+<ul>
+<li><code>gl_NumSubgroups</code>：local workgroup 包含的 subgroup
+的数量</li>
+<li><code>gl_SubgroupID</code>：当前 subgroup 在 local workgroup
+中的编号，范围是 [0, gl_NumSubgroups)</li>
+<li><code>gl_SubgroupSize</code>：subgroup 的大小</li>
+<li><code>gl_SubgroupInvocationID</code>：当前 invocation 在 subgroup 中
+ID，范围是 [0, gl_SubgroupSize)</li>
+<li><code>gl_SubgroupEqMask</code>, <code>gl_SubgroupGeMask</code>,
+<code>gl_SubgroupGtMask</code>, <code>gl_SubgroupLeMask</code>,<br>
+<code>gl_SubgroupLtMask</code>：subgroupBallot 相关</li>
+</ul>
+<p>有关 gl_LocalInvocationID 与 gl_SubgroupInvocationID
+的关系，没有找到有文档说明，但我相信应该与
+gl_GlobalInvocationID、gl_LocalInvocationID之间的关系类似。因为 GPU
+的最小调度单位是 subgroup/Warp 而不是 invocation/线程。在调度之前 local
+workgroup 就应该已经被划分为 subgroup。此时，subgroup 中的所有
+invocation 都对于 GPU 而言是相同的指令序列。subgroup
+内的分歧应该发生在实际执行过程中。因此，gl_LocalInvocationID 和
+gl_SubgroupInvocationID
+之间具有事先确定的关系应该不会对后续调度产生任何影响。但是如果没有确定的关系，那么subgroup
+功能的使用将会受到很大的限制。经过在 RTX 3080ti
+上测试，gl_LocalInvocationID 与 gl_SubgroupInvocationID
+有如下数值关系，</p>
+<figure class="highlight glsl"><table><tr><td class="code"><pre><span class="line">gl_SubgroupID * gl_SubgroupSize + gl_SubgroupInvocationID == <span class="built_in">gl_LocalInvocationIndex</span> </span><br></pre></td></tr></table></figure>
+<p>或者</p>
+<figure class="highlight glsl"><table><tr><td class="code"><pre><span class="line"><span class="built_in">gl_LocalInvocationIndex</span> % gl_SubgroupSize == gl_SubgroupInvocationID </span><br></pre></td></tr></table></figure>
+<h3 id="内存模型术语">内存模型术语</h3>
+<h4 id="coherent-or-incoherent-memory-access-2">1. Coherent or
+Incoherent Memory Access <a href="#%5B2%5D">[2]</a></h4>
+<ul>
+<li>Coherent 内存访问</li>
+</ul>
+<p>以最简单的例子——单处理器系统来说，对于同一内存区域同时只会有一个线程访问。因此，当一个处理元件对某一内存区域写，然后另一处理元件对同一内存区域读时，总能读到更新后的值。这是我们想要的结果，但得到这一正确结果并不只是多线程读写同步。因为，在硬件层有高速缓存-内存机制，处理器的读写往往不直接针对内存，而是针对缓存。缓存中的数据是内存中数据的拷贝或者是写操作得到的更新数据，因此需要确保写操作之后的读操作能够读到新数据，而非旧数据，这就是
+<strong>Coherent
+内存访问</strong>。单处理器系统的内存操作工作于同一套高速缓存-内存机制中，保证
+Coherent 内存访问较容易。</p>
+<ul>
+<li>Incoherent 内存访问</li>
+</ul>
+<p>但对于多处理器系统，每个处理器都有其本地缓存，当多个处理器同时访问同一内存区域时，同一内存区域的数据在这些处理器的缓存中都有一个备份。此时可能存在处理器读到的时本地缓存中的旧数据，而不是其他处理器写操作生成的新数据，即出现
+<strong>Incoherent
+内存访问</strong>。为了避免这种情况，多处理器系统的设计需要采用存储器一致性协议，粗略地说，当一个处理器对某一内存区域更新时，对该内存区域存在缓存备份的其他处理器也要对其本地缓存的相应位置进行更新。</p>
+<h4 id="visibility-3">2. Visibility <a href="#%5B3%5D">[3]</a></h4>
+<p>GPU 的核心数量远高于 CPU，在 GPU
+的执行过程中，不同处理器同时读写同一内存区域时，也会出现上述 Incoherent
+内存访问情况。而 <strong>Visibility</strong> 术语就是指一个 shader
+invocation 可以安全地读其他 shader invocation 的 Incoherent
+写数据，也就是说，不会读取到缓存中旧的备份，或者其他 invocation
+写数据对其是可见的。</p>
+<p>对于多个 shader invocation 同时读写不同的区域，不会出现上述
+incoherent 访问情况。此外，对于在同一处理器执行的 shader
+invocation，不会出现 incoherent
+情况，因为使用的是同一套缓存-内存机制，例如 compute shader 中的同一
+local workgroup 中的 invocation。特别注意，这里不会出现 incoherent
+访问问题，并不是指读写同步问题，读写同步同样需要额外处理。当不同处理器上的
+shader invocation 对同一内存区域进行读写时，则会出现 incoherent
+内存访问。</p>
+<p><a href="#%5B5%5D">[5]</a> 提到 incoherent 的内存访问操作有：</p>
+<ul>
+<li>对 image 变量的 imageLoad/imageStore</li>
+<li>对 buffer 变量的读写操作</li>
+<li><a href="https://www.khronos.org/opengl/wiki/Atomic_Counter">Atomic
+Counters</a></li>
+<li>对 compute shader 中的 shared 变量的读写操作。这个无法理解，shared
+变量存储在缓存中，不应该会有多个备份的情况，为什么还是 incoherent？</li>
+</ul>
+<p>这时需要考虑如何避免 incoherent 内存访问，即确保 visibility
+性质。这里有两种情况：</p>
+<h5 id="internal-visibility一个绘制指令执行内部一部分写而另一部分读">2.1
+Internal Visibility：一个绘制指令执行内部，一部分写、而另一部分读。</h5>
+<ul>
+<li>读写次序控制、内存控制</li>
+</ul>
+<p>想要使得一个 shader invocation 能够读取另一 shader invocation
+写数据，要先保证写操作在读操作之前确实发生，也就是读写同步问题。例如
+compute shader 中 <code>barrier</code> 函数，可以确保 local
+workgroup(执行在同一处理器) 中的所有 invocation 都执行到 barrier
+同步点后，才开始执行之后的代码。注意 barrier 函数只是对 local workgroup
+中的 invocation
+的执行过程进行了控制，这种控制只发生在同一个处理器上。对于 shared memory
+缓存只会在同一个处理器上共享，因此 barrier 同时也能够做到 shared memory
+的读写次序控制。在 compute shader 中 shared 变量即位于 shared memory
+中，由于本身就是缓存，不会出现多个备份情况，因此 shared 变量是隐含的
+coherent 访问。</p>
+<ul>
+<li>内存访问控制 <a href="#%5B4%5D">[4]</a></li>
+</ul>
+<p>确保读写次序，相当于确保了在读操作之前，写操作一定已经发生。对于
+coherent 内存访问而言，这已经确保了写数据的可见性；但对于 incoherent
+内存访问，写操作发生不代表写数据对其他 invocation 可见，这会导致一个
+invocation 的内存读写操作的相对次序对于另一个 invocation
+而言是不确定的状态，换句话说，写操作的数据对其他 invocation
+可见的次序不确定。例如一个 invocation 中执行两次写操作，而另一个
+invocation 可能会先看到第二次写的数据，后看到第一次写的数据。</p>
+<p>这时需要使用到 memory barrier 来控制读写操作，使得其他 invocation
+看到写数据的次序与写操作执行的次序一致。先对可能被多个处理器访问到的
+image 或 buffer 类型变量进行 <code>coherent</code> 修饰，声明该变量为
+coherent 访问机制。该访问机制使得相应的 memoryBarrier
+可以控制对被修饰变量的读写操作。调用 memoryBarrier 等函数的 invocation
+会等待之前的所有读写操作完成，当该函数返回后，写数据对之后的访问处于可见状态。例如一个
+invocation 执行两次写操作，每次写操作后都加上一个 memory
+barrier，那么其他 invocation
+就不可能先看到第二次写的数据，而后看到第一次写的数据。memory barrier
+有多种类型：</p>
+<ul>
+<li><code>memoryBarrier</code>：控制所有类型变量的内存访问，render
+command 内作用于全局。</li>
+<li><code>memoryBarrierAtomicCounter</code>：控制 atomic-counter
+变量的访问，render command 内作用于全局。</li>
+<li><code>memoryBarrierBuffer</code>：控制 buffer 变量的内存访问，render
+command 内作用于全局。</li>
+<li><code>memoryBarrierImage</code>：控制 image 变量的内存访问，render
+command 内作用于全局。</li>
+<li><code>memoryBarrierShared</code>：控制 shared
+变量的内存访问，作用于同一 workgroup。</li>
+<li><code>groupMemoryBarrier</code>：控制所有类型变量的内存访问，作用于同一
+workgroup。</li>
+</ul>
+<h5 id="external-visibility">2.2 External Visibility</h5>
+<p>一个 render command 内部的 visibility 是 shader invocation
+之间的读写操作。对于 render command 之间的 visibility 使用 barrier
+命令进行同步。例如 vulkan 中的 buffer barrier、image layout 等</p>
+<h3 id="reference">Reference</h3>
+<p><a name="[1]">[1]</a>
+https://images.nvidia.com/aem-dam/en-zz/Solutions/geforce/ampere/pdf/NVIDIA-ampere-GA102-GPU-Architecture-Whitepaper-V1.pdf</p>
+<p><a name="[2]">[2]</a>
+https://en.wikipedia.org/wiki/Memory_coherence</p>
+<p><a name="[3]">[3]</a>
+https://www.khronos.org/opengl/wiki/Memory_Model#Ensuring_visibility</p>
+<p><a name="[4]">[4]</a>https://www.khronos.org/registry/OpenGL/specs/gl/GLSLangSpec.4.60.html#shader-memory-control-functions</p>
+<p><a name="[5]">[5]</a>
+https://www.khronos.org/opengl/wiki/Memory_Model#Incoherent_memory_access</p>
+]]></content>
+      <categories>
+        <category>Vulkan Basics</category>
+      </categories>
+  </entry>
+  <entry>
+    <title>Compute Shader 实现 Pyramid Algorithm</title>
+    <url>/2022/07/17/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/</url>
+    <content><![CDATA[<h3 id="使用-compute-shader-生成-mipmap">使用 compute shader 生成
+mipmap</h3>
+<p>本文是参考 https://github.com/nvpro-samples/vk_compute_mipmaps
+的算法复现。</p>
+<p>将输入层级记为 <span class="math inline">\(L\)</span>，将 <span class="math inline">\(L\)</span> 的 2x2 样本区域生成一个样本则得到 <span class="math inline">\(L+1\)</span> 层级。下面介绍从 <span class="math inline">\(L\)</span> 到 <span class="math inline">\(L+M\)</span> 层级的生成算法，<span class="math inline">\(M\in[1,6]\)</span>，算法输入为 <span class="math inline">\(L\)</span> 层级的大小为 <span class="math inline">\(2^M\times 2^M\)</span> 的 tiles。</p>
+<h3 id="宽高为-2-的幂次">宽高为 2 的幂次</h3>
+<p>首先将输入层级划分为多个大小为 <span class="math inline">\(2^M\times
+2^M\)</span> 的 tile，每个 tile 作为 compute shader 中一个 local
+workgroup 的输入 tile，每个 local workgroup 负责生成其输入 tile
+的层级。假设输入层级大小为 <span class="math inline">\(X,Y\)</span>，那么一次 dispatch 产生的 local
+workgroup 数量为 <span class="math inline">\((X/2^M,
+Y/2^M)\)</span>，因此使用 workgroup id 作为 tile id，进而得到输入 tile
+在输入层级中的起始位置，用以获取输入层级的样本。</p>
+<ul>
+<li><p>假设 workgroup id 为 <span class="math inline">\((m,n)\)</span>，该 workgroup 的输入 tile id 为
+<span class="math inline">\((m,n)\)</span>。该输入 tile
+在输入层级中的起始位置设为 (xOffset, yOffset)，其计算方式为
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">xOffset = m &lt;&lt; M;</span><br><span class="line">yOffset = n &lt;&lt; M;</span><br></pre></td></tr></table></figure></p></li>
+<li><p>为了能够利用到 subgroup 内部数据同步的高效性，将 workgroup
+的线程/invocation 划分为大小为 16 的子组。这里使用 1D 的 invocation
+ID，<code>gl_LocalInvocationIndex</code> 来划分组，划分方式为
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">teamID = (ID &amp; <span class="number">0x00F0</span>) &gt;&gt; <span class="number">4</span>;</span><br></pre></td></tr></table></figure></p></li>
+<li><p>想要生成当前层级的样本，则需要确定当前层级样本在上一层级中对应的
+<span class="math inline">\(2\times 2\)</span>
+区域，即该区域在上一层级中的起始偏移量 (xBlockOffset,
+yBlockOffset)。该偏移量有三部分组成，当前 workgroup 对应的输入 tile
+在输入层级中的起始偏移量 (xOffset, yOffset)、当前 invocation
+所属组在输入 tile 中的起始偏移量 (tx, ty)、当前 invocation
+在其所属组的起始偏移量 (x, y)。最终有 <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">xBlockOffset = xOffset + tx + x;</span><br><span class="line">yBlockOffset = yOffset + ty + y;</span><br></pre></td></tr></table></figure></p></li>
+</ul>
+<h4 id="level">1-Level</h4>
+<p>输入层级划分为 <span class="math inline">\(2\times 2\)</span>
+tiles，每个线程加载一个 <span class="math inline">\(2\times2\)</span>
+tile 生成一个样本。1 level 算法比较简单，输入层级有多少个 <span class="math inline">\(2\times 2\)</span> tiles 就分发多少个
+invocation，即 global group size 与 tile 数量相等。直接使用
+<code>gl_GlobalInvocationID</code> 来索引 <span class="math inline">\(L\)</span> 层级的样本。以下为一个 tile 中的 4
+个样本的索引</p>
+<figure class="highlight glsl"><table><tr><td class="code"><pre><span class="line"><span class="built_in">gl_GlobalInvocationID</span>*<span class="number">4</span>+<span class="number">0</span>, <span class="built_in">gl_GlobalInvocationID</span>*<span class="number">4</span>+<span class="number">1</span>, </span><br><span class="line"><span class="built_in">gl_GlobalInvocationID</span>*<span class="number">4</span>+<span class="number">2</span>, <span class="built_in">gl_GlobalInvocationID</span>*<span class="number">4</span>+<span class="number">3</span></span><br></pre></td></tr></table></figure>
+<p>或者按照下述算法形式实现。</p>
+<h4 id="levels">2-Levels</h4>
+<p>输入层级划分为 <span class="math inline">\(4\times 4\)</span>
+tiles，local workgroup size 使用 4。一个输入 tile 可以划分为 4 个 <span class="math inline">\(2\times 2\)</span> blocks，每个 block 对应 <span class="math inline">\(L+1\)</span> 层的一个样本。因此每个 local
+workgroup 负责一个输入 tile，生成 4 个 <span class="math inline">\(L+1\)</span> 层级样本，4 个 <span class="math inline">\(L+1\)</span> 层级样本又可生成 1 个 <span class="math inline">\(L+2\)</span> 层级样本。算法过程如下示意，</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">   <span class="built_in">L</span>(<span class="number">4</span>x4)            L+<span class="number">1</span>(<span class="number">2</span>x2)             L+<span class="number">2</span></span><br><span class="line">+---------+       +-----+-----+       +---------+</span><br><span class="line">|         |       |  <span class="number">0</span>  |  <span class="number">1</span>  |       |         |</span><br><span class="line">|   <span class="number">4</span>x4   | ===&gt;  +-----+-----+ ====&gt; |    <span class="number">0</span>    |</span><br><span class="line">|         |       |  <span class="number">2</span>  |  <span class="number">3</span>  |       |         |</span><br><span class="line">+---------+       +-----+-----+       +---------+</span><br></pre></td></tr></table></figure>
+<p>确定 <span class="math inline">\(L+1\)</span> 层每个样本在 <span class="math inline">\(L\)</span> 层对应的 <span class="math inline">\(2\times 2\)</span> block 的起始位置，</p>
+<ul>
+<li><p>输入 tile 在 <span class="math inline">\(L\)</span>
+层级的起始位置：<span class="math inline">\(M=2\)</span> 代入
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">xOffset = m &lt;&lt; M;</span><br><span class="line">yOffset = n &lt;&lt; M;</span><br></pre></td></tr></table></figure></p></li>
+<li><p>local workgroup 内线程的分组 ID：由于 local workgroup size 为
+4，因此只有一个分组，teamID 恒为 0， <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">teamID = (ID &amp; <span class="number">0x00F0</span>) &gt;&gt; <span class="number">4</span>;</span><br></pre></td></tr></table></figure></p>
+<p>当前分组在输入 tile 中的偏移量也恒为 tx=0, ty=0</p></li>
+<li><p>当前 invocation
+在其所属分组的偏移量：<code>gl_LocalInvocationIndex</code> 为当前
+invocation 的索引，记为 id。<span class="math inline">\(L+1\)</span>
+层的 4 个样本如下，以及对应的组内偏移量 <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"> L+<span class="number">1</span> 样本编号       L+<span class="number">1</span> 样本编号二进制    L+<span class="number">1</span> 样本的组内起始偏移量</span><br><span class="line">+-----+-----+       +-----+-----+       +-----+-----+</span><br><span class="line">|  <span class="number">0</span>  |  <span class="number">1</span>  |       |  <span class="number">00</span> |  <span class="number">01</span> |       |(<span class="number">0</span>,<span class="number">0</span>)|(<span class="number">0</span>,<span class="number">2</span>)|</span><br><span class="line">+-----+-----+       +-----+-----+       +-----+-----+</span><br><span class="line">|  <span class="number">2</span>  |  <span class="number">3</span>  |       |  <span class="number">10</span> |  <span class="number">11</span> |       |(<span class="number">2</span>,<span class="number">0</span>)|(<span class="number">2</span>,<span class="number">2</span>)|</span><br><span class="line">+-----+-----+       +-----+-----+       +-----+-----+</span><br></pre></td></tr></table></figure></p>
+<p>当前 invocation 组内的偏移量的计算方式如下</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">x = (id &amp; <span class="number">2</span>);</span><br><span class="line">y = (id &amp; <span class="number">1</span>) &lt;&lt; <span class="number">1</span>;</span><br></pre></td></tr></table></figure></li>
+<li><p>最终得到 <span class="math inline">\(L+1\)</span> 层样本在 <span class="math inline">\(L\)</span> 层对应的 <span class="math inline">\(2\times 2\)</span> block 的起始偏移量：
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">xBlockOffset = xOffset + x;</span><br><span class="line">yBlockOffset = yOffset + y;</span><br></pre></td></tr></table></figure></p></li>
+</ul>
+<p>得到 (xBlockOffset, yBlockOffset) 后，则可加载该 2x2 区域的 4 个
+<span class="math inline">\(L\)</span> 层样本，即</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">(xBlockOffset+<span class="number">0</span>, yBlockOffset+<span class="number">0</span>), (xBlockOffset+<span class="number">0</span>, yBlockOffset+<span class="number">1</span>)</span><br><span class="line">(xBlockOffset+<span class="number">1</span>, yBlockOffset+<span class="number">0</span>), (xBlockOffset+<span class="number">1</span>, yBlockOffset+<span class="number">1</span>)</span><br></pre></td></tr></table></figure>
+<p>4 个 <span class="math inline">\(L\)</span> 层样本生成一个 <span class="math inline">\(L+1\)</span> 层样本，这样下来，每个 local
+workgroup 都得到了 <span class="math inline">\(L+1\)</span> 层级的 4
+个样本。<span class="math inline">\(L+1\)</span> 层样本的写入位置为
+(xBlockOffset &gt;&gt; 1, yBlockOffset &gt;&gt; 1)。</p>
+<p>由于 local workgroup size 为 4，即 local workgroup 的所有 invocation
+执行于同一个 subgroup，因此可利用 subgroup 内部的高效数据同步。每个
+local workgroup 的 0 号线程再使用 <code>subgroupShuffleXor</code> 得到
+1、2、3 号线程的样本，生成 <span class="math inline">\(L+2\)</span>
+层级的一个样本，写入位置为 (xBlockOffset &gt;&gt; 2, yBlockOffset
+&gt;&gt; 2)。</p>
+<h4 id="levels-1">3-Levels</h4>
+<p>3 levels 通过不同区域分别应用 2 levels 算法。输入层级划分为 <span class="math inline">\(8\times 8\)</span> tiles，local workgroup size
+使用 16。将 local workgroup 的 16 个线程分为 4 个 subtiles，每个 subtile
+大小为 <span class="math inline">\(2\times 2\)</span>，具有 4
+个线程，如下所示</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">workgroup 内的 subtile，<span class="string">&quot;|| =&quot;</span> 为 subtile 边界</span><br><span class="line">      +---+---++---+---+                              </span><br><span class="line">      | <span class="number">0</span> | <span class="number">1</span> || <span class="number">4</span> | <span class="number">5</span> |                               </span><br><span class="line">      +---+---++---+---+                              </span><br><span class="line">      | <span class="number">2</span> | <span class="number">3</span> || <span class="number">6</span> | <span class="number">7</span> |                              </span><br><span class="line">      +===+===++===+===+                              </span><br><span class="line">      | <span class="number">8</span> | <span class="number">9</span> ||<span class="number">12</span> |<span class="number">13</span> |                              </span><br><span class="line">      +---+---++---+---+                               </span><br><span class="line">      |<span class="number">10</span> |<span class="number">11</span> ||<span class="number">14</span> |<span class="number">15</span> |                               </span><br><span class="line">      +---+---++---+---+                               </span><br></pre></td></tr></table></figure>
+<p>local workgroup 的每个 subtile 应用 2 levels 算法来生成 <span class="math inline">\(L+1\)</span>、<span class="math inline">\(L+2\)</span> 的样本，在执行完 2 levels
+算法后，每个 subtile 得到一个 <span class="math inline">\(L+2\)</span>
+层样本。每个 workgroup 共得到 4 个 <span class="math inline">\(L+2\)</span> 层样本，最后生成 1 个 <span class="math inline">\(L+3\)</span> 层样本，过程如下所示，</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">     <span class="built_in">L</span>(<span class="number">8</span>x8)                  L+<span class="number">1</span>(<span class="number">4</span>x4)                  L+<span class="number">2</span>(<span class="number">2</span>x2)</span><br><span class="line">+---------------+       +---+---++---+---+       +-------++-------+</span><br><span class="line">|               |       | <span class="number">0</span> | <span class="number">1</span> || <span class="number">4</span> | <span class="number">5</span> |       |       ||       |</span><br><span class="line">|               |       +---+---++---+---+       |   <span class="number">0</span>   ||   <span class="number">4</span>   |</span><br><span class="line">|               |       | <span class="number">2</span> | <span class="number">3</span> || <span class="number">6</span> | <span class="number">7</span> |       |       ||       |</span><br><span class="line">|      <span class="number">8</span>x8      | ====&gt; +===+===++===+===+ ====&gt; +=======++=======+</span><br><span class="line">|               |       | <span class="number">8</span> | <span class="number">9</span> ||<span class="number">12</span> |<span class="number">13</span> |       |       ||       |</span><br><span class="line">|               |       +---+---++---+---+       |   <span class="number">8</span>   ||  <span class="number">12</span>   |</span><br><span class="line">|               |       |<span class="number">10</span> |<span class="number">11</span> ||<span class="number">14</span> |<span class="number">15</span> |       |       ||       |</span><br><span class="line">+---------------+       +---+---++---+---+       +-------++-------+</span><br></pre></td></tr></table></figure>
+<p>首先确定 <span class="math inline">\(L+1\)</span> 层每个样本在 <span class="math inline">\(L\)</span> 层对应的 <span class="math inline">\(2\times 2\)</span> block 的起始位置，</p>
+<ul>
+<li><p>输入 tile 在 <span class="math inline">\(L\)</span>
+层级的起始位置：<span class="math inline">\(M=3\)</span> 代入 (xOffset,
+yOffset) 的计算</p></li>
+<li><p>local workgroup 内线程的分组编号：local workgroup size 为
+16，只有一个分组，teamID 恒为 0，当前分组在输入 tile 中的偏移量也恒为
+tx=0, ty=0</p></li>
+<li><p>当前 invocation
+在其所属分组的偏移量：<code>gl_LocalInvocationIndex</code> 为当前
+invocation 的索引，记为 id。<span class="math inline">\(L+1\)</span>
+层的 16 个样本编号以及对应的组内偏移量，如下 <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">         L+<span class="number">1</span> 层编号二进制              L+<span class="number">1</span> 层编号对应的输入 tile 的偏移量</span><br><span class="line">+------+------++------+------+       +------+------++------+------+</span><br><span class="line">| <span class="number">0000</span> | <span class="number">0001</span> || <span class="number">0100</span> | <span class="number">0101</span> |       |(<span class="number">0</span>,<span class="number">0</span>) |(<span class="number">0</span>,<span class="number">2</span>) ||(<span class="number">0</span>,<span class="number">4</span>) |(<span class="number">0</span>,<span class="number">6</span>) |</span><br><span class="line">+------+------++------+------+       +------+------++------+------+</span><br><span class="line">| <span class="number">0010</span> | <span class="number">0011</span> || <span class="number">0110</span> | <span class="number">0111</span> |       |(<span class="number">2</span>,<span class="number">0</span>) |(<span class="number">2</span>,<span class="number">2</span>) ||(<span class="number">2</span>,<span class="number">4</span>) |(<span class="number">2</span>,<span class="number">6</span>) |</span><br><span class="line">+======+======++======+======+       +======+======++======+======+</span><br><span class="line">| <span class="number">1000</span> | <span class="number">1001</span> || <span class="number">1100</span> | <span class="number">1101</span> |       |(<span class="number">4</span>,<span class="number">0</span>) |(<span class="number">4</span>,<span class="number">2</span>) ||(<span class="number">4</span>,<span class="number">4</span>) |(<span class="number">4</span>,<span class="number">6</span>) |</span><br><span class="line">+------+------++------+------+       +------+------++------+------+</span><br><span class="line">| <span class="number">1010</span> | <span class="number">1011</span> || <span class="number">1110</span> | <span class="number">1111</span> |       |(<span class="number">6</span>,<span class="number">0</span>) |(<span class="number">6</span>,<span class="number">2</span>) ||(<span class="number">6</span>,<span class="number">4</span>) |(<span class="number">6</span>,<span class="number">6</span>) |</span><br><span class="line">+------+------++------+------+       +------+------++------+------+</span><br></pre></td></tr></table></figure></p>
+<p>当前 invocation 组内的偏移量的计算方式如下</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">x = (id &amp; <span class="number">2</span>) | (id &amp; <span class="number">8</span>) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">y = (id &amp; <span class="number">1</span>) &lt;&lt; <span class="number">1</span> | (id &amp; <span class="number">4</span>);</span><br></pre></td></tr></table></figure></li>
+<li><p>最终得到 <span class="math inline">\(L+1\)</span> 层样本在 <span class="math inline">\(L\)</span> 层对应的 <span class="math inline">\(2\times 2\)</span> block 的起始偏移量：
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">xBlockOffset = xOffset + x;</span><br><span class="line">yBlockOffset = yOffset + y;</span><br></pre></td></tr></table></figure></p></li>
+</ul>
+<p>与 2 levels 算法相似，得到 (xBlockOffset, yBlockOffset) 后，即可得到
+<span class="math inline">\(L\)</span> 层级的 4 个样本，从而生成 <span class="math inline">\(L+1\)</span> 层级样本。每个 local workgroup 共生成
+16 个 <span class="math inline">\(L+1\)</span> 层级样本，写入位置为
+(xBlockOffset &gt;&gt; 1, yBlockOffset &gt;&gt; 1)。</p>
+<p>每个 local workgroup 在同一个 subgroup 内执行，因此利用 subgroup
+内部的高效数据同步，每个 subtile 的第一个线程收集其他线程生成的 <span class="math inline">\(L+1\)</span> 层级样本，然后生成一个 <span class="math inline">\(L+2\)</span> 层级样本。每个 subtile 的第一个线程为
+<code>id&amp;3 == 0</code>，通过 使用 mask 参数分别为 1、2、3
+的<code>subgroupShuffleXor</code> ，得到 subtile 的其他线程生成的 <span class="math inline">\(L+1\)</span> 层级样本，过程如下</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="number">0</span> (<span class="number">0000</span>) ^ (<span class="number">0001</span>, <span class="number">0010</span>, <span class="number">0011</span>) = (<span class="number">0001</span>, <span class="number">0010</span>, <span class="number">0011</span>) = (<span class="number">1</span>, <span class="number">2</span>, <span class="number">3</span>)</span><br><span class="line"><span class="number">4</span> (<span class="number">0100</span>) ^ (<span class="number">0001</span>, <span class="number">0010</span>, <span class="number">0011</span>) = (<span class="number">0101</span>, <span class="number">0110</span>, <span class="number">0111</span>) = (<span class="number">5</span>, <span class="number">6</span>, <span class="number">7</span>)</span><br><span class="line"><span class="number">8</span> (<span class="number">1000</span>) ^ (<span class="number">0001</span>, <span class="number">0010</span>, <span class="number">0011</span>) = (<span class="number">1001</span>, <span class="number">1010</span>, <span class="number">1011</span>) = (<span class="number">9</span>, <span class="number">10</span>, <span class="number">11</span>)</span><br><span class="line"><span class="number">12</span>(<span class="number">1100</span>) ^ (<span class="number">0001</span>, <span class="number">0010</span>, <span class="number">0011</span>) = (<span class="number">1101</span>, <span class="number">1110</span>, <span class="number">1111</span>) = (<span class="number">13</span>, <span class="number">14</span>, <span class="number">15</span>)</span><br></pre></td></tr></table></figure>
+<p>每个 local workgroup 生成 4 个 <span class="math inline">\(L+2\)</span> 层级样本，写入位置为 (xBlockOffset
+&gt;&gt; 2, yBlockOffset &gt;&gt; 2)。每个 local workgroup
+中的第一个线程使用 <code>subgroupShuffleXor</code> 得到 4、8、12
+号线程的 <span class="math inline">\(L+2\)</span> 层级样本，生成一个
+<span class="math inline">\(L+3\)</span> 层级样本，写入位置为
+(xBlockOffset &gt;&gt; 3, yBlockOffset &gt;&gt; 3)。每个 local workgroup
+的第一个线程为 <code>id&amp;15 == 0</code>，过程如下：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"><span class="number">0</span>(<span class="number">0000</span>) ^ (<span class="number">0100</span>, <span class="number">1000</span>, <span class="number">1100</span>) = (<span class="number">0100</span>, <span class="number">1000</span>, <span class="number">1100</span>)</span><br></pre></td></tr></table></figure>
+<h4 id="levels-2">4/5-Levels</h4>
+<p>理论上，上述算法可以继续递归应用得到 4/5 levels 算法，例如对于 4
+levels 算法，输入层级划分为 <span class="math inline">\(16\times
+16\)</span> tiles，local workgroup 大小使用 64，划分为 4 组，每组 16
+个线程，分别应用 3 levels 算法，然后 0 号线程使用 shuffle 得到
+16、32、48 号线程的样本，最终生成 <span class="math inline">\(L+4\)</span> 的一个样本。但实际上，subgroup
+大小有限，例如 NVIDIA 显卡的 subgroup 大小为 32，无法使用 32 及之后的
+gl_SubgroupInvocationID，因此不能通过 subgroup 得到 32、48
+号线程的样本。对于此，改用 shared memory。</p>
+<h5 id="levels-3">4-levels</h5>
+<p>对于 4 levels 算法，输入层级划分为 <span class="math inline">\(16\times 16\)</span> tiles，local workgroup
+大小使用 64，划分为 4 组，每组 16 个线程。local workgroup 中的线程使用
+<code>gl_LocalInvocationIndex</code> 分组，0~15 为组 0，16~31 为组
+1，32~47 为组 2，48~63 为组 3，如下所示：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">workgroup 内的分组，<span class="string">&quot;|| =&quot;</span> 为分组边界</span><br><span class="line">        每组中间数字为分组编号</span><br><span class="line">        +---+---++---+---+</span><br><span class="line">        | <span class="number">0</span> | <span class="number">4</span> ||<span class="number">16</span> |<span class="number">20</span> |</span><br><span class="line">        +--<span class="number">-0</span>---++--<span class="number">-1</span>---+</span><br><span class="line">        | <span class="number">8</span> |<span class="number">12</span> ||<span class="number">24</span> |<span class="number">28</span> |</span><br><span class="line">        +===+===++===+===+</span><br><span class="line">        |<span class="number">32</span> |<span class="number">36</span> ||<span class="number">48</span> |<span class="number">52</span> |</span><br><span class="line">        +--<span class="number">-2</span>---++--<span class="number">-3</span>---+</span><br><span class="line">        |<span class="number">40</span> |<span class="number">44</span> ||<span class="number">56</span> |<span class="number">60</span> |</span><br><span class="line">        +---+---++---+---+</span><br></pre></td></tr></table></figure>
+<p>每组分别执行 3 levels 算法。但每组的第一个线程不仅生成 <span class="math inline">\(L+3\)</span> 的一个样本，还要将该样本写入 shared
+memory中。然后发出一个 barrier，barrier 之后在 shared memory 中存在 4
+组线程分别写入的一个 <span class="math inline">\(L+3\)</span>
+层级样本，即 <span class="math inline">\(L+3\)</span> 层级的一个 <span class="math inline">\(2\times 2\)</span> tile。最后 0 号线程使用 shared
+memory 中的 4 个 <span class="math inline">\(L+3\)</span>
+层级样本生成一个 <span class="math inline">\(L+4\)</span>
+层级样本。过程如下：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">     <span class="built_in">L</span>(<span class="number">16</span>x16)               L+<span class="number">2</span>(<span class="number">8</span>x8)                       L+<span class="number">3</span>(<span class="number">2</span>x2)                   L+<span class="number">4</span></span><br><span class="line">+-------++-------+     +---+---++---+---+             +-------++-------+        +---------------+</span><br><span class="line">|       ||       |     | <span class="number">0</span> | <span class="number">4</span> ||<span class="number">16</span> |<span class="number">20</span> |             |       ||       |        |               |</span><br><span class="line">|  <span class="number">8</span>x8  ||  <span class="number">8</span>x8  |     +---+---++---+---+             |   <span class="number">0</span>   ||  <span class="number">16</span>   |        |               |</span><br><span class="line">|       ||       |(L+<span class="number">1</span>)| <span class="number">8</span> |<span class="number">12</span> ||<span class="number">24</span> |<span class="number">28</span> |             |       ||       |        |               |</span><br><span class="line">+=======++=======+ ==&gt; +===+===++===+===+ =&gt;omitted=&gt; +=======++=======+ ==|==&gt; |      <span class="number">0</span>        |</span><br><span class="line">|       ||       |     |<span class="number">32</span> |<span class="number">36</span> ||<span class="number">48</span> |<span class="number">52</span> |      |      |       ||       |   |    |               |</span><br><span class="line">|  <span class="number">8</span>x8  ||  <span class="number">8</span>x8  |     +---+---++---+---+      |      |  <span class="number">32</span>   ||  <span class="number">48</span>   |   |    |               |</span><br><span class="line">|       ||       |     |<span class="number">40</span> |<span class="number">44</span> ||<span class="number">56</span> |<span class="number">60</span> |      |      |       ||       |   |    |               |</span><br><span class="line">+-------++-------+     +---+---++---+---+      |      +-------++-------+   |    +---------------+</span><br><span class="line">                                               |                           |</span><br><span class="line">                        <span class="number">16</span>-thread team handles each <span class="number">8</span>x8 sub-<span class="built_in">tile</span>        (barrier)</span><br></pre></td></tr></table></figure>
+<p>首先确定 <span class="math inline">\(L+1\)</span> 层每个样本在 <span class="math inline">\(L\)</span> 层对应的 <span class="math inline">\(2\times 2\)</span> block 的起始位置，</p>
+<ul>
+<li><p>输入 tile 在 <span class="math inline">\(L\)</span>
+层级的起始位置：<span class="math inline">\(M=4\)</span> 代入 (xOffset,
+yOffset) 的计算</p></li>
+<li><p>local workgroup 内线程的分组编号：local workgroup size 为
+64，分为 4 个组，0~15 为组 0，16~31 为组 1，32~47 为组 2，48~63 为组
+3。如下所示， <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">    L+<span class="number">1</span> 层编号十六进制        L+<span class="number">1</span>层编号对应的输入 tile 的偏移量           L+<span class="number">1</span> 层分组编号</span><br><span class="line">+----+----++----+----+     +------+------++------+------+    +-----------++-----------+</span><br><span class="line">|<span class="number">0000</span>|<span class="number">0004</span>||<span class="number">0010</span>|<span class="number">0014</span>|     |(<span class="number">0</span>,<span class="number">0</span>) |(<span class="number">0</span>,<span class="number">4</span>) ||(<span class="number">0</span>,<span class="number">8</span>) |(<span class="number">0</span>,<span class="number">12</span>)|    |           ||           |</span><br><span class="line">+----+----++----+----+     +------+------++------+------+    |     <span class="number">0</span>     ||     <span class="number">1</span>     |</span><br><span class="line">|<span class="number">0008</span>|<span class="number">000</span>C||<span class="number">0018</span>|<span class="number">001</span>C|     |(<span class="number">4</span>,<span class="number">0</span>) |(<span class="number">4</span>,<span class="number">4</span>) ||(<span class="number">4</span>,<span class="number">8</span>) |(<span class="number">4</span>,<span class="number">12</span>)|    |           ||           |</span><br><span class="line">+====+====++====+====+     +======+======++======+======+    +===========++===========+</span><br><span class="line">|<span class="number">0020</span>|<span class="number">0024</span>||<span class="number">0030</span>|<span class="number">0034</span>|     |(<span class="number">8</span>,<span class="number">0</span>) |(<span class="number">8</span>,<span class="number">4</span>) ||(<span class="number">8</span>,<span class="number">8</span>) |(<span class="number">8</span>,<span class="number">12</span>)|    |           ||           |</span><br><span class="line">+----+----++----+----+     +------+------++------+------+    |     <span class="number">2</span>     ||     <span class="number">3</span>     |</span><br><span class="line">|<span class="number">0028</span>|<span class="number">002</span>C||<span class="number">0038</span>|<span class="number">003</span>C|     |(<span class="number">12</span>,<span class="number">0</span>)|(<span class="number">12</span>,<span class="number">4</span>)||(<span class="number">12</span>,<span class="number">8</span>)|(<span class="number">12</span>,<span class="number">12</span>|    |           ||           |</span><br><span class="line">+----+----++----+----+     +------+------++------+------+    +-----------++-----------+</span><br></pre></td></tr></table></figure></p>
+<p>invocation 索引为 id，所属分组编号计算方式如下：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">teamID = (id &amp; <span class="number">0x00F0</span>) &gt;&gt; <span class="number">4</span>;</span><br></pre></td></tr></table></figure>
+<p>当前分组在输入 tile 中的偏移量为 <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">tx = (teamID &amp; <span class="number">2</span>) &lt;&lt; <span class="number">2</span>;</span><br><span class="line">ty = (teamID &amp; <span class="number">1</span>) &lt;&lt; <span class="number">3</span>;</span><br></pre></td></tr></table></figure></p></li>
+<li><p>当前 invocation 在其所属分组的偏移量： <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">x = (id &amp; <span class="number">2</span>) | (id &amp; <span class="number">8</span>) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">y = (id &amp; <span class="number">1</span>) &lt;&lt; <span class="number">1</span> | (id &amp; <span class="number">4</span>);</span><br></pre></td></tr></table></figure></p></li>
+<li><p>最终得到 <span class="math inline">\(L+1\)</span> 层样本在 <span class="math inline">\(L\)</span> 层对应的 <span class="math inline">\(2\times 2\)</span> block 的起始偏移量：
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">xBlockOffset = xOffset + tx + x;</span><br><span class="line">yBlockOffset = yOffset + ty + y;</span><br></pre></td></tr></table></figure></p></li>
+</ul>
+<p>得到 (xBlockOffset, yBlockOffset) 后即可在每个分组内分别执行 3-levels
+算法。每个分组都会生成一个 <span class="math inline">\(L+3\)</span>
+层级样本，即 workgroup 生成了 4 个 <span class="math inline">\(L+3\)</span> 层级样本。在生成最终的 <span class="math inline">\(L+4\)</span> 层样本时，不能再使用
+<code>subgroupShuffleXor</code> 来得到其他分组生成的 <span class="math inline">\(L+3\)</span> 层级样本，因为 subgroup size 为
+32，其他分组不一定位于同一个 subgroup 内，因此这时需要使用 shared
+memory。</p>
+<p>每个分组的第一个线程不仅需要生成一个 <span class="math inline">\(L+3\)</span> 层级样本，还需要将该样本写入 shared
+memory，组内的第一个线程为
+<code>(id &amp; 0x00F0)==id</code>，写入位置为 teamID。加一个 barrier
+等待 shared memory 的写操作完成。最后，workgroup 的第一个线程负责生成
+<span class="math inline">\(L+4\)</span> 层样本。</p>
+<h5 id="levels-4">5-levels</h5>
+<p>对于 5 levels 算法，输入层级划分为 <span class="math inline">\(32\times 32\)</span> tiles，local workgroup
+大小使用 256，划分为 16 组，每组 16 个线程。分组如下所示，</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line"> workgroup的每个分组编号      workgroup内每组的invocation起始编号    </span><br><span class="line">+----+----++----+----+       +----+----++----+----+</span><br><span class="line">|  <span class="number">0</span> |  <span class="number">1</span> ||  <span class="number">4</span> |  <span class="number">5</span> |       | <span class="number">0</span>  | <span class="number">16</span> || <span class="number">64</span> | <span class="number">80</span> |</span><br><span class="line">+----+----++----+----+       +----+----++----+----+</span><br><span class="line">|  <span class="number">2</span> |  <span class="number">3</span> ||  <span class="number">6</span> |  <span class="number">7</span> |       | <span class="number">32</span> | <span class="number">48</span> || <span class="number">96</span> | <span class="number">112</span>|</span><br><span class="line">+====+====++====+====+       +====+====++====+====+</span><br><span class="line">|  <span class="number">8</span> |  <span class="number">9</span> || <span class="number">12</span> | <span class="number">13</span> |       |<span class="number">128</span> | <span class="number">144</span>||<span class="number">192</span> | <span class="number">208</span>| </span><br><span class="line">+----+----++----+----+       +----+----++----+----+</span><br><span class="line">| <span class="number">10</span> | <span class="number">11</span> || <span class="number">14</span> | <span class="number">15</span> |       |<span class="number">160</span> | <span class="number">176</span>||<span class="number">224</span> | <span class="number">240</span>|</span><br><span class="line">+----+----++----+----+       +----+----++----+----+ </span><br></pre></td></tr></table></figure>
+<p>与 4 levels 算法相似，每组分别执行 3 levels
+算法，并且每组的第一个线程不仅生成 <span class="math inline">\(L+3\)</span> 层级的一个样本，还要写入 shared
+memory 中。在 barrier 之后，shared memory 中存在 16 组线程分别写入的一个
+<span class="math inline">\(L+3\)</span> 层级样本，即 <span class="math inline">\(L+3\)</span> 层级的一个 <span class="math inline">\(4\times 4\)</span> tile。最后使用 4 个线程执行一次
+2 levels 算法，最终得到 4 个 <span class="math inline">\(L+4\)</span>
+层级样本与 1 个 <span class="math inline">\(L+5\)</span>
+层级样本。过程如下所示，</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">  <span class="built_in">L</span>(<span class="number">32</span>x32)                 L+<span class="number">3</span> (+ copy in smem)            L+<span class="number">4</span>(<span class="number">2</span>x2)                  L+<span class="number">5</span></span><br><span class="line">+---+---++---+---+             +---+---++---+---+        +-------++-------+      +---------------+</span><br><span class="line">|<span class="number">8</span>x8|<span class="number">8</span>x8||<span class="number">8</span>x8|<span class="number">8</span>x8|             |  <span class="number">0</span>| <span class="number">16</span>|| <span class="number">64</span>| <span class="number">80</span>|        |       ||       |      |               |</span><br><span class="line">+---+---++---+---+             +---+---++---+---+        |   <span class="number">0</span>   ||   <span class="number">1</span>   |      |               |</span><br><span class="line">|<span class="number">8</span>x8|<span class="number">8</span>x8||<span class="number">8</span>x8|<span class="number">8</span>x8|             | <span class="number">32</span>| <span class="number">48</span>|| <span class="number">96</span>|<span class="number">112</span>|        |       ||       |      |               |</span><br><span class="line">+===+===++===+===+ =&gt;omitted=&gt; +===+===++===+===+ ==|==&gt; +=======++=======+ ===&gt; |       <span class="number">0</span>       |</span><br><span class="line">|<span class="number">8</span>x8|<span class="number">8</span>x8||<span class="number">8</span>x8|<span class="number">8</span>x8|       |     |<span class="number">128</span>|<span class="number">144</span>||<span class="number">192</span>|<span class="number">208</span>|   |    |       ||       |      |               |</span><br><span class="line">+---+---++---+---+       |     +---+---++---+---+   |    |   <span class="number">2</span>   ||   <span class="number">3</span>   |      |               |</span><br><span class="line">|<span class="number">8</span>x8|<span class="number">8</span>x8||<span class="number">8</span>x8|<span class="number">8</span>x8|       |     |<span class="number">160</span>|<span class="number">176</span>||<span class="number">224</span>|<span class="number">240</span>|   |    |       ||       |      |               | </span><br><span class="line">+---+---++---+---+       |     +---+---++---+---+   |    +-------++-------+      +---------------+</span><br><span class="line">                         |                          |</span><br><span class="line">   <span class="number">16</span>-thread team handles each <span class="number">8</span>x8 sub-<span class="built_in">tile</span>      (barrier)</span><br></pre></td></tr></table></figure>
+<p>首先确定 <span class="math inline">\(L+1\)</span> 层每个样本在 <span class="math inline">\(L\)</span> 层对应的 <span class="math inline">\(2\times 2\)</span> block 的起始位置，</p>
+<ul>
+<li><p>输入 tile 在 <span class="math inline">\(L\)</span>
+层级的起始位置：<span class="math inline">\(M=5\)</span> 代入 (xOffset,
+yOffset) 的计算</p></li>
+<li><p>local workgroup 内线程的分组编号：local workgroup size 为
+256，分为 16 个组，分组如下 <figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">        分组编号                每组的起始编号十六进制            起始编号在输入 tile 中对应的偏移量</span><br><span class="line">+----+----++----+----+       +----+----++----+----+        +-------+-------++-------+-------+</span><br><span class="line">|  <span class="number">0</span> |  <span class="number">1</span> ||  <span class="number">4</span> |  <span class="number">5</span> |       |<span class="number">0000</span>|<span class="number">0010</span>||<span class="number">0040</span>|<span class="number">0050</span>|        | (<span class="number">0</span>,<span class="number">0</span>) | (<span class="number">0</span>,<span class="number">8</span>) ||(<span class="number">0</span>,<span class="number">16</span>) | (<span class="number">0</span>,<span class="number">24</span>)|</span><br><span class="line">+----+----++----+----+       +----+----++----+----+        +-------+-------++-------+-------+</span><br><span class="line">|  <span class="number">2</span> |  <span class="number">3</span> ||  <span class="number">6</span> |  <span class="number">7</span> |       |<span class="number">0020</span>|<span class="number">0030</span>||<span class="number">0060</span>|<span class="number">0070</span>|        | (<span class="number">8</span>,<span class="number">0</span>) | (<span class="number">8</span>,<span class="number">8</span>) ||(<span class="number">8</span>,<span class="number">16</span>) | (<span class="number">8</span>,<span class="number">24</span>)|</span><br><span class="line">+====+====++====+====+       +====+====++====+====+        +=======+=======++=======+=======+</span><br><span class="line">|  <span class="number">8</span> |  <span class="number">9</span> || <span class="number">12</span> | <span class="number">13</span> |       |<span class="number">0080</span>|<span class="number">0090</span>||<span class="number">00</span>C0|<span class="number">00</span>D0|        |(<span class="number">16</span>,<span class="number">0</span>) | (<span class="number">16</span>,<span class="number">8</span>)||(<span class="number">16</span>,<span class="number">16</span>)|(<span class="number">16</span>,<span class="number">24</span>)|</span><br><span class="line">+----+----++----+----+       +----+----++----+----+        +-------+-------++-------+-------+</span><br><span class="line">| <span class="number">10</span> | <span class="number">11</span> || <span class="number">14</span> | <span class="number">15</span> |       |<span class="number">00</span>A0|<span class="number">00B</span>0||<span class="number">00E0</span>|<span class="number">00F</span>0|        |(<span class="number">24</span>,<span class="number">0</span>) | (<span class="number">24</span>,<span class="number">8</span>)||(<span class="number">24</span>,<span class="number">16</span>)|(<span class="number">24</span>,<span class="number">24</span>)|</span><br><span class="line">+----+----++----+----+       +----+----++----+----+        +-------+-------++-------+-------+</span><br></pre></td></tr></table></figure></p>
+<p>invocation 索引为 id，所属分组编号计算方式如下：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">teamID = (id &amp; <span class="number">0x00F0</span>) &gt;&gt; <span class="number">4</span>;</span><br></pre></td></tr></table></figure>
+<p>当前分组在输入 tile 中的偏移量为</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">tx = (teamID &amp; <span class="number">2</span>) &lt;&lt; <span class="number">2</span> | (teamID &amp; <span class="number">8</span>) &lt;&lt; <span class="number">1</span>;</span><br><span class="line">ty = (teamID &amp; <span class="number">1</span>) &lt;&lt; <span class="number">3</span> | (teamID &amp; <span class="number">4</span>) &lt;&lt; <span class="number">2</span>;</span><br></pre></td></tr></table></figure></li>
+<li><p>当前 invocation 在其所属分组的偏移量：</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">x = (id &amp; <span class="number">2</span>) | (id &amp; <span class="number">8</span>) &gt;&gt; <span class="number">1</span>;</span><br><span class="line">y = (id &amp; <span class="number">1</span>) &lt;&lt; <span class="number">1</span> | (id &amp; <span class="number">4</span>);</span><br></pre></td></tr></table></figure></li>
+<li><p>最终得到 <span class="math inline">\(L+1\)</span> 层样本在 <span class="math inline">\(L\)</span> 层对应的 <span class="math inline">\(2\times 2\)</span> block 的起始偏移量：
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">xBlockOffset = xOffset + tx + x;</span><br><span class="line">yBlockOffset = yOffset + ty + y;</span><br></pre></td></tr></table></figure></p></li>
+</ul>
+<p>得到 (xBlockOffset, yBlockOffset) 后，与 4-levels
+算法类似，在每个分组内分别执行 3-levels 算法。每组生成一个 <span class="math inline">\(L+3\)</span> 层级样本，且组内第一个线程
+<code>(id &amp; 0x00F0)==id</code> 负责写入 shared memory 中索引 teamID
+的位置。workgroup 共生成 16 个 <span class="math inline">\(L+3\)</span>
+层级样本，得到一个 4x4 大小的 shared memory。</p>
+<p>为了能够继续使用 subgroup 特性，使用一个 subgroup
+来生成最后两层。假设使用 ID 为 0~15 的 invocation，ID 用来索引 shared
+memory 中的样本。shared memory
+中的数组分为四部分，0<sub>3、4</sub>7、8<sub>11、12</sub>15，每个部分包含
+4 个 <span class="math inline">\(L+3\)</span> 层级样本。
+<code>id == id &amp; 0x000C</code> 的 invocation 负责收集 4 个 <span class="math inline">\(L+3\)</span> 层级样本，生成 1 个 <span class="math inline">\(L+4\)</span> 层级样本。最后 0 号 invocation 通过
+<code>subgroupShuffleXor</code> 收集其他 3 个 <span class="math inline">\(L+4\)</span> 层级样本，生成最终的 1 个 L+5
+层级样本。</p>
+<h3 id="宽高为非-2-的次幂">宽高为非 2 的次幂</h3>
+<p>对于图像宽高不是 2 的次幂的情况，<span class="math inline">\(L+1\)</span> 层级的样本在 <span class="math inline">\(L\)</span> 层级对应的 block 可能是 <span class="math inline">\(1\times 1\)</span>、<span class="math inline">\(1\times 2\)</span>、<span class="math inline">\(2\times 1\)</span>、$2$2、<span class="math inline">\(2\times 3\)</span>、<span class="math inline">\(3\times 2\)</span>、<span class="math inline">\(3\times 3\)</span> 等。在划分为 tile
+计算之后层级样本时，某些样本会用到多次，如下述 <span class="math inline">\(5 \times 5\)</span> 大小的 mip level 生成 <span class="math inline">\(2\times 2\)</span> 大小的 mip
+level，其中数字表示对应样本被使用到的次数。</p>
+<figure class="highlight c++"><table><tr><td class="code"><pre><span class="line">+---+---+---+---+---+        +---------+---------+</span><br><span class="line">|   |   | <span class="number">2</span> |   |   |        |         |         |</span><br><span class="line">+---+---+---+---+---+        |         |         |</span><br><span class="line">|   |   | <span class="number">2</span> |   |   |        |         |         |</span><br><span class="line">+---+---+---+---+---+        |         |         |</span><br><span class="line">| <span class="number">2</span> | <span class="number">2</span> | <span class="number">4</span> | <span class="number">2</span> | <span class="number">2</span> | =====&gt; +---------+---------+ (each sample generated with <span class="number">3</span>x3 kernel)</span><br><span class="line">+---+---+---+---+---+        |         |         |</span><br><span class="line">|   |   | <span class="number">2</span> |   |   |        |         |         |</span><br><span class="line">+---+---+---+---+---+        |         |         |</span><br><span class="line">|   |   | <span class="number">2</span> |   |   |        |         |         |</span><br><span class="line">+---+---+---+---+---+        +---------+---------+</span><br></pre></td></tr></table></figure>
+<p>这意味着，无法像前述 2 的次幂的算法那样，每个 workgroup 负责的输入
+tile，不会和其他 workgroup 有任何交集。这种由非 2
+的次幂引入的多次引用，会导致一些 workgroup 生成下一层级样本时，
+也可能使用到其他 workgroup 生成的样本。为了提高并行性，去除不同
+workgroup 之间的同步，可以推算出生成 <span class="math inline">\(M\)</span> 层级所需的输入层级的大小范围。在划分
+workgroup 时，不同 workgroup 之间的输入 tile 允许有重叠部分。</p>
+]]></content>
+      <categories>
+        <category>Vulkan Basics</category>
+      </categories>
+  </entry>
+</search>
