@@ -111,6 +111,7 @@
       <h1 class="site-title">wsyOverflow</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
+      <p class="site-subtitle" itemprop="description">blog pages</p>
   </div>
 
   <div class="site-nav-right">
@@ -214,7 +215,7 @@
       </div>
 
       <div class="post-title">
-          <a class="post-title-link" href="/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy.html" itemprop="url">
+          <a class="post-title-link" href="/Render-Engine/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy/" itemprop="url">
             <span itemprop="name">Scene Graph and Draw Call Grouping Strategy</span>
           </a>
       </div>
@@ -234,7 +235,7 @@
       </div>
 
       <div class="post-title">
-          <a class="post-title-link" href="/Render-Engine/Vulkan-Render-Design.html" itemprop="url">
+          <a class="post-title-link" href="/Render-Engine/Render-Engine/Vulkan-Render-Design/" itemprop="url">
             <span itemprop="name">Vulkan Render Design</span>
           </a>
       </div>
@@ -446,6 +447,31 @@ window.addEventListener('pjax:success', () => {
 
 
   
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
 
 
 

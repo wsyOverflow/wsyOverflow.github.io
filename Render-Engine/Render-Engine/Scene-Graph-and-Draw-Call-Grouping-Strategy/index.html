@@ -26,7 +26,7 @@
   <meta name="description" content="Summary 本文介绍了表示场景的 Scene Graph ，以及场景加载过程。基于 Scene Graph 组织 draw call 的策略。 Scene Graph Scene Graph 表示场景中物体的层级结构，是场景物体的组织形式。在本渲染器中，Scene Graph 主要由表示层级结构的基类UltraNode与组织场景物体的基类SceneObject组成。 1. 场景">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Scene Graph and Draw Call Grouping Strategy">
-<meta property="og:url" content="https://wsyoverflow.github.io/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy.html">
+<meta property="og:url" content="https://wsyoverflow.github.io/Render-Engine/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy/index.html">
 <meta property="og:site_name" content="wsyOverflow">
 <meta property="og:description" content="Summary 本文介绍了表示场景的 Scene Graph ，以及场景加载过程。基于 Scene Graph 组织 draw call 的策略。 Scene Graph Scene Graph 表示场景中物体的层级结构，是场景物体的组织形式。在本渲染器中，Scene Graph 主要由表示层级结构的基类UltraNode与组织场景物体的基类SceneObject组成。 1. 场景">
 <meta property="og:locale" content="en_US">
@@ -37,7 +37,7 @@
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://wsyoverflow.github.io/images/Scene%20Graph%20and%20Draw%20Call%20Grouping%20Strategy.assets/image-20220716235751202.png">
 
-<link rel="canonical" href="https://wsyoverflow.github.io/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy.html">
+<link rel="canonical" href="https://wsyoverflow.github.io/Render-Engine/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy/">
 
 
 <script id="page-configurations">
@@ -117,6 +117,7 @@
       <h1 class="site-title">wsyOverflow</h1>
       <span class="logo-line-after"><i></i></span>
     </a>
+      <p class="site-subtitle" itemprop="description">blog pages</p>
   </div>
 
   <div class="site-nav-right">
@@ -196,7 +197,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://wsyoverflow.github.io/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy.html">
+    <link itemprop="mainEntityOfPage" href="https://wsyoverflow.github.io/Render-Engine/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy/">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -503,11 +504,11 @@ https://developer.nvidia.com/content/how-modern-opengl-can-radically-reduce-driv
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/Render-Engine/Vulkan-Render-Design.html" rel="prev" title="Vulkan Render Design">
+    <a href="/Render-Engine/Render-Engine/Vulkan-Render-Design/" rel="prev" title="Vulkan Render Design">
       <i class="fa fa-chevron-left"></i> Vulkan Render Design
     </a></div>
       <div class="post-nav-item">
-    <a href="/Vulkan-Basics/Compute-Shader-%E5%AE%9E%E7%8E%B0-Pyramid-Algorithm.html" rel="next" title="Compute Shader 实现 Pyramid Algorithm">
+    <a href="/Vulkan-Basics/Vulkan-Basics/Compute-Shader-%E5%AE%9E%E7%8E%B0-Pyramid-Algorithm/" rel="next" title="Compute Shader 实现 Pyramid Algorithm">
       Compute Shader 实现 Pyramid Algorithm <i class="fa fa-chevron-right"></i>
     </a></div>
     </div>
@@ -718,6 +719,31 @@ window.addEventListener('pjax:success', () => {
 
 
   
+  <script data-pjax>
+    (function(){
+      var canonicalURL, curProtocol;
+      //Get the <link> tag
+      var x=document.getElementsByTagName("link");
+		//Find the last canonical URL
+		if(x.length > 0){
+			for (i=0;i<x.length;i++){
+				if(x[i].rel.toLowerCase() == 'canonical' && x[i].href){
+					canonicalURL=x[i].href;
+				}
+			}
+		}
+    //Get protocol
+	    if (!canonicalURL){
+	    	curProtocol = window.location.protocol.split(':')[0];
+	    }
+	    else{
+	    	curProtocol = canonicalURL.split(':')[0];
+	    }
+      //Get current URL if the canonical URL does not exist
+	    if (!canonicalURL) canonicalURL = window.location.href;
+	    //Assign script content. Replace current URL with the canonical URL
+      !function(){var e=/([http|https]:\/\/[a-zA-Z0-9\_\.]+\.baidu\.com)/gi,r=canonicalURL,t=document.referrer;if(!e.test(r)){var n=(String(curProtocol).toLowerCase() === 'https')?"https://sp0.baidu.com/9_Q4simg2RQJ8t7jm9iCKT-xh_/s.gif":"//api.share.baidu.com/s.gif";t?(n+="?r="+encodeURIComponent(document.referrer),r&&(n+="&l="+r)):r&&(n+="?l="+r);var i=new Image;i.src=n}}(window);})();
+  </script>
 
 
 
@@ -816,7 +842,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'wsyOverflow.github.io',
       owner       : 'wsyOverflow',
       admin       : ['wsyOverflow'],
-      id          : '176c117f29953939c8da39fba50feaa2',
+      id          : '77c4ef62f93aee8c9772e776ecd18541',
         language: '',
       distractionFreeMode: false
     });
