@@ -23,18 +23,18 @@
     var CONFIG = {"hostname":"wsyoverflow.github.io","root":"/","scheme":"Muse","version":"7.8.0","exturl":false,"sidebar":{"position":"left","display":"post","padding":18,"offset":12,"onmobile":false},"copycode":{"enable":true,"show_result":true,"style":null},"back2top":{"enable":true,"sidebar":false,"scrollpercent":false},"bookmark":{"enable":false,"color":"#222","save":"auto"},"fancybox":false,"mediumzoom":false,"lazyload":false,"pangu":false,"comments":{"style":"tabs","active":"gitalk","storage":true,"lazyload":false,"nav":null,"activeClass":"gitalk"},"algolia":{"hits":{"per_page":10},"labels":{"input_placeholder":"Search for Posts","hits_empty":"We didn't find any results for the search: ${query}","hits_stats":"${hits} results found in ${time} ms"}},"localsearch":{"enable":true,"trigger":"auto","top_n_per_article":1,"unescape":false,"preload":false},"motion":{"enable":true,"async":false,"transition":{"post_block":"fadeIn","post_header":"slideDownIn","post_body":"slideDownIn","coll_header":"slideLeftIn","sidebar":"slideUpIn"}},"path":"search.xml"};
   </script>
 
-  <meta name="description" content="Summary 作者源码 [3] Light Field Probe Structure Light Field(光场)描述了空间中一点的radiance在出射方向上的分布，假设点 \(\mathbf{x}\in \mathcal{R}^3\)，以及该点的一个出射方向 \(\omega\in \mathcal{S}^2\) (应该指上半球)，那么Light Field可使用 \(\ma">
+  <meta name="description" content="Summary作者源码 [3] Light Field Probe StructureLight Field(光场)描述了空间中一点的radiance在出射方向上的分布，假设点 $\mathbf{x}\in \mathcal{R}^3$，以及该点的一个出射方向 $\omega\in \mathcal{S}^2$ (应该指上半球)，那么Light Field可使用 $\mathcal{L}(\mat">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Real-Time Global Illumination using Precomputed Light Field Probes">
 <meta property="og:url" content="https://wsyoverflow.github.io/Paper-Notes/GI/Real-Time-Global-Illumination-using-Precomputed-Light-Field-Probes.html">
 <meta property="og:site_name" content="wsyOverflow">
-<meta property="og:description" content="Summary 作者源码 [3] Light Field Probe Structure Light Field(光场)描述了空间中一点的radiance在出射方向上的分布，假设点 \(\mathbf{x}\in \mathcal{R}^3\)，以及该点的一个出射方向 \(\omega\in \mathcal{S}^2\) (应该指上半球)，那么Light Field可使用 \(\ma">
+<meta property="og:description" content="Summary作者源码 [3] Light Field Probe StructureLight Field(光场)描述了空间中一点的radiance在出射方向上的分布，假设点 $\mathbf{x}\in \mathcal{R}^3$，以及该点的一个出射方向 $\omega\in \mathcal{S}^2$ (应该指上半球)，那么Light Field可使用 $\mathcal{L}(\mat">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes.assets/image-20230201162511726.png">
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes.assets/image-20230202104825030.png">
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes.assets/image-20230202213146200.png">
 <meta property="article:published_time" content="2023-01-12T06:56:16.983Z">
-<meta property="article:modified_time" content="2023-02-02T16:50:58.009Z">
+<meta property="article:modified_time" content="2023-02-02T17:06:01.157Z">
 <meta property="article:author" content="wsyOverflow">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://wsyoverflow.github.io/images/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes.assets/image-20230201162511726.png">
@@ -229,7 +229,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-02-03 00:50:58" itemprop="dateModified" datetime="2023-02-03T00:50:58+08:00">2023-02-03</time>
+                <time title="Modified: 2023-02-03 01:06:01" itemprop="dateModified" datetime="2023-02-03T01:06:01+08:00">2023-02-03</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -256,124 +256,56 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="summary">Summary</h2>
-<p>作者源码 <a href="#%5B3%5D">[3]</a></p>
-<h2 id="light-field-probe-structure">Light Field Probe Structure</h2>
-<p>Light Field(光场)描述了空间中一点的radiance在出射方向上的分布，假设点
-<span class="math inline">\(\mathbf{x}\in
-\mathcal{R}^3\)</span>，以及该点的一个出射方向 <span class="math inline">\(\omega\in \mathcal{S}^2\)</span>
-(应该指上半球)，那么Light Field可使用 <span class="math inline">\(\mathcal{L}(\mathbf{x},\omega)\)</span>
-表示。不可能对场景中每一点都定义Light
-Field，作者通过将场景的包围盒均分为grid来将空间离散化，对每个grid的一个采样点定义一个light
-field。</p>
-<p>在每个离散采样点 <span class="math inline">\(\mathbf{x}&#39;\)</span>（每个grid的一个采样点）上存储一个球形light
-field probe数据，用以记录点 <span class="math inline">\(\mathbf{x&#39;}\)</span> 的每个方向 <span class="math inline">\(\omega\)</span> 的数据，包括：</p>
+        <h2 id="Summary"><a href="#Summary" class="headerlink" title="Summary"></a>Summary</h2><p>作者源码 <a href="#[3]">[3]</a></p>
+<h2 id="Light-Field-Probe-Structure"><a href="#Light-Field-Probe-Structure" class="headerlink" title="Light Field Probe Structure"></a>Light Field Probe Structure</h2><p>Light Field(光场)描述了空间中一点的radiance在出射方向上的分布，假设点 $\mathbf{x}\in \mathcal{R}^3$，以及该点的一个出射方向 $\omega\in \mathcal{S}^2$ (应该指上半球)，那么Light Field可使用 $\mathcal{L}(\mathbf{x},\omega)$ 表示。不可能对场景中每一点都定义Light Field，作者通过将场景的包围盒均分为grid来将空间离散化，对每个grid的一个采样点定义一个light field。</p>
+<p>在每个离散采样点 $\mathbf{x}’$（每个grid的一个采样点）上存储一个球形light field probe数据，用以记录点 $\mathbf{x’}$ 的每个方向 $\omega$ 的数据，包括：</p>
 <ul>
-<li><span class="math inline">\(\mathcal{L}(\mathbf{x&#39;},\omega)\)</span>：点
-<span class="math inline">\(\mathbf{x}&#39;\)</span> 在方向 <span class="math inline">\(\omega\)</span> 的入射radiance。light
-field是在球面上的定义，而probe像素有一定大小，可以看作在球面上一片的radiance，因此文中称为spherical
-light field slice radiance。</li>
-<li>在方向 <span class="math inline">\(\omega\)</span> 上距点 <span class="math inline">\(\mathbf{x&#39;}\)</span> 最近的点 <span class="math inline">\(\mathbf{x&#39;&#39;}\)</span> 的表面法线：<span class="math inline">\(\vec{\mathbf{n_{x&#39;&#39;}}}\)</span></li>
-<li><span class="math inline">\(\mathbf{x&#39;}\)</span> 与 <span class="math inline">\(\mathbf{x&#39;&#39;}\)</span> 之间的radial
-distance <span class="math inline">\(r_{\mathbf{x&#39;}\leftrightarrow\mathbf{x&#39;&#39;}}\)</span></li>
+<li>$\mathcal{L}(\mathbf{x’},\omega)$：点 $\mathbf{x}’$ 在方向 $\omega$ 的入射radiance。light field是在球面上的定义，而probe像素有一定大小，可以看作在球面上一片的radiance，因此文中称为spherical light field slice radiance。</li>
+<li>在方向 $\omega$ 上距点 $\mathbf{x’}$ 最近的点 $\mathbf{x’’}$ 的表面法线：$\vec{\mathbf{n_{x’’}}}$</li>
+<li>$\mathbf{x’}$ 与 $\mathbf{x’’}$ 之间的radial distance $r_{\mathbf{x’}\leftrightarrow\mathbf{x’’}}$</li>
 </ul>
-<h3 id="probe-数据生成方式">1. Probe 数据生成方式</h3>
-<p>上述Probe数据中的几何信息，例如 <span class="math inline">\(\vec{\mathbf{n_{x&#39;&#39;}}}\)</span>、<span class="math inline">\(r_{\mathbf{x}&#39;\rightarrow\mathbf{x&#39;&#39;}}\)</span>，作者使用光栅化管线生成。而spherical
-light field slice radiance <span class="math inline">\(\mathcal{L}(\mathbf{x&#39;},\omega)\)</span>
-需要光线模拟过程来生成：可以通过光栅化过程现有的着色技术(deferred
-renderer with shadow map)来计算；或者使用离线path
-tracer；作者选择迭代应用本文提出的着色算法来生成，具体做法：对于一次反射的直接光照
-<span class="math inline">\(\mathcal{L}(\mathbf{x&#39;},\omega)\)</span>
-只包含场景中光源的发光，重复应用着色算法得到具有额外反射的 <span class="math inline">\(\mathcal{L}(\mathbf{x&#39;},\omega)\)</span>。</p>
-<h3 id="实现细节">2. 实现细节</h3>
-<p>一个probe本质上是以其中心点 <span class="math inline">\(\mathbf{x&#39;}\)</span>
-为球心的球面上所有方向的信息，类似于全向相机的渲染（Omnidirectional），其数据组织为cube
-map的形式，每个像素的数据为其对应方向 <span class="math inline">\(\omega\)</span>
-的probe数据。本文提出的算法中不直接使用cube
-map，而是在生成probe数据过程中，将cube map重采样到octahedral
-map(oc-map)中 <a href="#%5B1%5D">[1]</a> <a href="#%5B2%5D">[2]</a>，之后的算法就不再需要cube
-map。八面体参数化是将球面映射到一个方形平面上，相比于cube
-map，oc-map具有优势：失真度更低；同等质量水平下，存储开销与带宽降低4倍；分段线性的投影能够应用于高效的ray
-marching。</p>
-<p>每个probe的oc-map数据作为2D texture
-array的一个layer存储，一个oc-map像素大小为32字节，其存储格式为：</p>
+<h3 id="1-Probe-数据生成方式"><a href="#1-Probe-数据生成方式" class="headerlink" title="1. Probe 数据生成方式"></a>1. Probe 数据生成方式</h3><p>上述Probe数据中的几何信息，例如 $\vec{\mathbf{n_{x’’}}}$、$r_{\mathbf{x}’\rightarrow\mathbf{x’’}}$，作者使用光栅化管线生成。而spherical light field slice radiance $\mathcal{L}(\mathbf{x’},\omega)$ 需要光线模拟过程来生成：可以通过光栅化过程现有的着色技术(deferred renderer with shadow map)来计算；或者使用离线path tracer；作者选择迭代应用本文提出的着色算法来生成，具体做法：对于一次反射的直接光照 $\mathcal{L}(\mathbf{x’},\omega)$ 只包含场景中光源的发光，重复应用着色算法得到具有额外反射的 $\mathcal{L}(\mathbf{x’},\omega)$。</p>
+<h3 id="2-实现细节"><a href="#2-实现细节" class="headerlink" title="2. 实现细节"></a>2. 实现细节</h3><p>一个probe本质上是以其中心点 $\mathbf{x’}$ 为球心的球面上所有方向的信息，类似于全向相机的渲染（Omnidirectional），其数据组织为cube map的形式，每个像素的数据为其对应方向 $\omega$ 的probe数据。本文提出的算法中不直接使用cube map，而是在生成probe数据过程中，将cube map重采样到octahedral map(oc-map)中 <a href="#[1]">[1]</a> <a href="#[2]">[2]</a>，之后的算法就不再需要cube map。八面体参数化是将球面映射到一个方形平面上，相比于cube map，oc-map具有优势：失真度更低；同等质量水平下，存储开销与带宽降低4倍；分段线性的投影能够应用于高效的ray marching。</p>
+<p>每个probe的oc-map数据作为2D texture array的一个layer存储，一个oc-map像素大小为32字节，其存储格式为：</p>
 <ul>
-<li>HDR radiance <span class="math inline">\(\mathcal{L}(\mathbf{x&#39;},\omega)\)</span>：R11G11B10F
-(32 bits/pixel)</li>
-<li>法线 <span class="math inline">\(\vec{\mathbf{n_{x&#39;&#39;}}}\)</span>：RG8 (16
-bits/pixel)</li>
-<li>radial distance <span class="math inline">\(r_{\mathbf{x}&#39;\rightarrow\mathbf{x&#39;&#39;}}\)</span>：R16F
-(16 bits/pixel)</li>
+<li>HDR radiance $\mathcal{L}(\mathbf{x’},\omega)$：R11G11B10F (32 bits/pixel)</li>
+<li>法线 $\vec{\mathbf{n_{x’’}}}$：RG8 (16 bits/pixel)</li>
+<li>radial distance $r_{\mathbf{x}’\rightarrow\mathbf{x’’}}$：R16F (16 bits/pixel)</li>
 </ul>
-<p>irradiance probe：很多着色过程得益于prefilter light field radiance
-<span class="math inline">\(\mathcal{L}(\mathbf{x&#39;},\omega)\)</span>，因此将prefilter结果预存储到一个cosine-weighted
-incident irradiance probe <span class="math inline">\(\mathbf{E}(\mathbf{x&#39;},\vec{\mathbf{n}})\)</span>，</p>
-<p>radiance
-probe需要的分辨率取决于渲染分辨率和场景中的最低粗糙度，避免完美镜面反射的走样。为此需要满足八面体纹素对着的立体角不大于probe中心位置的像素对着的立体角。文中建议1024x1024的分辨率。</p>
+<p>irradiance probe：很多着色过程得益于prefilter light field radiance $\mathcal{L}(\mathbf{x’},\omega)$，因此将prefilter结果预存储到一个cosine-weighted incident irradiance probe $\mathbf{E}(\mathbf{x’},\vec{\mathbf{n}})$，</p>
+<p>radiance probe需要的分辨率取决于渲染分辨率和场景中的最低粗糙度，避免完美镜面反射的走样。为此需要满足八面体纹素对着的立体角不大于probe中心位置的像素对着的立体角。文中建议1024x1024的分辨率。</p>
 <blockquote>
 <p>场景中不同区域在屏幕上的像素比例不同，例如离相机远的区域占用像素更少、粗糙度越低对应的立体角越小。如果probe分辨率不足，会导致八面体纹素对应的立体角大于像素对应的立体角，像素采样到的radiance信息超出了像素范围，即radiance采样率不足。</p>
 </blockquote>
-<h2 id="light-field-probe-ray-tracing">Light Field Probe Ray
-Tracing</h2>
-<p>已知光线方程 <span class="math inline">\(\mathbf{p}(t)=\mathbf{r}_o+t\cdot\mathbf{r}_d\)</span>，求解最近交点
-<span class="math inline">\(\mathbf{p}(t&#39;)\equiv\mathbf{p}&#39;\)</span>。Light
-field probe中的几何信息radial
-distance和法线用于解决incoherent世界空间求交，radiance probe和irradiance
-probe包含了所需的辐射量，交点处的出射radiance <span class="math inline">\(\mathcal{L}(\mathbf{p}&#39;,-\mathbf{r}_d)\)</span>和入射irradiance
-<span class="math inline">\(\mathcal{L}(\mathbf{p}&#39;,\vec{\mathbf{n}}\equiv\vec{\mathbf{r}_d})\)</span>。</p>
-<p>作者提出的Light Field ray
-trace过程如下图：先选择一个候选probe，执行single-probe ray
-trace，当得到miss或hit结果时，则求交结束。当无法得到求交确定结果时，选择下一个候选probe继续执行single-probe
-ray trace。</p>
+<h2 id="Light-Field-Probe-Ray-Tracing"><a href="#Light-Field-Probe-Ray-Tracing" class="headerlink" title="Light Field Probe Ray Tracing"></a>Light Field Probe Ray Tracing</h2><p>已知光线方程 $\mathbf{p}(t)=\mathbf{r}_o+t\cdot\mathbf{r}_d$，求解最近交点 $\mathbf{p}(t’)\equiv\mathbf{p}’$。Light field probe中的几何信息radial distance和法线用于解决incoherent世界空间求交，radiance probe和irradiance probe包含了所需的辐射量，交点处的出射radiance $\mathcal{L}(\mathbf{p}’,-\mathbf{r}_d)$和入射irradiance $\mathcal{L}(\mathbf{p}’,\vec{\mathbf{n}}\equiv\vec{\mathbf{r}_d})$。</p>
+<p>作者提出的Light Field ray trace过程如下图：先选择一个候选probe，执行single-probe ray trace，当得到miss或hit结果时，则求交结束。当无法得到求交确定结果时，选择下一个候选probe继续执行single-probe ray trace。</p>
 <blockquote>
 <p>如果得到不确定的结果，则表示本次选择的probe缺少光线传播区域的信息，例如从probe视角来看，光线传播区域被遮挡，因此无法确定是miss或hit。</p>
 </blockquote>
 <p><img src="/images/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes.assets/image-20230201162511726.png" alt="image-20230201162511726" style="zoom: 67%;"></p>
 <p><img src="/images/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes.assets/image-20230202104825030.png" alt="image-20230202104825030" style="zoom:67%;"></p>
-<p>作者提出的 light field ray
-tracing算法主要包括两方面：选择候选probe的启发式策略；probe的oc-map中的光线求交。</p>
-<h3 id="single-probe光线求交">1. Single-Probe光线求交</h3>
-<p>球面的八面体投影性质：将三维空间的线段映射为oc-map中的多段线(最多4段线)，其中每段线分布在oc-map的不同面；probe的三维球体被以probe中心为原点的坐标系分割成8个平面，分别对应了oc-map的8个面，而每段线的端点为三维空间的线段与三个坐标轴对齐面的交点在oc-map的投影。</p>
-<p>probe的光线求交：首先计算出光线在oc-map投影的几组端点；然后沿着线段进行ray-march，使用当前位置与probe中心的radial
-distance <span class="math inline">\(t_0\)</span>
-以及当前位置在oc-map中的对应纹素存储的radial distance <span class="math inline">\(t_1\)</span> 做求交测试，</p>
+<p>作者提出的 light field ray  tracing算法主要包括两方面：选择候选probe的启发式策略；probe的oc-map中的光线求交。</p>
+<h3 id="1-Single-Probe光线求交"><a href="#1-Single-Probe光线求交" class="headerlink" title="1. Single-Probe光线求交"></a>1. Single-Probe光线求交</h3><p>球面的八面体投影性质：将三维空间的线段映射为oc-map中的多段线(最多4段线)，其中每段线分布在oc-map的不同面；probe的三维球体被以probe中心为原点的坐标系分割成8个平面，分别对应了oc-map的8个面，而每段线的端点为三维空间的线段与三个坐标轴对齐面的交点在oc-map的投影。</p>
+<p>probe的光线求交：首先计算出光线在oc-map投影的几组端点；然后沿着线段进行ray-march，使用当前位置与probe中心的radial distance $t_0$ 以及当前位置在oc-map中的对应纹素存储的radial distance $t_1$ 做求交测试，</p>
 <ul>
-<li>如果 <span class="math inline">\(t_0&gt;t_1\)</span>
-表示光线交于一个表面(hit)或者从一个表面后面通过(miss)</li>
+<li>如果 $t_0&gt;t_1$ 表示光线交于一个表面(hit)或者从一个表面后面通过(miss)</li>
 <li>否则miss</li>
 </ul>
 <blockquote>
 <p>probe的光线求交与SSR思想类似，不同的是：</p>
 <ul>
-<li>光线在depth
-buffer中的投影是一条直线，而在oc-map中的投影是几段线</li>
-<li>对于光线行进位置处的求交测试：SSR使用相机视角的depth
-buffer在行进位置处的深度值与相机到行进位置距离，而本文的probe求交则使用oc-map在行进位置处的radial
-distance与probe中心到行进位置的radial distance</li>
+<li>光线在depth buffer中的投影是一条直线，而在oc-map中的投影是几段线</li>
+<li>对于光线行进位置处的求交测试：SSR使用相机视角的depth buffer在行进位置处的深度值与相机到行进位置距离，而本文的probe求交则使用oc-map在行进位置处的radial distance与probe中心到行进位置的radial distance</li>
 </ul>
 </blockquote>
-<p>对于oc-map的一个面内ray-march可以使用hierarchy算法加速 <a href="#%5B4%5D">[4]</a>。上述求交测试中，当 <span class="math inline">\(t_0&lt;t_1\)</span> 可以确定miss，但 <span class="math inline">\(t_0&gt;t_1\)</span>
-有可能hit，也有可能从后面通过(miss)。为了得到确定结果，需要确定求交平面即oc-map的对应texel在三维空间的范围。oc-map的每个纹素描述的是距离probe中心
-<span class="math inline">\(r_{\mathbf{p}&#39;\leftrightarrow
-\mathbf{x}&#39;&#39;}\)</span> 并且法线为 <span class="math inline">\(\vec{\mathbf{n_{x}}&#39;&#39;}\)</span>
-的一个小patch(surfel)。基于法线和表示精度，作者使用一个球形体素包围该patch。只有当前行进点与该体素相交时，才表示与光线与patch表面相交。法线也可以用作排除掉相对于光线方向的背面的交点。下图为光线求交过程的可视化，光线在如图oc-map投影得到三个线段</p>
+<p>对于oc-map的一个面内ray-march可以使用hierarchy算法加速 <a href="#[4]">[4]</a>。上述求交测试中，当 $t_0<t_1$ 可以确定miss，但 $t_0>t_1$ 有可能hit，也有可能从后面通过(miss)。为了得到确定结果，需要确定求交平面即oc-map的对应texel在三维空间的范围。oc-map的每个纹素描述的是距离probe中心 $r_{\mathbf{p}’\leftrightarrow \mathbf{x}’’}$ 并且法线为 $\vec{\mathbf{n_{x}}’’}$ 的一个小patch(surfel)。基于法线和表示精度，作者使用一个球形体素包围该patch。只有当前行进点与该体素相交时，才表示与光线与patch表面相交。法线也可以用作排除掉相对于光线方向的背面的交点。下图为光线求交过程的可视化，光线在如图oc-map投影得到三个线段</t_1$></p>
 <p><img src="/images/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes.assets/image-20230202213146200.png" alt="image-20230202213146200" style="zoom:67%;"></p>
-<center>
-two-level层级结构的求交过程：黄色与绿色分别为粗粒度与细粒度的ray-march测试
-</center>
-<h3 id="probe的选取策略">2. probe的选取策略</h3>
-<h2 id="shading-with-light-field-probes">Shading with Light Field
-Probes</h2>
-<h2 id="reference">Reference</h2>
-<p><a name="[1]">[1]</a> Cigolle, Zina H., et al. "A survey of efficient
-representations for independent unit vectors." <em>Journal of Computer
-Graphics Techniques</em> 3.2 (2014).</p>
-<p><a name="[2]">[2]</a> https://zhuanlan.zhihu.com/p/384232048</p>
-<p><a name="[3]">[3]</a>
-https://github.com/Global-Illuminati/Precomputed-Light-Field-Probes</p>
-<p><a name="[4]">[4]</a> McGuire M, Mara M. Efficient GPU screen-space
-ray tracing[J]. Journal of Computer Graphics Techniques (JCGT), 2014,
-3(4): 73-85.</p>
+<center>two-level层级结构的求交过程：黄色与绿色分别为粗粒度与细粒度的ray-march测试</center>
+
+<h3 id="2-probe的选取策略"><a href="#2-probe的选取策略" class="headerlink" title="2. probe的选取策略"></a>2. probe的选取策略</h3><h2 id="Shading-with-Light-Field-Probes"><a href="#Shading-with-Light-Field-Probes" class="headerlink" title="Shading with Light Field Probes"></a>Shading with Light Field Probes</h2><h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p><a name="[1]">[1]</a> Cigolle, Zina H., et al. “A survey of efficient representations for independent unit vectors.” <em>Journal of Computer Graphics Techniques</em> 3.2 (2014).</p>
+<p><a name="[2]">[2]</a> <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/384232048">https://zhuanlan.zhihu.com/p/384232048</a></p>
+<p><a name="[3]">[3]</a> <a target="_blank" rel="noopener" href="https://github.com/Global-Illuminati/Precomputed-Light-Field-Probes">https://github.com/Global-Illuminati/Precomputed-Light-Field-Probes</a></p>
+<p><a name="[4]">[4]</a> McGuire M, Mara M. Efficient GPU screen-space ray tracing[J]. Journal of Computer Graphics Techniques (JCGT), 2014, 3(4): 73-85.</p>
 
     </div>
 
@@ -458,9 +390,7 @@ ray tracing[J]. Journal of Computer Graphics Techniques (JCGT), 2014,
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#summary"><span class="nav-text">Summary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#light-field-probe-structure"><span class="nav-text">Light Field Probe Structure</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#probe-%E6%95%B0%E6%8D%AE%E7%94%9F%E6%88%90%E6%96%B9%E5%BC%8F"><span class="nav-text">1. Probe 数据生成方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="nav-text">2. 实现细节</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#light-field-probe-ray-tracing"><span class="nav-text">Light Field Probe Ray
-Tracing</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#single-probe%E5%85%89%E7%BA%BF%E6%B1%82%E4%BA%A4"><span class="nav-text">1. Single-Probe光线求交</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#probe%E7%9A%84%E9%80%89%E5%8F%96%E7%AD%96%E7%95%A5"><span class="nav-text">2. probe的选取策略</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#shading-with-light-field-probes"><span class="nav-text">Shading with Light Field
-Probes</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#reference"><span class="nav-text">Reference</span></a></li></ol></div>
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#Summary"><span class="nav-text">Summary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Light-Field-Probe-Structure"><span class="nav-text">Light Field Probe Structure</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Probe-%E6%95%B0%E6%8D%AE%E7%94%9F%E6%88%90%E6%96%B9%E5%BC%8F"><span class="nav-text">1. Probe 数据生成方式</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="nav-text">2. 实现细节</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Light-Field-Probe-Ray-Tracing"><span class="nav-text">Light Field Probe Ray Tracing</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Single-Probe%E5%85%89%E7%BA%BF%E6%B1%82%E4%BA%A4"><span class="nav-text">1. Single-Probe光线求交</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#2-probe%E7%9A%84%E9%80%89%E5%8F%96%E7%AD%96%E7%95%A5"><span class="nav-text">2. probe的选取策略</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Shading-with-Light-Field-Probes"><span class="nav-text">Shading with Light Field Probes</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#Reference"><span class="nav-text">Reference</span></a></li></ol></div>
       </div>
       <!--/noindex-->
 
