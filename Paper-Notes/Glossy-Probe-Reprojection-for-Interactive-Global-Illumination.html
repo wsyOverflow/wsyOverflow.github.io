@@ -40,7 +40,7 @@
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Glossy%20Probe%20Reprojection%20for%20Interactive%20Global%20Illumination.assets/image-20220717214753044.png">
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Glossy%20Probe%20Reprojection%20for%20Interactive%20Global%20Illumination.assets/image-20220717214823052.png">
 <meta property="article:published_time" content="2022-07-17T13:38:37.131Z">
-<meta property="article:modified_time" content="2022-07-17T13:55:10.380Z">
+<meta property="article:modified_time" content="2023-02-01T08:11:21.929Z">
 <meta property="article:author" content="wsyOverflow">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://wsyoverflow.github.io/images/Glossy%20Probe%20Reprojection%20for%20Interactive%20Global%20Illumination.assets/image-20220717214054549.png">
@@ -227,10 +227,16 @@
                 <i class="far fa-calendar"></i>
               </span>
               <span class="post-meta-item-text">Posted on</span>
-              
 
-              <time title="Created: 2022-07-17 21:38:37 / Modified: 21:55:10" itemprop="dateCreated datePublished" datetime="2022-07-17T21:38:37+08:00">2022-07-17</time>
+              <time title="Created: 2022-07-17 21:38:37" itemprop="dateCreated datePublished" datetime="2022-07-17T21:38:37+08:00">2022-07-17</time>
             </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-02-01 16:11:21" itemprop="dateModified" datetime="2023-02-01T16:11:21+08:00">2023-02-01</time>
+              </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
                 <i class="far fa-folder"></i>
@@ -273,10 +279,8 @@ roughness，达到硬边界的平滑过渡。</p>
 <h2 id="background">Background</h2>
 <h3 id="light-probe">1. Light Probe</h3>
 <ul class="task-list">
-<li><p><input type="checkbox" disabled>
-light probe 算法思想</p></li>
-<li><p><input type="checkbox" disabled>
-基于 3D-grid 的 light probe <a href="#%5B1%5D">[1]</a></p></li>
+<li><p><input type="checkbox">light probe 算法思想</p></li>
+<li><p><input type="checkbox">基于 3D-grid 的 light probe <a href="#%5B1%5D">[1]</a></p></li>
 </ul>
 <h2 id="approach">Approach</h2>
 <h3 id="probe-预计算">1. Probe 预计算</h3>
@@ -286,8 +290,8 @@ light probe 算法思想</p></li>
 的所有方向都收集同样多样本的信息，会使得 probe
 数据存储消耗过大。因此作者提出 adaptive probe
 resolution，即根据不同位置、不同视角观察到的几何信息来评估该位置需要的
-probe resolution
-，高分辨率对应高样本数，低分辨率对应低样本数。先介绍一下本论文使用的
+probe
+resolution，高分辨率对应高样本数，低分辨率对应低样本数。先介绍一下本论文使用的
 probe data 存储的数据</p>
 <h4 id="per-probe-data">1.1 Per Probe Data</h4>
 <p>预计算过程中，为每个 Probe 生成数据，包含三张贴图，如下图所示：</p>
@@ -339,8 +343,7 @@ direction，方便 probe data预计算过程的 ray-tracing。</p>
 计算</h5>
 <p>一个 Adaptive resolution map 的元素表示 probe 每个方向对应的 probe
 resolution 参数。计算该 Map 前先使用以 probe 出发的 ray casting 构建 4
-个 256x128 的 buffers，(i) 材质 smoothness <span class="math inline">\(m_{mat}\)</span>，(ii) 深度值 <span class="math inline">\(m_{depth}\)</span>，(iii) 法线 $ m_{norm}$，(iv)
-facing angle <span class="math inline">\(m_{face}\)</span>
+个 256x128 的 buffers，(i) 材质 smoothness <span class="math inline">\(\large m_{mat}\)</span>，(ii) 深度值 <span class="math inline">\(\large m_{depth}\)</span>，(iii) 法线 <span class="math inline">\(\large m_{norm}\)</span>，(iv) facing angle <span class="math inline">\(\large m_{face}\)</span>
 (入射光方向与表面法线点乘)。</p>
 <p>Adaptive resolution map 的元素计算：</p>
 <p><span class="math display">\[
@@ -359,20 +362,19 @@ m=m_{mat}(m_{size}+m_{complexity})
 夹角越大，越 grazing，对应较大的 <span class="math inline">\(m\)</span></p>
 </blockquote>
 <ul class="task-list">
-<li><input type="checkbox" disabled>
-不明白：This term converts probe area to actual object size,
-compensating for perspective and angular foreshortening akin to a form
-factor. <span class="math inline">\(\theta_{long}\)</span> is the
-longitude angle, which compensates for size variations induced by the
-lat-long base parameterization.</li>
+<li><input type="checkbox">不明白：This term converts probe area to
+actual object size, compensating for perspective and angular
+foreshortening akin to a form factor. <span class="math inline">\(\theta_{long}\)</span> is the longitude angle,
+which compensates for size variations induced by the lat-long base
+parameterization.</li>
 </ul></li>
 <li><p>要求 c) 需要对局部几何复杂度分析，作者使用频率分析代替： <span class="math display">\[
    m_{complexity}=\frac{1}{N^2}\sum\limits^{N-1}_{p=0}\sum\limits^{N-1}_{q=0}w_{p,q}||\mathbf{b}_{p,q}*m_{norm}||_1
    \]</span></p>
 <ul class="task-list">
-<li><input type="checkbox" disabled>
-2D Discrete consine transform <a href="#%5B2%5D">[2]</a>: <span class="math inline">\(\mathbf{b}\)</span>​ 是 basis function，basis
-function 与 法线的卷积用来分析 local neighborhood 的频率信息</li>
+<li><input type="checkbox">2D Discrete consine transform <a href="#%5B2%5D">[2]</a>: <span class="math inline">\(\mathbf{b}\)</span>​
+是 basis function，basis function 与 法线的卷积用来分析 local
+neighborhood 的频率信息</li>
 </ul>
 <p><span class="math inline">\(w_{p,q} =||[p,q]||^k\)</span>
 权重用来确保高频对几何复杂度贡献更高，论文中取 <span class="math inline">\(N=16,k=5\)</span>。</p></li>
@@ -386,8 +388,8 @@ probe 真正分辨率的参数化。</p>
 <p>本小节，作者使用 tensorial quasi-harmonic maps <a href="#%5B3%5D">[3]</a>，将 adaptive resolution map 转为 adapted
 resolution。转换过程如下：</p>
 <ul class="task-list">
-<li><input type="checkbox" disabled>
-需要理解 <a href="#%5B3%5D">[3]</a> 的数学原理，描述下面过程的细节</li>
+<li><input type="checkbox">需要理解 <a href="#%5B3%5D">[3]</a>
+的数学原理，描述下面过程的细节</li>
 </ul>
 <ol type="1">
 <li>将每个 proble 对应的 3D grid 进行离散等划分，得到均分的四边形网格
@@ -426,9 +428,7 @@ view 视角无关(view-independent)，因此存储在传统的 lightmap 中。</
 probe 样本的 glossy light 信息。过程如下：</p>
 <ol type="1">
 <li><ul class="task-list">
-<li><input type="checkbox" disabled>
-对于每个顶点，使用 <a href="#%5B4%5D">[4]</a> 技术估计其主曲率与对应方向
-<a href="#Fig%201.3">Fig
+<li><input type="checkbox">对于每个顶点，使用 <a href="#%5B4%5D">[4]</a> 技术估计其主曲率与对应方向 <a href="#Fig%201.3">Fig
 1.3(a)</a>。该步骤在每个物体上分别进行，并且为了更好的结果，对较大表面，先进行细分
 <a href="#Fig%201.3">Fig 1.3(b d)</a>。</li>
 </ul></li>
@@ -493,11 +493,7 @@ path perturbation 理论来确定 <span class="math inline">\(\mathbf{x}\)</span
 specular motion。其中反射路径 <span class="math inline">\(\mathcal{S}_1\)</span>​​​​ 在 G-buffer
 光栅化后已经确定，那么只有 <span class="math inline">\(\mathbf{x&#39;}\)</span>​​​ 是未知的。</p>
 <ul class="task-list">
-<li><input type="checkbox" disabled>
-基于 specular path perturbation <a href="#%5B5%5D">[5]</a>
-理论，此时问题转化为：已知 <span class="math inline">\(\Delta
-p=p&#39;-p\)</span>​​，近似 <span class="math inline">\(\Delta
-x=x-x&#39;\)</span>​​，从而得到 <span class="math inline">\(x&#39;=x+\Delta x\)</span>​​. <span class="math display">\[
+<li><input type="checkbox">基于 specular path perturbation <a href="#%5B5%5D">[5]</a> 理论，此时问题转化为：已知 <span class="math inline">\(\Delta p=p&#39;-p\)</span>​​，近似 <span class="math inline">\(\Delta x=x-x&#39;\)</span>​​，从而得到 <span class="math inline">\(x&#39;=x+\Delta x\)</span>​​. <span class="math display">\[
 \Delta x=J\Delta p+[\Delta p]^TH[\Delta p]
 \]</span> 其中，<span class="math inline">\(J(p,q,x,f)\)</span>​​ 是一个
 3X3 Jacobian 矩阵，<span class="math inline">\(H(p,q,x,f)\)</span>​​
@@ -698,35 +694,26 @@ filter</p>
 <h4 id="efficient-filter-approximation">3.3 Efficient Filter
 Approximation</h4>
 <ul class="task-list">
-<li><input type="checkbox" disabled>
-<span class="math inline">\(\eqref{glossy filtering}\)</span>​​​
-式的计算开销太大，作者使用 two passes, effectively using four 1D
-separable filters 进行高效近似计算 <a href="#%5B7%5D">[7]</a></li>
+<li><input type="checkbox"><span class="math inline">\(\eqref{glossy
+filtering}\)</span>​​​ 式的计算开销太大，作者使用 two passes, effectively
+using four 1D separable filters 进行高效近似计算 <a href="#%5B7%5D">[7]</a></li>
 </ul>
 <h2 id="remain-questions">Remain Questions</h2>
 <ul class="task-list">
-<li><p><input type="checkbox" disabled>
-不明白：This term converts probe area to actual object size,
-compensating for perspective and angular foreshortening akin to a form
-factor. <span class="math inline">\(\large \theta_{long}\)</span> is the
-longitude angle, which compensates for size variations induced by the
-lat-long base parameterization.</p></li>
-<li><p><input type="checkbox" disabled>
-2D Discrete consine transform <a href="#%5B2%5D">[2]</a>: <span class="math inline">\(\mathbf{b}\)</span>​ 是 basis function，basis
-function 与 法线的卷积用来分析 local neighborhood 的频率信息</p></li>
-<li><p><input type="checkbox" disabled>
-需要理解 <a href="#%5B3%5D">[3]</a>
+<li><p><input type="checkbox">不明白：This term converts probe area to
+actual object size, compensating for perspective and angular
+foreshortening akin to a form factor. <span class="math inline">\(\large
+\theta_{long}\)</span> is the longitude angle, which compensates for
+size variations induced by the lat-long base parameterization.</p></li>
+<li><p><input type="checkbox">2D Discrete consine transform <a href="#%5B2%5D">[2]</a>: <span class="math inline">\(\mathbf{b}\)</span>​
+是 basis function，basis function 与 法线的卷积用来分析 local
+neighborhood 的频率信息</p></li>
+<li><p><input type="checkbox">需要理解 <a href="#%5B3%5D">[3]</a>
 的数学原理，描述下面过程的细节</p></li>
-<li><p><input type="checkbox" disabled>
-对于每个顶点，使用 <a href="#%5B4%5D">[4]</a> 技术估计其主曲率与对应方向
-<a href="#Fig%201.3">Fig
+<li><p><input type="checkbox">对于每个顶点，使用 <a href="#%5B4%5D">[4]</a> 技术估计其主曲率与对应方向 <a href="#Fig%201.3">Fig
 1.3(a)</a>。该步骤在每个物体上分别进行，并且为了更好的结果，对较大表面，先进行细分
 <a href="#Fig%201.3">Fig 1.3(b d)</a>。</p></li>
-<li><p><input type="checkbox" disabled>
-基于 specular path perturbation <a href="#%5B5%5D">[5]</a>
-理论，此时问题转化为：已知 <span class="math inline">\(\Delta
-p=p&#39;-p\)</span>，近似 <span class="math inline">\(\Delta
-x=x-x&#39;\)</span>，从而得到 <span class="math inline">\(x&#39;=x+\Delta x\)</span>. <span class="math display">\[
+<li><p><input type="checkbox">基于 specular path perturbation <a href="#%5B5%5D">[5]</a> 理论，此时问题转化为：已知 <span class="math inline">\(\Delta p=p&#39;-p\)</span>，近似 <span class="math inline">\(\Delta x=x-x&#39;\)</span>，从而得到 <span class="math inline">\(x&#39;=x+\Delta x\)</span>. <span class="math display">\[
 \Delta x=J\Delta p+[\Delta p]^TH[\Delta p]
 \]</span> 其中，<span class="math inline">\(J(p,q,x,f)\)</span> 是一个
 3X3 Jacobian 矩阵，<span class="math inline">\(H(p,q,x,f)\)</span>
@@ -734,10 +721,8 @@ x=x-x&#39;\)</span>，从而得到 <span class="math inline">\(x&#39;=x+\Delta x
 是重复 <span class="math inline">\(\Delta p\)</span> 三次的 1x1x3
 tensor。由于 specular path perturbation 需要使用到 <span class="math inline">\(f\)</span>​​
 的一阶、二阶、三阶导数，这里就使用到了预计算中近似的抛物面。</p></li>
-<li><p><input type="checkbox" disabled>
-cross-bilateral 是什么</p></li>
-<li><p><input type="checkbox" disabled>
-<span class="math inline">\(\eqref{glossy filtering}\)</span>
+<li><p><input type="checkbox">cross-bilateral 是什么</p></li>
+<li><p><input type="checkbox"><span class="math inline">\(\eqref{glossy filtering}\)</span>
 式的计算开销太大，作者使用 two passes, effectively using four 1D
 separable filters 进行高效近似计算 <a href="#%5B7%5D">[7]</a></p></li>
 </ul>
@@ -880,7 +865,7 @@ Approximation</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">7</span>
+          <span class="site-state-item-count">8</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
@@ -912,7 +897,7 @@ Approximation</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2
 <div class="copyright">
   
   &copy; 
-  <span itemprop="copyrightYear">2022</span>
+  <span itemprop="copyrightYear">2023</span>
   <span class="with-love">
     <i class="fa fa-heart"></i>
   </span>

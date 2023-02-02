@@ -4,7 +4,31 @@
   <url>
     <loc>https://wsyoverflow.github.io/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting.html</loc>
     
-    <lastmod>2022-08-14T07:34:04.541Z</lastmod>
+    <lastmod>2023-02-02T16:21:39.247Z</lastmod>
+    
+    
+  </url>
+  
+  <url>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Real-Time-Global-Illumination-using-Precomputed-Light-Field-Probes.html</loc>
+    
+    <lastmod>2023-02-02T15:42:45.911Z</lastmod>
+    
+    
+  </url>
+  
+  <url>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html</loc>
+    
+    <lastmod>2023-02-01T08:16:32.150Z</lastmod>
+    
+    
+  </url>
+  
+  <url>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination.html</loc>
+    
+    <lastmod>2023-02-01T08:11:21.929Z</lastmod>
     
     
   </url>
@@ -13,22 +37,6 @@
     <loc>https://wsyoverflow.github.io/Render-Engine/Vulkan-Render-Design.html</loc>
     
     <lastmod>2022-08-14T02:42:03.655Z</lastmod>
-    
-    
-  </url>
-  
-  <url>
-    <loc>https://wsyoverflow.github.io/Paper-Notes/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination.html</loc>
-    
-    <lastmod>2022-07-17T13:55:10.380Z</lastmod>
-    
-    
-  </url>
-  
-  <url>
-    <loc>https://wsyoverflow.github.io/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html</loc>
-    
-    <lastmod>2022-07-16T18:06:43.451Z</lastmod>
     
     
   </url>
