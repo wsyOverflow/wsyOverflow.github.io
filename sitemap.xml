@@ -2,9 +2,25 @@
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   
   <url>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination.html</loc>
+    
+    <lastmod>2023-03-03T13:30:41.534Z</lastmod>
+    
+    
+  </url>
+  
+  <url>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Dynamic-Diffuse-Global-Illumination-with-Ray-Traced-Irradiance-Fields.html</loc>
+    
+    <lastmod>2023-03-03T13:29:30.328Z</lastmod>
+    
+    
+  </url>
+  
+  <url>
     <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Real-Time-Global-Illumination-using-Precomputed-Light-Field-Probes.html</loc>
     
-    <lastmod>2023-02-14T15:40:07.889Z</lastmod>
+    <lastmod>2023-03-03T13:23:42.688Z</lastmod>
     
     
   </url>
@@ -13,14 +29,6 @@
     <loc>https://wsyoverflow.github.io/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting.html</loc>
     
     <lastmod>2023-02-14T15:31:19.671Z</lastmod>
-    
-    
-  </url>
-  
-  <url>
-    <loc>https://wsyoverflow.github.io/Paper-Notes/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination.html</loc>
-    
-    <lastmod>2023-02-14T15:30:05.053Z</lastmod>
     
     
   </url>
