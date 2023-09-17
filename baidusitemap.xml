@@ -1,39 +1,63 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
-    <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination.html</loc>
-    <lastmod>2023-03-03</lastmod>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Dynamic-Diffuse-Global-Illumination-with-Ray-Traced-Irradiance-Fields.html</loc>
+    <lastmod>2023-09-17</lastmod>
   </url>
   <url>
-    <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Dynamic-Diffuse-Global-Illumination-with-Ray-Traced-Irradiance-Fields.html</loc>
-    <lastmod>2023-03-03</lastmod>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html</loc>
+    <lastmod>2023-09-17</lastmod>
+  </url>
+  <url>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/Ray-Tracing/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting.html</loc>
+    <lastmod>2023-09-17</lastmod>
+  </url>
+  <url>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/Cloud-Rendering/Effect-based-Multi-viewer-Caching-for-Cloud-native-Rendering.html</loc>
+    <lastmod>2023-09-17</lastmod>
+  </url>
+  <url>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/Render-Pipeline/Texture-Space-Shading.html</loc>
+    <lastmod>2023-09-17</lastmod>
+  </url>
+  <url>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/Render-Pipeline/Texel-Shading.html</loc>
+    <lastmod>2023-09-17</lastmod>
+  </url>
+  <url>
+    <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Glossy-Probe-Reprojection-for-Interactive-Global-Illumination.html</loc>
+    <lastmod>2023-09-17</lastmod>
   </url>
   <url>
     <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Real-Time-Global-Illumination-using-Precomputed-Light-Field-Probes.html</loc>
-    <lastmod>2023-03-03</lastmod>
-  </url>
-  <url>
-    <loc>https://wsyoverflow.github.io/Paper-Notes/Spatiotemporal-reservoir-resampling-for-real-time-ray-tracing-with-dynamic-direct-lighting.html</loc>
-    <lastmod>2023-02-14</lastmod>
-  </url>
-  <url>
-    <loc>https://wsyoverflow.github.io/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html</loc>
-    <lastmod>2023-02-14</lastmod>
-  </url>
-  <url>
-    <loc>https://wsyoverflow.github.io/Render-Engine/Vulkan-Render-Design.html</loc>
-    <lastmod>2022-08-14</lastmod>
+    <lastmod>2023-09-17</lastmod>
   </url>
   <url>
     <loc>https://wsyoverflow.github.io/Render-Engine/Scene-Graph-and-Draw-Call-Grouping-Strategy.html</loc>
-    <lastmod>2022-07-16</lastmod>
+    <lastmod>2023-09-17</lastmod>
   </url>
   <url>
-    <loc>https://wsyoverflow.github.io/Vulkan-Basics/Compute-Shader-%E5%AE%9E%E7%8E%B0-Pyramid-Algorithm.html</loc>
-    <lastmod>2022-07-16</lastmod>
+    <loc>https://wsyoverflow.github.io/Rendering-Blogs/Graphics-Algorithm/1.-Hierarchy-Ray-March.html</loc>
+    <lastmod>2023-09-17</lastmod>
+  </url>
+  <url>
+    <loc>https://wsyoverflow.github.io/Rendering-Blogs/Graphics-Algorithm/2.-Reblur%E8%A7%A3%E6%9E%90.html</loc>
+    <lastmod>2023-09-17</lastmod>
+  </url>
+  <url>
+    <loc>https://wsyoverflow.github.io/C++/Effective-Modern-C++/Chapter-1%EF%BC%9A%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC.html</loc>
+    <lastmod>2023-09-04</lastmod>
   </url>
   <url>
     <loc>https://wsyoverflow.github.io/Vulkan-Basics/Compute-Shader-%E5%9F%BA%E7%A1%80.html</loc>
-    <lastmod>2022-07-16</lastmod>
+    <lastmod>2023-08-23</lastmod>
+  </url>
+  <url>
+    <loc>https://wsyoverflow.github.io/Render-Engine/Vulkan-Render-Design.html</loc>
+    <lastmod>2023-07-27</lastmod>
+  </url>
+  <url>
+    <loc>https://wsyoverflow.github.io/Vulkan-Basics/Compute-Shader-%E5%AE%9E%E7%8E%B0-Pyramid-Algorithm.html</loc>
+    <lastmod>2023-07-27</lastmod>
   </url>
 </urlset> 

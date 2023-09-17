@@ -26,21 +26,21 @@
   <meta name="description" content="1 Summary Forward Light Cuts: A Scalable Approach to Real-Time Global Illumination [1] 这篇论文假设了次级光源为 diffuse 材质的场景，并且不考虑次级光照的阴影，提出了一种能够很好结合 tessellation 和 geometry 阶段的并行特性的高效实时全局光照近似计算算法。该算法基于 ma">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Forward Light Cuts A Scalable Approach to Real-Time Global Illumination">
-<meta property="og:url" content="https://wsyoverflow.github.io/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html">
+<meta property="og:url" content="https://wsyoverflow.github.io/Paper-Notes/GI/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html">
 <meta property="og:site_name" content="wsyOverflow">
 <meta property="og:description" content="1 Summary Forward Light Cuts: A Scalable Approach to Real-Time Global Illumination [1] 这篇论文假设了次级光源为 diffuse 材质的场景，并且不考虑次级光照的阴影，提出了一种能够很好结合 tessellation 和 geometry 阶段的并行特性的高效实时全局光照近似计算算法。该算法基于 ma">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="https://wsyoverflow.github.io/images/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013637705.png">
-<meta property="og:image" content="https://wsyoverflow.github.io/images/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013806858.png">
-<meta property="og:image" content="https://wsyoverflow.github.io/images/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013853277.png">
-<meta property="og:image" content="https://wsyoverflow.github.io/images/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013914497.png">
+<meta property="og:image" content="https://wsyoverflow.github.io/images/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013637705.png">
+<meta property="og:image" content="https://wsyoverflow.github.io/images/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013806858.png">
+<meta property="og:image" content="https://wsyoverflow.github.io/images/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013853277.png">
+<meta property="og:image" content="https://wsyoverflow.github.io/images/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013914497.png">
 <meta property="article:published_time" content="2022-07-16T17:34:35.261Z">
-<meta property="article:modified_time" content="2023-02-14T15:29:00.037Z">
+<meta property="article:modified_time" content="2023-09-17T05:31:35.057Z">
 <meta property="article:author" content="wsyOverflow">
 <meta name="twitter:card" content="summary">
-<meta name="twitter:image" content="https://wsyoverflow.github.io/images/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013637705.png">
+<meta name="twitter:image" content="https://wsyoverflow.github.io/images/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013637705.png">
 
-<link rel="canonical" href="https://wsyoverflow.github.io/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html">
+<link rel="canonical" href="https://wsyoverflow.github.io/Paper-Notes/GI/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html">
 
 
 <script id="page-configurations">
@@ -200,7 +200,7 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://wsyoverflow.github.io/Paper-Notes/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html">
+    <link itemprop="mainEntityOfPage" href="https://wsyoverflow.github.io/Paper-Notes/GI/Forward-Light-Cuts-A-Scalable-Approach-to-Real-Time-Global-Illumination.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
       <meta itemprop="image" content="/images/avatar.gif">
@@ -230,7 +230,7 @@
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-02-14 23:29:00" itemprop="dateModified" datetime="2023-02-14T23:29:00+08:00">2023-02-14</time>
+                <time title="Modified: 2023-09-17 13:31:35" itemprop="dateModified" datetime="2023-09-17T13:31:35+08:00">2023-09-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -257,7 +257,7 @@
     <div class="post-body" itemprop="articleBody">
 
       
-        <h2 id="summary">1 Summary</h2>
+        <h1 id="summary">1 Summary</h1>
 <p><code>Forward Light Cuts: A Scalable Approach to Real-Time Global Illumination</code>
 <a href="#%5B1%5D">[1]</a></p>
 <p>这篇论文假设了次级光源为 diffuse
@@ -269,7 +269,7 @@ multi-scale radiance
 子集，在每个子集中的每个三角形上随机采样生成一个扰动的
 VPL，这样就组成了多尺度的 VPL 集合。之后求解该 VPL 集合形成的 many-light
 问题来近似全局光照。该算法既模拟了传统层级的光源数量的随尺度增加的几何级下降，又具有可高度并行的线性设计，在场景完全动态并且涉及大量物体时，相比于之前算法，画面质量无明显损失并且具有较大的性能提升。</p>
-<h2 id="motivation">2 Motivation</h2>
+<h1 id="motivation">2 Motivation</h1>
 <p>实时全局光照有很多基于 radiance caching
 的方法，之前这些方法构建出场景中几何的层级结构（多为树形结构），使用这种层级结构来构建
 multi-scale radiance
@@ -279,10 +279,10 @@ function，之后通过查询该层级结构对像素进行照亮。</p>
 <li>层级缓存结构每一帧都要重复计算，这个缺点带来的开销在现代图形学的并行结构下更为明显</li>
 <li>对于实时渲染，初始 VPL 集合过大，带来的开销难以分摊</li>
 </ul>
-<h2 id="approach">3 Approach</h2>
-<h3 id="vpls-generation">3.1 VPLs Generation</h3>
-<h4 id="区分-divergent-和-regular-三角形">3.1.1 区分 Divergent 和
-Regular 三角形</h4>
+<h1 id="approach">3 Approach</h1>
+<h2 id="vpls-generation">3.1 VPLs Generation</h2>
+<h3 id="区分-divergent-和-regular-三角形">3.1.1 区分 Divergent 和
+Regular 三角形</h3>
 <p>设置阈值 <span class="math inline">\(S_0\)</span> ，面积大于 <span class="math inline">\(S_0\)</span> 的三角形为 Divergent
 三角形，这类三角形需要经过一次 tessellation 特殊处理，之后描述。</p>
 <p><span class="math display">\[
@@ -292,7 +292,7 @@ tradeoff。</p>
 <blockquote>
 <p><code>个人理解见</code>：<a href="#附录1">附录 1. 阈值 <span class="math inline">\(S_0\)</span> 的启发式的理解</a></p>
 </blockquote>
-<h4 id="三角形抽取过程">3.1.2 三角形抽取过程</h4>
+<h3 id="三角形抽取过程">3.1.2 三角形抽取过程</h3>
 <p>抽取操作目的是丢弃小三角形，因为这类三角形引入的 diffuse indirect
 lighting
 对最终的渲染贡献很小，丢弃会加快速度，但如果全部无差别丢弃，则会丢失那些多个小三角形一起作用而带来的明显间接光照效果，因此提取操作中引入一种随机过程，即<strong>随机抽取过程</strong>：</p>
@@ -305,7 +305,7 @@ lighting
 regular 三角形的集合，<span class="math inline">\(\mathcal{L^*}\)</span>
 是保留的三角形集合。由此可以看出，<strong>三角形面积越小，被丢弃的概率越大。</strong>对于整个场景的面能够保留下来的数量的期望为
 <span class="math inline">\(\mathbb{E}(N_{sample})=\frac{\mathcal{A}_{scene}}{S_0}\)</span>。</p>
-<h5 id="基于随机提取过程的三角形多尺度划分">基于随机提取过程的三角形多尺度划分</h5>
+<h4 id="基于随机提取过程的三角形多尺度划分">基于随机提取过程的三角形多尺度划分</h4>
 <p>将场景中三角形划分为 <span class="math inline">\((\mathcal{L}^0,...,\mathcal{L}^N)\)</span> 共
 <span class="math inline">\(N+1\)</span> 个子集，子集索引由 <span class="math inline">\(0\)</span> 到 <span class="math inline">\(N\)</span>
 递增，影响距离递减（即尺度递减），子集包含的三角形数量递增。为了实现这样的划分，引入
@@ -320,7 +320,7 @@ probability}
 <p>实际划分算法又有进一步的改动，引入 <span class="math inline">\(\large\forall k\in [0...N],\quad
 \tilde{S}_k=\frac{1}{\sum^k_{j=0}\frac{1}{S_j}}\)</span> ，
 算法伪代码如下</p>
-<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013637705.png" alt="尺度等级划分算法" style="zoom: 67%;"></p>
+<p><img src="/images/Paper Notes/GI/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013637705.png" alt="尺度等级划分算法" style="zoom: 67%;"></p>
 <blockquote>
 <p>可知 <span class="math inline">\(\tilde{S}_k\)</span> 单调递减，与原
 <span class="math inline">\(S_k\)</span>
@@ -330,9 +330,9 @@ probability}
 <p>至此，我们已经对场景三角形进行随机划分为多个不同尺度的子集，之后其中的每个三角形都会随机生成一个
 VPL，形成 VPL 集。接下来基于生成的 VPL 求解 many-light
 问题，即如何使用这些 VPL 照亮像素。</p>
-<h3 id="vpls-光照下的着色">3.2 VPLs 光照下的着色</h3>
-<h5 id="many-light-下的-vpls-lighting-问题描述">3.2.1 many-light 下的
-VPLs lighting 问题描述</h5>
+<h2 id="vpls-光照下的着色">3.2 VPLs 光照下的着色</h2>
+<h4 id="many-light-下的-vpls-lighting-问题描述">3.2.1 many-light 下的
+VPLs lighting 问题描述</h4>
 <p>在 many-lights 框架中，对于 normal 为 <span class="math inline">\(\vec{n_x}\)</span> 的着色点 <span class="math inline">\(x\)</span> 的 indirect outgoing
 radiance，计算方法由连续积分近似为来自一个 VPLs 集合的 radiance
 离散求和。</p>
@@ -370,8 +370,8 @@ irradiance，由于 <span class="math inline">\(&lt;\vec{n_i},\bar{y_ix}&gt;^+\)
 \end{align}\tag{2} \label{received radiance}
 \]</span></p>
 </blockquote>
-<h5 id="多尺度划分下的-vpls-lighting-的近似">3.2.2 多尺度划分下的 VPLs
-lighting 的近似</h5>
+<h4 id="多尺度划分下的-vpls-lighting-的近似">3.2.2 多尺度划分下的 VPLs
+lighting 的近似</h4>
 <p>上述进行的对三角形的多尺度随机划分引入了随机过程，因此 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span>
 也变成了<strong>随机量</strong>，接下来就需要对该随机量进行估计。我们定义
 <span class="math inline">\(K(x,\vec{n_x})\)</span> 为 <span class="math inline">\(L^{ML}(x,\vec{n_x})\)</span>
@@ -439,7 +439,7 @@ radiance 贡献较为显著的区域，这个显著程度由 <span class="math i
 <p><span class="math inline">\(D(h)=\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}\)</span>
 与 <span class="math inline">\(\large x\)</span> 着色点无关，因此 <span class="math inline">\(\mathcal{B}_h(t_i)\)</span> 是一个 nest
 ball，其边界上有点 <span class="math inline">\(y_i\)</span>，其中心位于直线 <span class="math inline">\((y_i,\vec{n_i})\)</span> 上。如下图所示</p>
-<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013806858.png" alt="image-20220717013806858" style="zoom:67%;"></p>
+<p><img src="/images/Paper Notes/GI/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013806858.png" alt="image-20220717013806858" style="zoom:67%;"></p>
 <blockquote>
 <p>上图是 <span class="math inline">\(f^k(t_i,x)\)</span>
 函数的二维可视化，其值从 0(黑) 到 1(白)。</p>
@@ -479,13 +479,13 @@ VPL 到达，控制计算量，如：</p>
 <p>个人理解见：<a href="#附录6">附录 6.
 模拟传统层级的几何级下降的理解</a></p>
 </blockquote>
-<h2 id="实现细节">4 实现细节</h2>
-<h5 id="pipeline-描述">4.1 Pipeline 描述</h5>
+<h1 id="实现细节">4 实现细节</h1>
+<h4 id="pipeline-描述">4.1 Pipeline 描述</h4>
 <p>本论文提出的技术共用到三个 geometry pass，其中两个主要 pass 用于生成
 GBuffer 和生成 Splat VPLs。第三个 pass 用于处理 Divergent
 triangle。如下图所示</p>
-<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013853277.png" alt="image-20220717013853277" style="zoom:50%;"></p>
-<h5 id="divergent-三角形处理">4.2 Divergent 三角形处理</h5>
+<p><img src="/images/Paper Notes/GI/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013853277.png" alt="image-20220717013853277" style="zoom:50%;"></p>
+<h4 id="divergent-三角形处理">4.2 Divergent 三角形处理</h4>
 <p>在本论文提出的 indirect lighting pipeline 中包含了两个 geometry
 pass：第一个 pass 关闭 tessellation stage
 处理整个场景的三角形，这个阶段检测出哪些是 Divergent
@@ -500,8 +500,8 @@ geometry 阶段过滤 regular 三角形，提高了效率。</p>
 </blockquote>
 <p>regular pipeline 即对 regular 三角形采样分级，再进行 VPL lighting
 计算。</p>
-<h5 id="per-triangle-random-number-generation">4.3 Per-triangle random
-number generation</h5>
+<h4 id="per-triangle-random-number-generation">4.3 Per-triangle random
+number generation</h4>
 <p>本论文涉及的随机过程都需要随机数来完成，对于算法 1 用到的随机数 <span class="math inline">\(\large u_{t_i}\)</span>，作者使用伪随机数。mesh
 中每个顶点添加一个额外的 uint32 属性，v_rand。该属性在加载 mesh
 时为每个顶点生成一个 uniform 随机数。在 regular pipeline
@@ -514,26 +514,26 @@ xor\)</span> 操作得到的。</p>
 <p>想要以上随机数每帧更新，以上随机数最终再与一个 uniform 的全局变量
 u_rand 进行 <span class="math inline">\(\large xor\)</span> 操作，这个
 uniform 全局变量大概要一帧更新一次。算法如下</p>
-<p><img src="/images/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013914497.png" alt="image-20220717013914497" style="zoom: 67%;"></p>
-<h5 id="progressive-rendering">4.4 Progressive rendering</h5>
+<p><img src="/images/Paper Notes/GI/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013914497.png" alt="image-20220717013914497" style="zoom: 67%;"></p>
+<h4 id="progressive-rendering">4.4 Progressive rendering</h4>
 <p>可以按照上述使用 u_rand 的方法生成多个 independent
 rendering，之后累积作平均用以产生更好的渲染结果。如，从 u_rand
 中为每个三角形生成两个独立的随机数，用以扰动 VPL 中心点 <span class="math inline">\(\large y_i\)</span>。平均由多个 jittered VPLs
 生成的多个 independent rendering，可以提供接近公式 (4)
 真实解的结果。</p>
-<h2 id="remain-question">5 Remain Question</h2>
+<h1 id="remain-question">5 Remain Question</h1>
 <ul class="task-list">
-<li><input type="checkbox">划分整体过程中的整体应该怎么理解？</li>
-<li><input type="checkbox">Splatting indirect illumination
-技术不了解</li>
+<li><label><input type="checkbox">划分整体过程中的整体应该怎么理解？</label></li>
+<li><label><input type="checkbox">Splatting indirect illumination
+技术不了解</label></li>
 </ul>
-<h2 id="reference">6 Reference</h2>
+<h1 id="reference">6 Reference</h1>
 <p><a name="[1]">[1]</a> Gilles LAURENT, Cyril DELALANDRE, Grégoire de
 LA RIVIÈRE, and Tamy BOUBEKEUR. 2016. Forward Light Cuts: A Scalable
 Approach to Real-Time Global Illumination. <i>Comput. Graph. Forum</i>
 35, 4 (July 2016), 79–88.</p>
-<h2 id="附录">附录</h2>
-<h3 id="阈值-s_0-的启发式的理解">1. <a name="附录1">阈值 <span class="math inline">\(S_0\)</span> 的启发式的理解</a></h3>
+<h1 id="附录">附录</h1>
+<h2 id="阈值-s_0-的启发式的理解">1. <a name="附录1">阈值 <span class="math inline">\(S_0\)</span> 的启发式的理解</a></h2>
 <p>以像素为球心、半径为 <span class="math inline">\(D_{near}\)</span>
 的球面面积为 <span class="math inline">\(4\pi
 D^2_{near}\)</span>，假设在距离 <span class="math inline">\(D_{near}\)</span> 内的 VPL
@@ -544,8 +544,8 @@ diffuse，因此可粗略地认为 VPL 发出的 radiance
 \frac{D^2_{near}}{N_{avg}}\)</span>，高于此平均面积的三角形成为
 divergent，剩下的三角形为 regular，regular 三角形生成的 VPL
 具有可控的影响距离，divergent 三角形后续会进一步细分为小三角形。</p>
-<h3 id="着色方程积分近似为求和的理解">2.
-<a name="附录2">着色方程积分近似为求和的理解</a></h3>
+<h2 id="着色方程积分近似为求和的理解">2.
+<a name="附录2">着色方程积分近似为求和的理解</a></h2>
 <p>首先来看精确的 rendering equation，</p>
 <p><span class="math display">\[
 L(x,\omega_o)=\int_{\Omega^+}\space
@@ -562,7 +562,7 @@ cos\theta&#39;}{||x&#39;-x||^2} \space dA
 唯一不同的是一个是对总体面积的连续积分，一个是将每个 VPL
 的面积视为微元的离散求和。可知，在 VPL
 面积较小时，这种近似较为接近正确。</p>
-<h3 id="vpl-lighting-推导">3. <a name="附录3">VPL lighting 推导</a></h3>
+<h2 id="vpl-lighting-推导">3. <a name="附录3">VPL lighting 推导</a></h2>
 <p>将划分的三角形所有子集看作一个整体求和符号有：<span class="math inline">\(\sum\limits^N_{k=0}\sum\limits_{t_i^k\in
 \mathcal{L}^k}=\sum\limits_{t_i\in \mathcal{L}}\)</span></p>
 <blockquote>
@@ -612,8 +612,8 @@ cos\theta&#39;}{||x&#39;-x||^2} \space dA
 <p>最终有</p>
 </blockquote>
 <p>$ _{t_i}H(t_i,x,)<sup>N_{k=0}F</sup>k(t_i,x)P(t_i^k)$</p>
-<h3 id="转为整体划分问题推导">4.
-<a name="附录4">转为整体划分问题推导</a></h3>
+<h2 id="转为整体划分问题推导">4.
+<a name="附录4">转为整体划分问题推导</a></h2>
 <p>由 <span class="math inline">\(\eqref{partition probability}\)</span>
 式代入 <span class="math inline">\(\eqref{many light estimator}\)</span>
 中有</p>
@@ -624,7 +624,7 @@ F^k(t_i,x)\frac{\mathcal{A}(t_i)}{S_k}=\mathcal{A}(t_i)\]</span></p>
 <p>假设未知函数 <span class="math inline">\(f^k(t_i,x)\)</span> 使得
 <span class="math inline">\(F^k(t_i,x)=S_kf^k(t_i,x)\)</span>，那么有</p>
 <p>​ <span class="math inline">\(\sum\limits_kf^k(t_i,x)=1\)</span></p>
-<h3 id="整体划分选取推导">5. <a name="附录5">整体划分选取推导</a></h3>
+<h2 id="整体划分选取推导">5. <a name="附录5">整体划分选取推导</a></h2>
 <blockquote>
 <p>当 receiver 正对着 emitter 时，将 <span class="math inline">\(\vec{n_x}=\bar{xy_i}\)</span> 代入 <span class="math inline">\(\eqref{received radiance}\)</span>，有</p>
 </blockquote>
@@ -641,8 +641,8 @@ H(t_i,x,\vec{n_x})&amp;=\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{(&lt;\vec{n_i},\
 \geq \pi \sqrt{\frac{2h}{3\rho_i\rho_xE(t_i)}}\]</span></p>
 <p><span class="math display">\[\frac{||x-y_i||}{&lt;\vec{n_i},\bar{y_ix}&gt;}
 \leq \frac{1}{\pi} \sqrt{\frac{3\rho_i\rho_xE(t_i)}{2h}}\]</span></p>
-<h3 id="模拟传统层级的几何级下降的理解">6.
-<a name="附录6">模拟传统层级的几何级下降的理解</a></h3>
+<h2 id="模拟传统层级的几何级下降的理解">6.
+<a name="附录6">模拟传统层级的几何级下降的理解</a></h2>
 <p>这里的模拟层级表示而引入几何级下降的参数配置：例如满二叉树的层级表示，根节点层(0层)节点数量为
 <span class="math inline">\(S_0=1\)</span> 个，往下每层数量是前一层的 2
 倍，即有 <span class="math inline">\(S_k=S_0 2^k\)</span>
@@ -734,13 +734,13 @@ H(t_i,x,\vec{n_x})&amp;=\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{(&lt;\vec{n_i},\
 
       <!--noindex-->
       <div class="post-toc-wrap sidebar-panel">
-          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-2"><a class="nav-link" href="#summary"><span class="nav-text">1 Summary</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#motivation"><span class="nav-text">2 Motivation</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#approach"><span class="nav-text">3 Approach</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#vpls-generation"><span class="nav-text">3.1 VPLs Generation</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%8C%BA%E5%88%86-divergent-%E5%92%8C-regular-%E4%B8%89%E8%A7%92%E5%BD%A2"><span class="nav-text">3.1.1 区分 Divergent 和
-Regular 三角形</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E4%B8%89%E8%A7%92%E5%BD%A2%E6%8A%BD%E5%8F%96%E8%BF%87%E7%A8%8B"><span class="nav-text">3.1.2 三角形抽取过程</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E9%9A%8F%E6%9C%BA%E6%8F%90%E5%8F%96%E8%BF%87%E7%A8%8B%E7%9A%84%E4%B8%89%E8%A7%92%E5%BD%A2%E5%A4%9A%E5%B0%BA%E5%BA%A6%E5%88%92%E5%88%86"><span class="nav-text">基于随机提取过程的三角形多尺度划分</span></a></li></ol></li></ol></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vpls-%E5%85%89%E7%85%A7%E4%B8%8B%E7%9A%84%E7%9D%80%E8%89%B2"><span class="nav-text">3.2 VPLs 光照下的着色</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#many-light-%E4%B8%8B%E7%9A%84-vpls-lighting-%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="nav-text">3.2.1 many-light 下的
-VPLs lighting 问题描述</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#%E5%A4%9A%E5%B0%BA%E5%BA%A6%E5%88%92%E5%88%86%E4%B8%8B%E7%9A%84-vpls-lighting-%E7%9A%84%E8%BF%91%E4%BC%BC"><span class="nav-text">3.2.2 多尺度划分下的 VPLs
-lighting 的近似</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="nav-text">4 实现细节</span></a><ol class="nav-child"><li class="nav-item nav-level-5"><a class="nav-link" href="#pipeline-%E6%8F%8F%E8%BF%B0"><span class="nav-text">4.1 Pipeline 描述</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#divergent-%E4%B8%89%E8%A7%92%E5%BD%A2%E5%A4%84%E7%90%86"><span class="nav-text">4.2 Divergent 三角形处理</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#per-triangle-random-number-generation"><span class="nav-text">4.3 Per-triangle random
-number generation</span></a></li><li class="nav-item nav-level-5"><a class="nav-link" href="#progressive-rendering"><span class="nav-text">4.4 Progressive rendering</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#remain-question"><span class="nav-text">5 Remain Question</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#reference"><span class="nav-text">6 Reference</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%99%84%E5%BD%95"><span class="nav-text">附录</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E9%98%88%E5%80%BC-s_0-%E7%9A%84%E5%90%AF%E5%8F%91%E5%BC%8F%E7%9A%84%E7%90%86%E8%A7%A3"><span class="nav-text">1. 阈值 \(S_0\) 的启发式的理解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9D%80%E8%89%B2%E6%96%B9%E7%A8%8B%E7%A7%AF%E5%88%86%E8%BF%91%E4%BC%BC%E4%B8%BA%E6%B1%82%E5%92%8C%E7%9A%84%E7%90%86%E8%A7%A3"><span class="nav-text">2.
-着色方程积分近似为求和的理解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#vpl-lighting-%E6%8E%A8%E5%AF%BC"><span class="nav-text">3. VPL lighting 推导</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E8%BD%AC%E4%B8%BA%E6%95%B4%E4%BD%93%E5%88%92%E5%88%86%E9%97%AE%E9%A2%98%E6%8E%A8%E5%AF%BC"><span class="nav-text">4.
-转为整体划分问题推导</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E5%88%92%E5%88%86%E9%80%89%E5%8F%96%E6%8E%A8%E5%AF%BC"><span class="nav-text">5. 整体划分选取推导</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E6%A8%A1%E6%8B%9F%E4%BC%A0%E7%BB%9F%E5%B1%82%E7%BA%A7%E7%9A%84%E5%87%A0%E4%BD%95%E7%BA%A7%E4%B8%8B%E9%99%8D%E7%9A%84%E7%90%86%E8%A7%A3"><span class="nav-text">6.
+          <div class="post-toc motion-element"><ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#summary"><span class="nav-text">1 Summary</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#motivation"><span class="nav-text">2 Motivation</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#approach"><span class="nav-text">3 Approach</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#vpls-generation"><span class="nav-text">3.1 VPLs Generation</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%8C%BA%E5%88%86-divergent-%E5%92%8C-regular-%E4%B8%89%E8%A7%92%E5%BD%A2"><span class="nav-text">3.1.1 区分 Divergent 和
+Regular 三角形</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E4%B8%89%E8%A7%92%E5%BD%A2%E6%8A%BD%E5%8F%96%E8%BF%87%E7%A8%8B"><span class="nav-text">3.1.2 三角形抽取过程</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%9F%BA%E4%BA%8E%E9%9A%8F%E6%9C%BA%E6%8F%90%E5%8F%96%E8%BF%87%E7%A8%8B%E7%9A%84%E4%B8%89%E8%A7%92%E5%BD%A2%E5%A4%9A%E5%B0%BA%E5%BA%A6%E5%88%92%E5%88%86"><span class="nav-text">基于随机提取过程的三角形多尺度划分</span></a></li></ol></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#vpls-%E5%85%89%E7%85%A7%E4%B8%8B%E7%9A%84%E7%9D%80%E8%89%B2"><span class="nav-text">3.2 VPLs 光照下的着色</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#many-light-%E4%B8%8B%E7%9A%84-vpls-lighting-%E9%97%AE%E9%A2%98%E6%8F%8F%E8%BF%B0"><span class="nav-text">3.2.1 many-light 下的
+VPLs lighting 问题描述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#%E5%A4%9A%E5%B0%BA%E5%BA%A6%E5%88%92%E5%88%86%E4%B8%8B%E7%9A%84-vpls-lighting-%E7%9A%84%E8%BF%91%E4%BC%BC"><span class="nav-text">3.2.2 多尺度划分下的 VPLs
+lighting 的近似</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E5%AE%9E%E7%8E%B0%E7%BB%86%E8%8A%82"><span class="nav-text">4 实现细节</span></a><ol class="nav-child"><li class="nav-item nav-level-4"><a class="nav-link" href="#pipeline-%E6%8F%8F%E8%BF%B0"><span class="nav-text">4.1 Pipeline 描述</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#divergent-%E4%B8%89%E8%A7%92%E5%BD%A2%E5%A4%84%E7%90%86"><span class="nav-text">4.2 Divergent 三角形处理</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#per-triangle-random-number-generation"><span class="nav-text">4.3 Per-triangle random
+number generation</span></a></li><li class="nav-item nav-level-4"><a class="nav-link" href="#progressive-rendering"><span class="nav-text">4.4 Progressive rendering</span></a></li></ol></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#remain-question"><span class="nav-text">5 Remain Question</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#reference"><span class="nav-text">6 Reference</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#%E9%99%84%E5%BD%95"><span class="nav-text">附录</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#%E9%98%88%E5%80%BC-s_0-%E7%9A%84%E5%90%AF%E5%8F%91%E5%BC%8F%E7%9A%84%E7%90%86%E8%A7%A3"><span class="nav-text">1. 阈值 \(S_0\) 的启发式的理解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E7%9D%80%E8%89%B2%E6%96%B9%E7%A8%8B%E7%A7%AF%E5%88%86%E8%BF%91%E4%BC%BC%E4%B8%BA%E6%B1%82%E5%92%8C%E7%9A%84%E7%90%86%E8%A7%A3"><span class="nav-text">2.
+着色方程积分近似为求和的理解</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#vpl-lighting-%E6%8E%A8%E5%AF%BC"><span class="nav-text">3. VPL lighting 推导</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E8%BD%AC%E4%B8%BA%E6%95%B4%E4%BD%93%E5%88%92%E5%88%86%E9%97%AE%E9%A2%98%E6%8E%A8%E5%AF%BC"><span class="nav-text">4.
+转为整体划分问题推导</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%95%B4%E4%BD%93%E5%88%92%E5%88%86%E9%80%89%E5%8F%96%E6%8E%A8%E5%AF%BC"><span class="nav-text">5. 整体划分选取推导</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#%E6%A8%A1%E6%8B%9F%E4%BC%A0%E7%BB%9F%E5%B1%82%E7%BA%A7%E7%9A%84%E5%87%A0%E4%BD%95%E7%BA%A7%E4%B8%8B%E9%99%8D%E7%9A%84%E7%90%86%E8%A7%A3"><span class="nav-text">6.
 模拟传统层级的几何级下降的理解</span></a></li></ol></li></ol></div>
       </div>
       <!--/noindex-->
@@ -755,12 +755,12 @@ number generation</span></a></li><li class="nav-item nav-level-5"><a class="nav-
       <div class="site-state-item site-state-posts">
           <a href="/archives/">
         
-          <span class="site-state-item-count">9</span>
+          <span class="site-state-item-count">15</span>
           <span class="site-state-item-name">posts</span>
         </a>
       </div>
       <div class="site-state-item site-state-categories">
-        <span class="site-state-item-count">6</span>
+        <span class="site-state-item-count">10</span>
         <span class="site-state-item-name">categories</span>
       </div>
   </nav>
@@ -1011,7 +1011,7 @@ NexT.utils.loadComments(document.querySelector('#gitalk-container'), () => {
       repo        : 'wsyOverflow.github.io',
       owner       : 'wsyOverflow',
       admin       : ['wsyOverflow'],
-      id          : '37a6ac1a6d081616c1c5e26a7fbdc717',
+      id          : 'bdb6377826c327a9b225b763b7c0a313',
         language: '',
       distractionFreeMode: false
     });
