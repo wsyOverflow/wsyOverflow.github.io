@@ -1,6 +1,10 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
   <url>
+    <loc>https://wsyoverflow.github.io/Rendering-Blogs/Graphics-Algorithm/2.-Reblur%E8%A7%A3%E6%9E%90.html</loc>
+    <lastmod>2023-09-17</lastmod>
+  </url>
+  <url>
     <loc>https://wsyoverflow.github.io/Paper-Notes/GI/Dynamic-Diffuse-Global-Illumination-with-Ray-Traced-Irradiance-Fields.html</loc>
     <lastmod>2023-09-17</lastmod>
   </url>
@@ -38,10 +42,6 @@
   </url>
   <url>
     <loc>https://wsyoverflow.github.io/Rendering-Blogs/Graphics-Algorithm/1.-Hierarchy-Ray-March.html</loc>
-    <lastmod>2023-09-17</lastmod>
-  </url>
-  <url>
-    <loc>https://wsyoverflow.github.io/Rendering-Blogs/Graphics-Algorithm/2.-Reblur%E8%A7%A3%E6%9E%90.html</loc>
     <lastmod>2023-09-17</lastmod>
   </url>
   <url>

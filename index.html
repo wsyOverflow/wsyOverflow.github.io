@@ -190,117 +190,6 @@
   
   
   <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
-    <link itemprop="mainEntityOfPage" href="https://wsyoverflow.github.io/C++/Effective-Modern-C++/Chapter-1%EF%BC%9A%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC.html">
-
-    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
-      <meta itemprop="image" content="/images/avatar.gif">
-      <meta itemprop="name" content="wsyOverflow">
-      <meta itemprop="description" content="">
-    </span>
-
-    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
-      <meta itemprop="name" content="wsyOverflow">
-    </span>
-      <header class="post-header">
-        <h2 class="post-title" itemprop="name headline">
-          
-            <a href="/C++/Effective-Modern-C++/Chapter-1%EF%BC%9A%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC.html" class="post-title-link" itemprop="url">Untitled</a>
-        </h2>
-
-        <div class="post-meta">
-            <span class="post-meta-item">
-              <span class="post-meta-item-icon">
-                <i class="far fa-calendar"></i>
-              </span>
-              <span class="post-meta-item-text">Posted on</span>
-
-              <time title="Created: 2023-09-04 23:48:19" itemprop="dateCreated datePublished" datetime="2023-09-04T23:48:19+08:00">2023-09-04</time>
-            </span>
-              <span class="post-meta-item">
-                <span class="post-meta-item-icon">
-                  <i class="far fa-calendar-check"></i>
-                </span>
-                <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-09-05 00:33:18" itemprop="dateModified" datetime="2023-09-05T00:33:18+08:00">2023-09-05</time>
-              </span>
-
-          
-
-        </div>
-      </header>
-
-    
-    
-    
-    <div class="post-body" itemprop="articleBody">
-
-      
-          <h2 id="条款一模板类型推导">条款一：模板类型推导</h2>
-<p>对于下面一段模板伪代码：</p>
-<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">f</span><span class="params">(ParamType param)</span></span>;	<span class="comment">// ParamType</span></span><br></pre></td></tr></table></figure>
-<p><code>ParamType</code>
-是模板形参类型，常带有修辞词(const)或引用声明。接下来将要谈论的几种情况：</p>
-<ul>
-<li>值传递：<code>ParamType</code>为<code>T</code></li>
-<li>引用传递：
-<ul>
-<li>左值引用：<code>ParamType</code>为<code>T&amp;</code>或<code>T const&amp;</code></li>
-<li>万能引用：<code>ParamType</code>为<code>T&amp;&amp;</code></li>
-</ul></li>
-<li>指针传递：<code>ParamType</code>为<code>T*</code></li>
-</ul>
-<h3 id="类型推导规则">类型推导规则</h3>
-<ol type="1">
-<li><p>无论是上述哪种情况，引用类型的实参都会被当作非引用类型处理</p>
-<p>这一点与普通函数调用类似，实参是否为引用类型不会影响到形参是否为引用</p></li>
-<li><p>值传递模板类型：实参的 const/volatile 会被去掉</p>
-<p>这一点与普通函数调用类似，值传递形参只是实参的副本，const/volatile
-修饰对于值传递没有意义。</p></li>
-<li><p>引用传递模板类型：</p>
-<ul>
-<li><ol type="a">
-<li>左值引用：遵循第1点，实参自带的引用类型会被忽略。</li>
-</ol>
-<ul>
-<li>1 const引用模板类型：实参的const会被忽略</li>
-<li>2
-非const引用模板类型：实参的const会被模板类型保留，这一点与普通函数调用不同</li>
-</ul></li>
-<li><ol start="2" type="a">
-<li>万能引用：会根据实参属于左值还是右值推导模板类型</li>
-</ol>
-<ul>
-<li>1 左值实参：模板类型会被解释为左值引用，剩下的推导过程与 3.a.1
-相同</li>
-<li>2
-右值实参：模板类型会被解释为右值引用。右值实参没有const而言了（因为是右值）</li>
-</ul></li>
-</ul></li>
-<li><p>指针模板类型：与左值引用推导规则类型</p>
-<ol type="1">
-<li>会取消掉实参的指针类型</li>
-</ol></li>
-</ol>
-<h3 id="示例">示例</h3>
-
-      
-    </div>
-
-    
-    
-    
-      <footer class="post-footer">
-        <div class="post-eof"></div>
-      </footer>
-  </article>
-  
-  
-  
-
-      
-  
-  
-  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
     <link itemprop="mainEntityOfPage" href="https://wsyoverflow.github.io/Rendering-Blogs/Graphics-Algorithm/2.-Reblur%E8%A7%A3%E6%9E%90.html">
 
     <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
@@ -325,14 +214,14 @@
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2023-08-20 10:36:00" itemprop="dateCreated datePublished" datetime="2023-08-20T10:36:00+08:00">2023-08-20</time>
+              <time title="Created: 2023-09-20 23:21:10" itemprop="dateCreated datePublished" datetime="2023-09-20T23:21:10+08:00">2023-09-20</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-09-17 13:01:20" itemprop="dateModified" datetime="2023-09-17T13:01:20+08:00">2023-09-17</time>
+                <time title="Modified: 2023-09-17 16:30:06" itemprop="dateModified" datetime="2023-09-17T16:30:06+08:00">2023-09-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -666,18 +555,22 @@ Direction, lerp factor) 见附录 <code>NoD</code> 法线与 Dv
 <li><p>估算lobe半径大小</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> lobeRadius = hitDist * NoD * lobeTanHalfAngle;    <span class="comment">// 没看出有什么精确的几何变换，更像是一个近似模型</span></span><br></pre></td></tr></table></figure></li>
 </ul>
-<p>转换为像素单位
-<code>minBlurRadius = lobeRaidus / PixelRadiusToWorld(gUnproject, gOrthoMode, 1.0, viewZ + hitDist * Dv.w);</code>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> <span class="title function_">PixelRadiusToWorld</span><span class="params">(<span class="type">float</span> unproject, <span class="type">float</span> orthoMode, <span class="type">float</span> pixelRadius, <span class="type">float</span> viewZ)</span></span><br><span class="line">&#123;	<span class="comment">// 可以理解为一个像素在世界空间表面上所占据区域的半径，pixelRadius 是以pixel为单位的半径</span></span><br><span class="line">     <span class="keyword">return</span> pixelRadius * unproject * lerp( viewZ, <span class="number">1.0</span>, <span class="built_in">abs</span>( orthoMode ) );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>转换为像素单位： 世界空间半径 /
+一个像素对应的世界空间大小。像素对应的世界空间大小，与像素的深度有关，即投影到
+viewZ 处的截面 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">minBlurRadius = lobeRaidus / PixelRadiusToWorld(gUnproject, gOrthoMode, <span class="number">1.0</span>, viewZ + hitDist * Dv.w);</span><br><span class="line"><span class="comment">// 将屏幕空间以像素为单位的半径投影回视锥体 viewZ 处的截面上的几何半径</span></span><br><span class="line"><span class="type">float</span> <span class="title function_">PixelRadiusToWorld</span><span class="params">(<span class="type">float</span> unproject, <span class="type">float</span> orthoMode, <span class="type">float</span> pixelRadius, <span class="type">float</span> viewZ)</span></span><br><span class="line">&#123;</span><br><span class="line">     <span class="keyword">return</span> pixelRadius * unproject * lerp( viewZ, <span class="number">1.0</span>, <span class="built_in">abs</span>( orthoMode ) );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <ul>
-<li><p>gUnproject：1.0f / (0.5f * rectH * project[1]); 大概是 1.0 / (0.5
-* rectW)。orthoMode 为 0，因此上式为 pixelRadius * (1.0 / (0.5 * rectW))
-* viewZ</p>
-<p>如下所示的视锥2D示意图，该式子计算的是近平面的像素大小对应view_z处平面的大小。pixelRadius是以pixel个数为单位的半径，那么对应归一化后的near平面上的长度为
-pixelRadius * (1 / rectW)，根据相似可列 <span class="math display">\[
-\frac{pr}{wr} = \frac{near}{z_v}
-\]</span> near * pixelWorldRadius = view_z * pixelRadius * (1.0 / (0.5 *
-rectW)) = view_z * pixelRadius * (1.0 / rectW) * 2.0</p></li>
+<li><p>gUnproject：1.0f / (0.5f * rectH * project[1]); project[1]
+计算的是 <span class="math inline">\(\frac{1}{\tan\alpha_1}\)</span>
+<img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230917160953598.png" alt="image-20230917160953598" style="zoom:50%;"><img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230917161201304.png" alt="image-20230917161201304" style="zoom:50%;"></p>
+<p>视锥体在 viewZ 处的截面高度为 <span class="math inline">\(2 * viewZ *
+\tan\alpha_1\)</span>，因此与屏幕高度的比值为 <span class="math display">\[
+\begin{align}
+&amp; 2 * viewZ * \tan\alpha_1 * \frac{1}{rectH} = 2 * viewZ *
+\frac{1}{project[1]} * \frac{1}{rectH} \\
+&amp; = viewZ * \frac{1}{project[1] * 0.5 * rectH}
+\end{align}
+\]</span>
+因此屏幕空间像素乘上以上比值，可以投影回viewZ处，得到几何半径。</p></li>
 </ul></li>
 <li><p><code>blurRadius</code> ：使用一个 hitDistFactor 与 specular
 magic curve 缩放输入radius参数。不理解原理 :question: :confused:</p>
@@ -686,18 +579,14 @@ magic curve 缩放输入radius参数。不理解原理 :question: :confused:</p>
 clamp 到 0~1</p>
 <ul>
 <li><p><code>float frustumSize</code>：(2 / aspect) *
-viewZ，<strong>frustum 在 viewZ 处平面的面积</strong> :confused:
+viewZ，<strong>视锥体在 viewZ 处截面的高度</strong> :confused:
 :question:</p>
 <p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> <span class="title function_">GetFrustumSize</span><span class="params">(<span class="type">float</span> minRectDimMulUnproject, <span class="type">float</span> orthoMode, <span class="type">float</span> viewZ)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">return</span> minRectDimMulUnproject * lerp(viewZ, <span class="number">1.0</span>, <span class="built_in">abs</span>(orthoMode));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>gMinRectDimMulUnproject :
-<code>(float)ml::Min(rectW, rectH) * unproject = 1.0 / (0.5 * project[1]) = 2 / apsect</code></p>
-<p>即 2 / (width / height) = height / (0.5 * width)，假设 viewZ
-处截面宽高为 h1 w1，有相似关系</p>
-<p>width/w1 = near / viewZ = height / h1，因此有 width / w1 = height /
-h1，即</p>
-<p>viewZ * width = near * w1, viewZ * height = near * h1;</p>
-<p>这是 x 轴方向 FOV 一半的 tan 值，乘上 viewZ 则可以看作 frustum 在
-viewZ 处的平面宽度的一半</p></li>
+<code>(float)ml::Min(rectW, rectH) * unproject</code></p>
+<p>前述已经讲过 viewZ * unproject 为视锥体在 viewZ
+处的截面高度与屏幕高度的比值，因此 frustumSize 描述的是 viewZ
+处截面的高度</p></li>
 </ul></li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> blurRadius = gSpecPrepassBlurRadius;</span><br><span class="line">blurRadius *= hitDistFactor * smc;</span><br><span class="line">blurRadius = min( blurRadius, minBlurRadius );</span><br></pre></td></tr></table></figure></li>
@@ -1116,6 +1005,117 @@ direction, lerpFactor)</p>
 <h1 id="reference">Reference</h1>
 <p><a name="[1]">[1]</a>
 https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf</p>
+
+      
+    </div>
+
+    
+    
+    
+      <footer class="post-footer">
+        <div class="post-eof"></div>
+      </footer>
+  </article>
+  
+  
+  
+
+      
+  
+  
+  <article itemscope itemtype="http://schema.org/Article" class="post-block" lang="en">
+    <link itemprop="mainEntityOfPage" href="https://wsyoverflow.github.io/C++/Effective-Modern-C++/Chapter-1%EF%BC%9A%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC.html">
+
+    <span hidden itemprop="author" itemscope itemtype="http://schema.org/Person">
+      <meta itemprop="image" content="/images/avatar.gif">
+      <meta itemprop="name" content="wsyOverflow">
+      <meta itemprop="description" content="">
+    </span>
+
+    <span hidden itemprop="publisher" itemscope itemtype="http://schema.org/Organization">
+      <meta itemprop="name" content="wsyOverflow">
+    </span>
+      <header class="post-header">
+        <h2 class="post-title" itemprop="name headline">
+          
+            <a href="/C++/Effective-Modern-C++/Chapter-1%EF%BC%9A%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC.html" class="post-title-link" itemprop="url">Untitled</a>
+        </h2>
+
+        <div class="post-meta">
+            <span class="post-meta-item">
+              <span class="post-meta-item-icon">
+                <i class="far fa-calendar"></i>
+              </span>
+              <span class="post-meta-item-text">Posted on</span>
+
+              <time title="Created: 2023-09-04 23:48:19" itemprop="dateCreated datePublished" datetime="2023-09-04T23:48:19+08:00">2023-09-04</time>
+            </span>
+              <span class="post-meta-item">
+                <span class="post-meta-item-icon">
+                  <i class="far fa-calendar-check"></i>
+                </span>
+                <span class="post-meta-item-text">Edited on</span>
+                <time title="Modified: 2023-09-05 00:33:18" itemprop="dateModified" datetime="2023-09-05T00:33:18+08:00">2023-09-05</time>
+              </span>
+
+          
+
+        </div>
+      </header>
+
+    
+    
+    
+    <div class="post-body" itemprop="articleBody">
+
+      
+          <h2 id="条款一模板类型推导">条款一：模板类型推导</h2>
+<p>对于下面一段模板伪代码：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><span class="line"><span class="function"><span class="keyword">template</span>&lt;<span class="keyword">typename</span> T&gt;</span></span><br><span class="line"><span class="function"><span class="type">void</span> <span class="title">f</span><span class="params">(ParamType param)</span></span>;	<span class="comment">// ParamType</span></span><br></pre></td></tr></table></figure>
+<p><code>ParamType</code>
+是模板形参类型，常带有修辞词(const)或引用声明。接下来将要谈论的几种情况：</p>
+<ul>
+<li>值传递：<code>ParamType</code>为<code>T</code></li>
+<li>引用传递：
+<ul>
+<li>左值引用：<code>ParamType</code>为<code>T&amp;</code>或<code>T const&amp;</code></li>
+<li>万能引用：<code>ParamType</code>为<code>T&amp;&amp;</code></li>
+</ul></li>
+<li>指针传递：<code>ParamType</code>为<code>T*</code></li>
+</ul>
+<h3 id="类型推导规则">类型推导规则</h3>
+<ol type="1">
+<li><p>无论是上述哪种情况，引用类型的实参都会被当作非引用类型处理</p>
+<p>这一点与普通函数调用类似，实参是否为引用类型不会影响到形参是否为引用</p></li>
+<li><p>值传递模板类型：实参的 const/volatile 会被去掉</p>
+<p>这一点与普通函数调用类似，值传递形参只是实参的副本，const/volatile
+修饰对于值传递没有意义。</p></li>
+<li><p>引用传递模板类型：</p>
+<ul>
+<li><ol type="a">
+<li>左值引用：遵循第1点，实参自带的引用类型会被忽略。</li>
+</ol>
+<ul>
+<li>1 const引用模板类型：实参的const会被忽略</li>
+<li>2
+非const引用模板类型：实参的const会被模板类型保留，这一点与普通函数调用不同</li>
+</ul></li>
+<li><ol start="2" type="a">
+<li>万能引用：会根据实参属于左值还是右值推导模板类型</li>
+</ol>
+<ul>
+<li>1 左值实参：模板类型会被解释为左值引用，剩下的推导过程与 3.a.1
+相同</li>
+<li>2
+右值实参：模板类型会被解释为右值引用。右值实参没有const而言了（因为是右值）</li>
+</ul></li>
+</ul></li>
+<li><p>指针模板类型：与左值引用推导规则类型</p>
+<ol type="1">
+<li>会取消掉实参的指针类型</li>
+</ol></li>
+</ol>
+<h3 id="示例">示例</h3>
 
       
     </div>

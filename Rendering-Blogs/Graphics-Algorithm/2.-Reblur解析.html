@@ -39,12 +39,14 @@
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur解析.assets/image-20230820113146073.png">
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur解析.assets/image-20230820113322228.png">
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur解析.assets/image-20230820113351881.png">
+<meta property="og:image" content="https://wsyoverflow.github.io/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur解析.assets/image-20230917160953598.png">
+<meta property="og:image" content="https://wsyoverflow.github.io/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur解析.assets/image-20230917161201304.png">
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur解析.assets/image-20230820201305538.png">
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur解析.assets/image-20230822111025809.png">
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur解析.assets/image-20230903135344354.png">
 <meta property="og:image" content="https://wsyoverflow.github.io/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur解析.assets/image-20230820113637853.png">
-<meta property="article:published_time" content="2023-08-20T02:36:00.795Z">
-<meta property="article:modified_time" content="2023-09-17T05:01:20.012Z">
+<meta property="article:published_time" content="2023-09-20T15:21:10.868Z">
+<meta property="article:modified_time" content="2023-09-17T08:30:06.267Z">
 <meta property="article:author" content="wsyOverflow">
 <meta name="twitter:card" content="summary">
 <meta name="twitter:image" content="https://wsyoverflow.github.io/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur解析.assets/image-20230820103719276-1694926428932-2.png">
@@ -232,14 +234,14 @@
               </span>
               <span class="post-meta-item-text">Posted on</span>
 
-              <time title="Created: 2023-08-20 10:36:00" itemprop="dateCreated datePublished" datetime="2023-08-20T10:36:00+08:00">2023-08-20</time>
+              <time title="Created: 2023-09-20 23:21:10" itemprop="dateCreated datePublished" datetime="2023-09-20T23:21:10+08:00">2023-09-20</time>
             </span>
               <span class="post-meta-item">
                 <span class="post-meta-item-icon">
                   <i class="far fa-calendar-check"></i>
                 </span>
                 <span class="post-meta-item-text">Edited on</span>
-                <time title="Modified: 2023-09-17 13:01:20" itemprop="dateModified" datetime="2023-09-17T13:01:20+08:00">2023-09-17</time>
+                <time title="Modified: 2023-09-17 16:30:06" itemprop="dateModified" datetime="2023-09-17T16:30:06+08:00">2023-09-17</time>
               </span>
             <span class="post-meta-item">
               <span class="post-meta-item-icon">
@@ -573,18 +575,22 @@ Direction, lerp factor) 见附录 <code>NoD</code> 法线与 Dv
 <li><p>估算lobe半径大小</p>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> lobeRadius = hitDist * NoD * lobeTanHalfAngle;    <span class="comment">// 没看出有什么精确的几何变换，更像是一个近似模型</span></span><br></pre></td></tr></table></figure></li>
 </ul>
-<p>转换为像素单位
-<code>minBlurRadius = lobeRaidus / PixelRadiusToWorld(gUnproject, gOrthoMode, 1.0, viewZ + hitDist * Dv.w);</code>
-<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> <span class="title function_">PixelRadiusToWorld</span><span class="params">(<span class="type">float</span> unproject, <span class="type">float</span> orthoMode, <span class="type">float</span> pixelRadius, <span class="type">float</span> viewZ)</span></span><br><span class="line">&#123;	<span class="comment">// 可以理解为一个像素在世界空间表面上所占据区域的半径，pixelRadius 是以pixel为单位的半径</span></span><br><span class="line">     <span class="keyword">return</span> pixelRadius * unproject * lerp( viewZ, <span class="number">1.0</span>, <span class="built_in">abs</span>( orthoMode ) );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
+<p>转换为像素单位： 世界空间半径 /
+一个像素对应的世界空间大小。像素对应的世界空间大小，与像素的深度有关，即投影到
+viewZ 处的截面 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">minBlurRadius = lobeRaidus / PixelRadiusToWorld(gUnproject, gOrthoMode, <span class="number">1.0</span>, viewZ + hitDist * Dv.w);</span><br><span class="line"><span class="comment">// 将屏幕空间以像素为单位的半径投影回视锥体 viewZ 处的截面上的几何半径</span></span><br><span class="line"><span class="type">float</span> <span class="title function_">PixelRadiusToWorld</span><span class="params">(<span class="type">float</span> unproject, <span class="type">float</span> orthoMode, <span class="type">float</span> pixelRadius, <span class="type">float</span> viewZ)</span></span><br><span class="line">&#123;</span><br><span class="line">     <span class="keyword">return</span> pixelRadius * unproject * lerp( viewZ, <span class="number">1.0</span>, <span class="built_in">abs</span>( orthoMode ) );</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <ul>
-<li><p>gUnproject：1.0f / (0.5f * rectH * project[1]); 大概是 1.0 / (0.5
-* rectW)。orthoMode 为 0，因此上式为 pixelRadius * (1.0 / (0.5 * rectW))
-* viewZ</p>
-<p>如下所示的视锥2D示意图，该式子计算的是近平面的像素大小对应view_z处平面的大小。pixelRadius是以pixel个数为单位的半径，那么对应归一化后的near平面上的长度为
-pixelRadius * (1 / rectW)，根据相似可列 <span class="math display">\[
-\frac{pr}{wr} = \frac{near}{z_v}
-\]</span> near * pixelWorldRadius = view_z * pixelRadius * (1.0 / (0.5 *
-rectW)) = view_z * pixelRadius * (1.0 / rectW) * 2.0</p></li>
+<li><p>gUnproject：1.0f / (0.5f * rectH * project[1]); project[1]
+计算的是 <span class="math inline">\(\frac{1}{\tan\alpha_1}\)</span>
+<img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230917160953598.png" alt="image-20230917160953598" style="zoom:50%;"><img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230917161201304.png" alt="image-20230917161201304" style="zoom:50%;"></p>
+<p>视锥体在 viewZ 处的截面高度为 <span class="math inline">\(2 * viewZ *
+\tan\alpha_1\)</span>，因此与屏幕高度的比值为 <span class="math display">\[
+\begin{align}
+&amp; 2 * viewZ * \tan\alpha_1 * \frac{1}{rectH} = 2 * viewZ *
+\frac{1}{project[1]} * \frac{1}{rectH} \\
+&amp; = viewZ * \frac{1}{project[1] * 0.5 * rectH}
+\end{align}
+\]</span>
+因此屏幕空间像素乘上以上比值，可以投影回viewZ处，得到几何半径。</p></li>
 </ul></li>
 <li><p><code>blurRadius</code> ：使用一个 hitDistFactor 与 specular
 magic curve 缩放输入radius参数。不理解原理 :question: :confused:</p>
@@ -593,18 +599,14 @@ magic curve 缩放输入radius参数。不理解原理 :question: :confused:</p>
 clamp 到 0~1</p>
 <ul>
 <li><p><code>float frustumSize</code>：(2 / aspect) *
-viewZ，<strong>frustum 在 viewZ 处平面的面积</strong> :confused:
+viewZ，<strong>视锥体在 viewZ 处截面的高度</strong> :confused:
 :question:</p>
 <p><figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> <span class="title function_">GetFrustumSize</span><span class="params">(<span class="type">float</span> minRectDimMulUnproject, <span class="type">float</span> orthoMode, <span class="type">float</span> viewZ)</span></span><br><span class="line">&#123;</span><br><span class="line">	<span class="keyword">return</span> minRectDimMulUnproject * lerp(viewZ, <span class="number">1.0</span>, <span class="built_in">abs</span>(orthoMode));</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure></p>
 <p>gMinRectDimMulUnproject :
-<code>(float)ml::Min(rectW, rectH) * unproject = 1.0 / (0.5 * project[1]) = 2 / apsect</code></p>
-<p>即 2 / (width / height) = height / (0.5 * width)，假设 viewZ
-处截面宽高为 h1 w1，有相似关系</p>
-<p>width/w1 = near / viewZ = height / h1，因此有 width / w1 = height /
-h1，即</p>
-<p>viewZ * width = near * w1, viewZ * height = near * h1;</p>
-<p>这是 x 轴方向 FOV 一半的 tan 值，乘上 viewZ 则可以看作 frustum 在
-viewZ 处的平面宽度的一半</p></li>
+<code>(float)ml::Min(rectW, rectH) * unproject</code></p>
+<p>前述已经讲过 viewZ * unproject 为视锥体在 viewZ
+处的截面高度与屏幕高度的比值，因此 frustumSize 描述的是 viewZ
+处截面的高度</p></li>
 </ul></li>
 </ul>
 <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">float</span> blurRadius = gSpecPrepassBlurRadius;</span><br><span class="line">blurRadius *= hitDistFactor * smc;</span><br><span class="line">blurRadius = min( blurRadius, minBlurRadius );</span><br></pre></td></tr></table></figure></li>
@@ -1044,13 +1046,10 @@ https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_
         
     <div class="post-nav">
       <div class="post-nav-item">
-    <a href="/Rendering-Blogs/Graphics-Algorithm/1.-Hierarchy-Ray-March.html" rel="prev" title="Screen Space Ray Reflection">
-      <i class="fa fa-chevron-left"></i> Screen Space Ray Reflection
+    <a href="/C++/Effective-Modern-C++/Chapter-1%EF%BC%9A%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC.html" rel="prev" title="">
+      <i class="fa fa-chevron-left"></i> 
     </a></div>
-      <div class="post-nav-item">
-    <a href="/C++/Effective-Modern-C++/Chapter-1%EF%BC%9A%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC.html" rel="next" title="">
-       <i class="fa fa-chevron-right"></i>
-    </a></div>
+      <div class="post-nav-item"></div>
     </div>
       </footer>
     
