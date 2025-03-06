@@ -1,0 +1,797 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="GPGPU, Coherent">
+  
+    <meta name="description" content="1 Summary经常看到glsl的type修饰 coherent，系统整理下有关coherent的理解。 2 基础概念2.1 Coherent or Incoherent Memory Access [2]2.1.1 Coherent 内存访问以最简单的例子——单处理器系统来说，对于同一内存区域同时只会有一个线程访问。因此，当一个处理元件对某一内存区域写，然后另一处理元件对同一内存区域读时，总能">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SlabHash">
+<meta property="og:url" content="http://example.com/2023/10/24/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 Summary经常看到glsl的type修饰 coherent，系统整理下有关coherent的理解。 2 基础概念2.1 Coherent or Incoherent Memory Access [2]2.1.1 Coherent 内存访问以最简单的例子——单处理器系统来说，对于同一内存区域同时只会有一个线程访问。因此，当一个处理元件对某一内存区域写，然后另一处理元件对同一内存区域读时，总能">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access.assets/image-20231024143637826.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024163924062.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024164125968.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024164201758.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access.assets/image-20231024145820900.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024184950016.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024185559050.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024191716458.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024194223239.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024194548619.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024203351835.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024203440579.png">
+<meta property="article:published_time" content="2023-10-24T06:04:13.780Z">
+<meta property="article:modified_time" content="2023-10-24T12:36:34.822Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access.assets/image-20231024143637826.png">
+  
+  
+  
+  <title>SlabHash - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="SlabHash"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-10-24 14:04" pubdate>
+          October 24, 2023 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.2k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          27 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">SlabHash</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-Summary"><a href="#1-Summary" class="headerlink" title="1 Summary"></a>1 Summary</h1><p>经常看到glsl的type修饰 <code>coherent</code>，系统整理下有关coherent的理解。</p>
+<h1 id="2-基础概念"><a href="#2-基础概念" class="headerlink" title="2 基础概念"></a>2 基础概念</h1><h2 id="2-1-Coherent-or-Incoherent-Memory-Access-2"><a href="#2-1-Coherent-or-Incoherent-Memory-Access-2" class="headerlink" title="2.1 Coherent or Incoherent Memory Access [2]"></a>2.1 Coherent or Incoherent Memory Access <a href="#%5B2%5D">[2]</a></h2><h3 id="2-1-1-Coherent-内存访问"><a href="#2-1-1-Coherent-内存访问" class="headerlink" title="2.1.1 Coherent 内存访问"></a>2.1.1 Coherent 内存访问</h3><p>以最简单的例子——单处理器系统来说，对于同一内存区域同时只会有一个线程访问。因此，当一个处理元件对某一内存区域写，然后另一处理元件对同一内存区域读时，总能读到更新后的值。这是我们想要的结果，但得到这一正确结果并不只是多线程读写同步。因为，在硬件层有高速缓存-内存机制，处理器的读写往往不直接针对内存，而是针对缓存。缓存中的数据是内存中数据的拷贝或者是写操作得到的更新数据，因此需要确保写操作之后的读操作能够读到新数据，而非旧数据，这就是 <strong>Coherent 内存访问</strong>。单处理器系统的内存操作工作于同一套高速缓存-内存机制中，保证 Coherent 内存访问较容易。</p>
+<h3 id="2-1-2-Incoherent-内存访问"><a href="#2-1-2-Incoherent-内存访问" class="headerlink" title="2.1.2 Incoherent 内存访问"></a>2.1.2 Incoherent 内存访问</h3><p>但对于多处理器系统，每个处理器都有其本地缓存，当多个处理器同时访问同一内存区域时，同一内存区域的数据在这些处理器的缓存中都有一个备份。此时可能存在处理器读到的是本地缓存中的旧数据，而不是其他处理器写操作生成的新数据，即出现 <strong>Incoherent 内存访问</strong>。为了避免这种情况，多处理器系统的设计需要采用存储器一致性协议，粗略地说，当一个处理器对某一内存区域更新时，对该内存区域存在缓存备份的其他处理器也要对其本地缓存的相应位置进行更新。</p>
+<h2 id="2-2-GPU-Architecture"><a href="#2-2-GPU-Architecture" class="headerlink" title="2.2 GPU Architecture"></a>2.2 GPU Architecture</h2><p>GPU 具有非常多的处理器核心，在 Nvidia 中称为 Streaming Multiprocessor(SM)，AMD 称为 Compute Unit(CU)，以下使用 SM。在 SM 内部包含最基本的处理单元 lane，lane 可以近似理解为一个线程。SM 进行调度执行任务时，最小单位并不是 lane，而是 Warp(Nvidia 中的称呼，AMD 称为 wavefront)。一个 Warp 包含一定数量的 lane，在 Nvidia 中是 32，AMD 是 64。不同的架构，一个 SM 中包含的 warp 数量不同，目前的 Nvidia GPU 中一个 SM 包含 4 个 warp，即 128 个 lane(shader core、cuda core等)。GPU 显卡型号不同，GPU 包含的 SM 数量也不同，3080Ti 包含 80 个 SM。</p>
+<p>下面来自 <a href="#%5B4%5D">[4]</a> 的图 Fig-1 为GPU示意图，Fig-2为其中单个SM示意图。</p>
+<p>![image-20231024143243815](&#x2F;images&#x2F;Rendering Blogs&#x2F;GPGPU&#x2F;Coherent Memory Access.assets&#x2F;image-20231024143243815.png)</p>
+<center>Fig-1 GPU 整体的结构图</center>
+
+<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access.assets/image-20231024143637826.png" srcset="/img/loading.gif" lazyload alt="image-20231024143637826" style="zoom: 67%;">
+
+<center>Fig-2 SM示意图</center>
+
+<h3 id="2-2-1-Memory-Model"><a href="#2-2-1-Memory-Model" class="headerlink" title="2.2.1 Memory Model"></a>2.2.1 Memory Model</h3><p>从Fig-1中可以看出，整个GPU共用一个L2 cache，而Fig-2中每个SM都有一个L1 cache。下面Fig-3 是来自 <a href="#%5B3%5D">[3]</a> 的GPU内存的简化模型，即 <code>L1 cache - L2 cache - DRAM</code> 这样的三层结构，</p>
+<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization.assets/image-20231024163924062.png" srcset="/img/loading.gif" lazyload alt="image-20231024163924062" style="zoom:50%;">
+
+<center>Fig-3 GPU 存储层级结构</center>
+
+<p>其中：</p>
+<ul>
+<li><p>register：每个 SM 具有256KB 大小的寄存器区。</p>
+</li>
+<li><p>shared memory&#x2F;L1 cache：一个 SM 中的所有线程可以访问该 SM 具有有限大小的 shared memory。shared memory 本质上是一个较小的读写缓存区，GA102 架构中为 128KB，但其中只有一部分可被程序员使用，其他用作缓存或其他用途，例如 48KB 用作 shared memory。</p>
+</li>
+<li><p>L2 cache：通过L2 cache访问DRAM</p>
+</li>
+<li><p>global memory(DRAM)：global memory 即 GPU 显存。如果寄存器存储或者shared memory 的使用大小溢出，则会将其中的数据写入显存中，这一点和 CPU 的高速缓存-内存机制类似。</p>
+</li>
+</ul>
+<p>按照2.1节的概念，正是这样的两层cache的结构引入了内存访问的coherent问题。</p>
+<p><img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization.assets/image-20231024164125968.png" srcset="/img/loading.gif" lazyload alt="image-20231024164125968" style="zoom: 45%;"><img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization.assets/image-20231024164201758.png" srcset="/img/loading.gif" lazyload alt="image-20231024164201758" style="zoom:45%;"></p>
+<h3 id="2-2-2-Execution-Model"><a href="#2-2-2-Execution-Model" class="headerlink" title="2.2.2 Execution Model"></a>2.2.2 Execution Model</h3><p>对于GPGPU，用户调度方式是通过cuda或者compute shader发出多个thread group。而GPU收到这些thread group如何调度执行就是execution model。</p>
+<p>在同一个 Warp 中的所有 lane 执行相同的指令，但可以处理不同的数据，这样就构成了现代 GPU 的 SIMD 机制。但一个 Warp 中的所有 lane 并不总是同时处于运行状态，即 active lane；也并不总是同时处于非运行状态，即 inactive lane。例如：</p>
+<ul>
+<li><p>下发的任务组包含的任务数量较少或者不是 warp 大小的整数倍，不足以填满整个 warp 的 lane，那么未分配任务的 lane 则处于 inactive 状态。下发的任务组在 vulkan 中称为  local workgroup(D3D 中的 thread group) 大小。</p>
+</li>
+<li><p>Dynamic Branching 会导致 lane 的执行路径不止一条，即不止一套指令，这一定程度上破坏了 SIMD 机制。例如，代码中包含 if-else 语句，不满足 if 条件的 lane 由于 lockstep 运行方式需要等待其它所有满足 if 条件的 lane 执行 if 部分，等待中的 lane 则处于 inactive 状态。反之，满足 if 条件的 lane 也会等待不满足 if 条件的 lane 执行 else 部分。</p>
+</li>
+</ul>
+<p>接下来，基于 <a href="#%5B3%5D">[3]</a> 关于cuda执行模型的资料(理论上都是一样的)来介绍。cuda中的执行单位有：</p>
+<ul>
+<li><p>thread：对应compute shader中的invocation</p>
+</li>
+<li><p>threads block：对应work group</p>
+<p>运行在一个SM上，因此 threads block 内的线程可以有轻量级地同步与数据交换。</p>
+<ul>
+<li>同一个SM共享一个L2 cache，因此可以仅使用shared memory，要快于buffer、image这类global memory。</li>
+<li>同一个warp线程也可以使用warp内的数据同步（更快）</li>
+</ul>
+<p>当一个threads block被调度到某一个SM上时，就只会在这个SM上执行 (中间可能会有hide latency导致的换入换出)，否则L2 cache就无法保证是同一个。</p>
+</li>
+<li><p>grid：grid大小 (x, y, z) 对应dispatch中的参数，一个grid包含 x*y*z 个threads blocks。</p>
+<p>这些blocks如何被调度由GPU决定，是不可知的，也就是无法知道哪些blocks会在一个SM上执行、哪些在不同SM上执行。因此需要统一视为在不同SM上。 </p>
+<p>不同threads block之间无法同步，数据交换只能通过global memory</p>
+</li>
+</ul>
+<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access.assets/image-20231024145820900.png" srcset="/img/loading.gif" lazyload alt="image-20231024145820900" style="zoom:50%;">
+
+<h2 id="2-3-Synchronization"><a href="#2-3-Synchronization" class="headerlink" title="2.3 Synchronization"></a>2.3 Synchronization</h2><p>同步主要包含两类：</p>
+<ul>
+<li>对代码指令执行结点的同步。全部执行到同步点时才会开始执行之后的指令，这类同步只能发生在thread block(work group)内。</li>
+<li>对内存访问操作的同步。保证能够读到已经执行的写操作后的数据，避免读到cache中旧的备份。这里的访问操作不是显示调用的指令，而是cache机制中隐含的memory transaction。</li>
+</ul>
+<p>下面基于glsl对这两类同步进行阐述。为了解释内存操作的同步，先看下OpenGL对visibility的描述。</p>
+<h3 id="2-3-1-Visibility-5"><a href="#2-3-1-Visibility-5" class="headerlink" title="2.3.1 Visibility [5]"></a>2.3.1 Visibility <a href="#%5B5%5D">[5]</a></h3><p>在 GPU 的执行过程中，不同处理器同时读写同一内存区域时，也会出现上述 Incoherent 内存访问情况。而 <strong>Visibility</strong> 术语就是指一个 shader invocation 可以安全地读其他 shader invocation 的 Incoherent 写数据，也就是说，不会读取到缓存中旧的备份，或者其他 invocation 写数据对其是可见的。</p>
+<p>避免 incoherent 内存访问，即确保 visibility 性质。这里有两种情况：</p>
+<h4 id="2-3-1-1-Internal-Visibility"><a href="#2-3-1-1-Internal-Visibility" class="headerlink" title="2.3.1.1 Internal Visibility"></a>2.3.1.1 Internal Visibility</h4><p>发生在一个 render command 执行内部，即shader invocations之间。<a href="#%5B6%5D">[6]</a> 中提到shader中的 incoherent访问操作有：</p>
+<ul>
+<li><p>对 image 变量的 imageLoad&#x2F;imageStore</p>
+</li>
+<li><p>对 buffer 变量的读写操作</p>
+</li>
+<li><p><a target="_blank" rel="noopener" href="https://www.khronos.org/opengl/wiki/Atomic_Counter">Atomic Counters</a></p>
+</li>
+<li><p>对 compute shader 中的 shared 变量的读写操作。:x:</p>
+<blockquote>
+<p>这一点应该是错的。shared 变量位于shared memory即L1缓存中。根据2.2.1小节内容，L1 cache位于SM内，是独立的且对其它SM不可见，因此不会有多个备份的情况，所以不会是 incoherent。</p>
+<p>后面也有官方资料证实shared变量是隐含的coherent。</p>
+</blockquote>
+</li>
+</ul>
+<h4 id="2-3-1-2-External-Visibility"><a href="#2-3-1-2-External-Visibility" class="headerlink" title="2.3.1.2 External Visibility"></a>2.3.1.2 External Visibility</h4><p>一个 render command 内部的 visibility 是 shader invocation 之间的读写操作。对于 render command 之间的 visibility 使用 barrier 命令进行同步。例如 vulkan 中的 buffer barrier、image layout 等。</p>
+<h3 id="2-3-2-指令同步"><a href="#2-3-2-指令同步" class="headerlink" title="2.3.2 指令同步"></a>2.3.2 指令同步</h3><p>由2.2.2小节中描述的cuda执行模型可知，不同work group之间无法同步，因此这里的同步是work group内的。</p>
+<p>glsl 中函数 <code>barrier()</code>可以确保workgroup(执行在同一处理器) 中的所有 invocation 都执行到 barrier 同步点后，才开始执行之后的代码。其在官方文档 <a href="#%5B7%5D">[7]</a> 8.16节中的描述如下</p>
+<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization.assets/image-20231024184950016.png" srcset="/img/loading.gif" lazyload alt="image-20231024184950016" style="zoom:50%;">
+
+<p>在 compute shader 中 shared 变量位于 shared memory 中，即位于L1 cache中，同一SM只有一份，因此 shared 变量是隐含的 coherent 访问。barrier同步的是同一workgroup的指令，因此也能做到对shared变量的访问同步。这一点在 <a href="#%5B7%5D">[7]</a> 的 1.1.3 小节也有说明</p>
+<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization.assets/image-20231024185559050.png" srcset="/img/loading.gif" lazyload alt="image-20231024185559050" style="zoom:50%;">
+
+<p>思考另一点，同一work group的invocation都位于同一SM，那么为什么还需要barrier来同步指令？位于之前的指令不应该先于之后的指令完成吗？</p>
+<p>那是因为，GPU调度单位是warp，对于一个提交的work group，work group被分配好SM后，会先被划分为一个或多个warp，以warp为单位调度执行。一个SM共有4个warp，如果不足以执行完整个work group，那么会需要多次调度执行。因此work group虽然都在同一个SM上，但其中的warp可能不是同时开始或结束的。对于 barrier 同步而言，执行到同步点的warp会停下来，此时SM可以再调度一个warp进来执行。</p>
+<h3 id="2-3-3-Memory-Barrier"><a href="#2-3-3-Memory-Barrier" class="headerlink" title="2.3.3 Memory Barrier"></a>2.3.3 Memory Barrier</h3><p>指令同步无法解决前面说的incoherent内存访问问题，首先是指令同步只能发生在work group内，其次不同work groups可能分布在不同的SM上，仍然会导致incoherent问题。</p>
+<p>复述incoherent问题：写操作发生不代表写数据对其他 invocation 可见，这会导致一个 invocation 的内存读写操作的相对次序对于另一个 invocation 而言是不确定的状态，换句话说，写操作的数据对其他 invocation 可见的次序不确定。例如一个 invocation 中执行两次写操作，而另一个 invocation 可能会先看到第二次写的数据，后看到第一次写的数据。</p>
+<p>memory barrier 则是用来控制读写操作（背后的cache机制），使得其他 invocation 看到写数据的次序与写操作执行的次序一致。先对可能被多个处理器访问到的 image 或 buffer 类型变量进行 <code>coherent</code> 修饰，声明该变量为 coherent 访问机制。该访问机制使得相应的 memoryBarrier 可以控制对被修饰变量的读写操作。调用 memoryBarrier 等函数的 invocation 会等待之前的所有读写操作完成，当该函数返回后，写数据对之后的访问处于可见状态。</p>
+<p>memory barrier有以下几种类型, 来自<a href="#%5B7%5D">[7]</a> 的 8.17节 ：</p>
+<ul>
+<li><code>memoryBarrier</code>：控制所有类型变量的内存访问，render command 内作用于全局。</li>
+<li><code>memoryBarrierAtomicCounter</code>：控制 atomic-counter 变量的访问，render command 内作用于全局。</li>
+<li><code>memoryBarrierBuffer</code>：控制 buffer 变量的内存访问，render command 内作用于全局。</li>
+<li><code>memoryBarrierImage</code>：控制 image 变量的内存访问，render command 内作用于全局。</li>
+<li><code>memoryBarrierShared</code>：控制 shared 变量的内存访问，作用于同一 workgroup。</li>
+<li><code>groupMemoryBarrier</code>：控制所有类型变量的内存访问，作用于同一 workgroup。</li>
+</ul>
+<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization.assets/image-20231024191716458.png" srcset="/img/loading.gif" lazyload alt="image-20231024191716458" style="zoom:50%;">
+
+<p>官方文档 <a href="#%5B7%5D">[7]</a> 后续有些描述可以更清晰理解这些memory barrier的作用</p>
+<ul>
+<li>作用范围：只有 <code>memoryBarrierShared()</code> 与 <code>groupMemoryBarrier()</code> 只会控制同一work group的memory transaction，其它memory barrier都是作用于render command的所有invocation。<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization.assets/image-20231024194223239.png" srcset="/img/loading.gif" lazyload alt="image-20231024194223239" style="zoom:50%;"></li>
+<li>对于执行store的invocation而言，不需要memory barrier来保证其自身的观察到store次序。除非有其它invocation对同一内存位置写入。<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization.assets/image-20231024194548619.png" srcset="/img/loading.gif" lazyload alt="image-20231024194548619" style="zoom:50%;"></li>
+</ul>
+<p>一些疑问与猜想：</p>
+<ul>
+<li>对于不同work group不会对同一内存位置读写的情况还需要memory barrier吗？例如多个work group处理一张图片，每个work group负责一个tile。<br>感觉应该不需要，对不同位置操作，没有带来对同一位置多份cache的情况</li>
+<li><code>groupMemoryBarrier()</code>只对同一work group的memory transaction起作用，这似乎没有意义？因为同一work group在同一SM上，具有相同的cache，memory transaction应该不会导致incoherent问题 :question:<ul>
+<li>按照上面第二段的解释而言，如果work group内的每个invocation负责访问不同的内存位置，那么确实不需要该memory barrier。</li>
+<li>如果work group内的invocation可能访问同一内存位置，按照我的推测，应该是缓存机制没办法保证访存(store&#x2F;load)的原子性，而work group的invocation属于并行线程，会导致多线程读写问题。<code>groupMemoryBarrier()</code>可以保证memory同步点之前的memory transaction完成，可以确保写后读的正确性。</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-3-4-Atomic-Memory"><a href="#2-3-4-Atomic-Memory" class="headerlink" title="2.3.4 Atomic Memory"></a>2.3.4 Atomic Memory</h3><p>官方文档 <a href="#%5B7%5D">[7]</a> 8.11 节描述了对 buffer&#x2F;shared 变量存储的atomic操作，</p>
+<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization.assets/image-20231024203351835.png" srcset="/img/loading.gif" lazyload alt="image-20231024203351835" style="zoom:50%;">
+
+<p>而atomic操作可以满足memory qualification，如下所述。理论上应该是可以保证coherent访问的，那读取操作应该需要使用 <code>atomicAnd(mem, 0xFFFFFFFF)</code></p>
+<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization.assets/image-20231024203440579.png" srcset="/img/loading.gif" lazyload alt="image-20231024203440579" style="zoom:50%;">
+
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a name="[1]">[1]</a> <a target="_blank" rel="noopener" href="https://docs.nvidia.com/deeplearning/performance/dl-performance-gpu-background/index.html#gpu-arch">https://docs.nvidia.com/deeplearning/performance/dl-performance-gpu-background/index.html#gpu-arch</a></p>
+<p><a name="[2]">[2]</a> <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/Memory_coherence">https://en.wikipedia.org/wiki/Memory_coherence</a></p>
+<p><a name="[3]">[3]</a> <a target="_blank" rel="noopener" href="https://www.olcf.ornl.gov/wp-content/uploads/2013/02/GPU_Opt_Fund-CW1.pdf">https://www.olcf.ornl.gov/wp-content/uploads/2013/02/GPU_Opt_Fund-CW1.pdf</a></p>
+<p><a name="[4]">[4]</a> <a target="_blank" rel="noopener" href="https://images.nvidia.cn/aem-dam/en-zz/Solutions/geforce/ampere/pdf/NVIDIA-ampere-GA102-GPU-Architecture-Whitepaper-V1.pdf">https://images.nvidia.cn/aem-dam/en-zz/Solutions/geforce/ampere/pdf/NVIDIA-ampere-GA102-GPU-Architecture-Whitepaper-V1.pdf</a></p>
+<p><a name="[5]">[5]</a> <a target="_blank" rel="noopener" href="https://www.khronos.org/opengl/wiki/Memory_Model#Ensuring_visibility">https://www.khronos.org/opengl/wiki/Memory_Model#Ensuring_visibility</a></p>
+<p><a name="[6]">[6]</a> <a target="_blank" rel="noopener" href="https://www.khronos.org/opengl/wiki/Memory_Model#Incoherent_memory_access">https://www.khronos.org/opengl/wiki/Memory_Model#Incoherent_memory_access</a></p>
+<p><a name="[7]">[7]</a> <a target="_blank" rel="noopener" href="https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.pdf">https://registry.khronos.org/OpenGL/specs/gl/GLSLangSpec.4.60.pdf</a></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/GPGPU/" class="category-chain-item">GPGPU</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/GPGPU/Synchronization/" class="category-chain-item">Synchronization</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>SlabHash</div>
+      <div>http://example.com/2023/10/24/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>October 24, 2023</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/" title="SlabHash">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">SlabHash</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/10/22/C++/Entity%20Component%20System/" title="">
+                        <span class="hidden-mobile"></span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

@@ -1,0 +1,768 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="GPGPU, GPU Hash Table">
+  
+    <meta name="description" content="1 Summary对于GPU的高并发以及SIMT(Single Instruction Multiple Threads)执行模型而言，cache命中率对性能的影响很大。作者提出reorder算法提高对hash table数据访问的局部性，这也是该方向的首次研究与尝试。 2 Basic Design and Implementation本章节介绍了DACHash的基础设计与实现，包括数据结构、ha">
+<meta property="og:type" content="article">
+<meta property="og:title" content="DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs">
+<meta property="og:url" content="http://example.com/2023/10/15/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 Summary对于GPU的高并发以及SIMT(Single Instruction Multiple Threads)执行模型而言，cache命中率对性能的影响很大。作者提出reorder算法提高对hash table数据访问的局部性，这也是该方向的首次研究与尝试。 2 Basic Design and Implementation本章节介绍了DACHash的基础设计与实现，包括数据结构、ha">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs.assets/image-20231015135803985.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs.assets/image-20231015151513845.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs.assets/image-20231015174307884.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs.assets/image-20231016134758480.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs.assets/image-20231016134839642.png">
+<meta property="article:published_time" content="2023-10-15T05:42:08.105Z">
+<meta property="article:modified_time" content="2023-10-25T06:01:40.676Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs.assets/image-20231015135803985.png">
+  
+  
+  
+  <title>DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-10-15 13:42" pubdate>
+          October 15, 2023 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          2.1k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          18 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-Summary"><a href="#1-Summary" class="headerlink" title="1 Summary"></a>1 Summary</h1><p>对于GPU的高并发以及SIMT(Single Instruction Multiple Threads)执行模型而言，cache命中率对性能的影响很大。作者提出reorder算法提高对hash table数据访问的局部性，这也是该方向的首次研究与尝试。</p>
+<h1 id="2-Basic-Design-and-Implementation"><a href="#2-Basic-Design-and-Implementation" class="headerlink" title="2 Basic Design and Implementation"></a>2 Basic Design and Implementation</h1><p>本章节介绍了DACHash的基础设计与实现，包括数据结构、hash table的操作与内存管理。</p>
+<h2 id="2-1-Base-Data-Structure-and-Organization"><a href="#2-1-Base-Data-Structure-and-Organization" class="headerlink" title="2.1 Base Data Structure and Organization"></a>2.1 Base Data Structure and Organization</h2><p>hash table的bucket是一个以小型数组为结点(super node)的链表，其中数组的每个元素是key-value对，如下图所示。连接bucket头的super node是预先分配好的，后续super node则是实时动态分配与释放的。</p>
+<img src="/images/Paper Notes/GPGPU/DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs.assets/image-20231015135803985.png" srcset="/img/loading.gif" lazyload alt="image-20231015135803985" style="zoom: 67%;">
+
+<blockquote>
+<p>这种数组的链表结构对于哈希表而言更像是一种对开放地址与拉链法的折衷，既能方便解决冲突，又能支持GPU-friendly的并行(数组具有高cache命中率)。</p>
+</blockquote>
+<h2 id="2-2-Operations"><a href="#2-2-Operations" class="headerlink" title="2.2 Operations"></a>2.2 Operations</h2><p>作者通过cuda的atomic functions实现了hash table的常见操作</p>
+<h3 id="2-2-1-Search"><a href="#2-2-1-Search" class="headerlink" title="2.2.1 Search"></a>2.2.1 Search</h3><p>search操作用于在hash table中查找给定key，并返回对应的value。如果没有找到key，则返回null。执行过程：</p>
+<ul>
+<li>key经过hash定位到bucket</li>
+<li>从bucket第一个super node逐条查找，直到<ul>
+<li>找到对应key，返回value</li>
+<li>查找到bucket链表末尾，返回null</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-2-2-Insert"><a href="#2-2-2-Insert" class="headerlink" title="2.2.2 Insert"></a>2.2.2 Insert</h3><p>insert操作添加一个key-value对到hash table中。执行过程：</p>
+<ul>
+<li>如果key已经存在于hash table中，那么insert表现为与update相同的操作。</li>
+<li>如果key不存在，查找一个empty slot，并插入新的key-value对，这可能会带来super node的动态申请<ul>
+<li>在bucket的链表中查找一个empty slot，使用 atomicCAS。</li>
+<li>如果查找到链表最后，没有找到empty slot，申请一个新的super node。使用 atomicCAS 链接到bucket链表末尾。<ul>
+<li>可能同时有多个线程尝试链接自己申请的super node到bucket末尾，但只会有一个成功</li>
+<li>失败的线程释放掉申请的super node，在bucket新的尾结点重新尝试插入操作</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-2-3-Update"><a href="#2-2-3-Update" class="headerlink" title="2.2.3 Update"></a>2.2.3 Update</h3><p>update操作查找一个key并更新对应值。如果key能找到，那么使用 atmoicExch 更新value。如果key找不到，那么执行insert操作。</p>
+<h3 id="2-2-4-Delete"><a href="#2-2-4-Delete" class="headerlink" title="2.2.4 Delete"></a>2.2.4 Delete</h3><p>delete操作将指定key标记为deleted，与search操作类似，只是没有返回值。执行过程：</p>
+<ul>
+<li>从bucket第一个super node开始遍历，直至<ul>
+<li>找到对应key，标记为deleted</li>
+<li>遍历到bucket链表末尾</li>
+</ul>
+</li>
+</ul>
+<h3 id="2-2-5-Clean"><a href="#2-2-5-Clean" class="headerlink" title="2.2.5 Clean"></a>2.2.5 Clean</h3><p>clean操作紧凑bucket的super node链表，确保只有最后一个super node有empty slot。clean操作在单独的kernel执行(对应compute pass)，所以不会有其它操作的妨碍。clean操作只会在memory stack空的时候执行，会将空super node释放，放回memory stack。</p>
+<h2 id="2-3-Memory-Stack"><a href="#2-3-Memory-Stack" class="headerlink" title="2.3 Memory Stack"></a>2.3 Memory Stack</h2><p>insert、update、delete、clean操作可能需要super node的动态申请与释放。为此，预分配大量super nodes，并放入concurrent stack，如下图所示</p>
+<ul>
+<li>pop：申请一个super node</li>
+<li>push：释放一个super node</li>
+</ul>
+<img src="/images/Paper Notes/GPGPU/DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs.assets/image-20231015151513845.png" srcset="/img/loading.gif" lazyload alt="image-20231015151513845" style="zoom: 67%;">
+
+<center>Fig 2: 线程t0与t1同时访问concurrent memory stack</center>
+
+<p>这里作者没有给出实际的算法。自己调研了下GPU上并行栈的算法，基本核心都是解决 ABA problem<a href="#%5B3%5D">[3]</a> ，但本文中的memory stack中没有重复元素，因此可以简单实现。</p>
+<p>contention处理：当多个线程同时竞争同一top指针时，每个线程迭代执行直到操作完成，可以看作一次迭代只会有一个线程完成操作。这里以glsl的原子操作介绍实现：</p>
+<ul>
+<li><p>使用 <code>atomicAdd</code> 得到target_top，即当前线程操作的目标位置。</p>
+<p>多线程同时竞争到同一top指针时，只有当目标位置满足操作要求时，才会完成操作。例如push操作需要目标位置为空，pop操作需要目标位置不为空</p>
+</li>
+<li><p>使用 <code>atomicCompSwap</code> 来循环判断目标位置是否满足条件。</p>
+</li>
+</ul>
+<p>实现如下</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-type">void</span> push(<span class="hljs-type">uint</span> value)<br>&#123;<br>    <span class="hljs-type">uint</span> target_top = <span class="hljs-built_in">atomicAdd</span>(top, <span class="hljs-number">1</span>);<br>    <span class="hljs-keyword">if</span> (target_top &gt;= STACK_SIZE) <span class="hljs-keyword">return</span>;    <span class="hljs-comment">// 栈满</span><br>    <span class="hljs-keyword">while</span>(<span class="hljs-built_in">atomicCompSwap</span>(concurrent_stack[target_top], EMPTY_NODE_INDEX, value) != EMPTY_NODE_INDEX);<br>&#125;<br><br><span class="hljs-type">uint</span> pop()<br>&#123;<br>    <span class="hljs-type">uint</span> target_top = <span class="hljs-built_in">atomicAdd</span>(top, <span class="hljs-number">-1</span>);<br>    <span class="hljs-keyword">if</span> (target_top &gt;= STACK_SIZE) <span class="hljs-keyword">return</span> EMPTY_NODE_INDEX;   <span class="hljs-comment">// 栈空，溢出</span><br>    <span class="hljs-keyword">while</span> (<span class="hljs-literal">true</span>) &#123;<br>        <span class="hljs-type">uint</span> value = <span class="hljs-built_in">atomicAnd</span>(concurrent_stack[target_top], <span class="hljs-number">0xFFFFFFFFFFFFFFFF</span>);<br>        <span class="hljs-keyword">if</span> (value != EMPTY_NODE_INDEX &amp;&amp; <span class="hljs-built_in">atomicCompSwap</span>(concurrent_stack[target_top], value, EMPTY_NODE_INDEX) == value) &#123;<br>            <span class="hljs-keyword">return</span> value;<br>        &#125;<br>    &#125;<br>    <span class="hljs-keyword">return</span> EMPTY_NODE_INDEX;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h1 id="3-Reorder"><a href="#3-Reorder" class="headerlink" title="3 Reorder"></a>3 Reorder</h1><p>如果一个warp的输入keys被哈希到不同的bucket中，由于bucket之间或之内的super node在内存中是分散的，因此这个warp的线程发出的内存请求很可能位于不同的cache line(uncoalesced)，而不是同一个cache line(coalesced)。也就是说，这个warp具有较差的局部性。</p>
+<p>SlabHash<a href="#%5B2%5D">[2]</a> 提出了wrap内的 work-sharing 策略来提高coalesced memory access。该策略大概是一个warp并行处理一个super node，即一次执行单个key，这样warp的线程只需要一次全局内存访问，后续都只在cache中。但对于链表的遍历过程，该策略可能会重复遍历，带来较差的局部性问题。</p>
+<p>下图描述了一个cache命中率较低的访问示例。假设一个大小为4的warp要处理keys <code>&#123;0, 3, 7, 8&#125;</code>，处理过程如下：</p>
+<ul>
+<li>warp处理key 0，对应bucket 0，并加载了第一个super node。但加载super node同时加载的其它key并未被使用到。处理其它key也会遇到这种情况。</li>
+<li>warp再处理key 3、key 7，遇到了同样的问题。同时，随着bucket 3与bucket 7的super node的加载，key 0的数据很可能从cache中被逐出。</li>
+<li>warp处理key 8，bucket 0的第一个super node再次被加载，降低了cache命中率。</li>
+</ul>
+<p>![image-20231015170725329](&#x2F;images&#x2F;Paper Notes&#x2F;GPGPU&#x2F;DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs.assets&#x2F;image-20231015170725329.png)</p>
+<p>为了提高链表遍历过程中的cache命中率，作者提出对keys的reorder算法，将相同hash value的keys组织在一起。这一步是将super node的内存区进行划分，通过reorder算法，使得相同hash value的key的super node在物理上也相邻。</p>
+<p>Algorithm1描述了reorder算法的伪代码过程，关键变量有：</p>
+<ul>
+<li>二维数组 buffer <code>ReorderSpace[B][M]</code>，其中 B 为bucket数量，M &#x3D; ceil(N&#x2F;B)，N为 keysList 的大小。<ul>
+<li>行索引定位为 bucket value</li>
+<li>列索引为bucket内存区域的index</li>
+<li>值为key</li>
+</ul>
+</li>
+<li><code>Record[B]</code> 用来追踪每个bucket的最新index</li>
+</ul>
+<p>关键处理有：</p>
+<ul>
+<li><p>line 8：分配一个bucket内存区域的index。相同bucket的key是会被映射到 <code>ReorderSpace</code> 的同一行</p>
+</li>
+<li><p>line 9-11：<code>ReorderSpace</code> 的M其实是认为keys能够在bucket间均匀分布，但这一点很可能不满足。当不均匀发生时，就会出现 index &gt;&#x3D; M 的情况。</p>
+<p>在 index 超出范围时，尝试使用下一个bucket的index，直至满足条件。</p>
+</li>
+<li><p>line 12：最终将key加到 <code>ReorderSpace</code> 中</p>
+</li>
+</ul>
+<img src="/images/Paper Notes/GPGPU/DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs.assets/image-20231015174307884.png" srcset="/img/loading.gif" lazyload alt="image-20231015174307884" style="zoom: 60%;">
+
+<p>只有在reorder完成后，后续的操作才能被执行，因此这里需要加上同步操作。同时为了加快reorder以及节省内存，也可以选择将相近的hash value组织在一起，例如 line 3 将 B 改为 (B&#x2F;4)。</p>
+<blockquote>
+<p>这个岂不是需要提前得到要处理的 keys，大概是接收到keys后需要先进行reorder，再执行后续的操作。</p>
+</blockquote>
+<h1 id="4-Dynamic-Mapping-Schemes"><a href="#4-Dynamic-Mapping-Schemes" class="headerlink" title="4 Dynamic Mapping Schemes"></a>4 Dynamic Mapping Schemes</h1><p>在以thread group处理一批keys时，有两种 thread-data mapping模式：</p>
+<ul>
+<li><p>one-to-one mapping scheme：每个线程负责一个key，因此warp的32个线程可以独立地处理32个keys中的一个。</p>
+<p>由于32个key很可能hash到不同的bucket，因此这种模式的内存访问是比较分散的。</p>
+<p>由于查找过程是独立的，因此这部分操作很可能有差异，导致一个warp的线程退出时间不同。</p>
+</li>
+<li><p>many-to-one mapping scheme：一个warp的线程共同协作处理32个key，一次处理一个key。</p>
+<p>key的查找过程使用warp的线程并行处理一个super node，访存更连续。</p>
+<p>由于并行处理一个key，过程基本都是一样的，一个warp的线程会汇聚到一个时间点。之后再处理不同的操作。</p>
+</li>
+</ul>
+<p>作者提出按照如下方式动态选择mapping模式<br>$$<br>D &#x3D; \left{<br>\begin{array} {rcl}<br>O \quad \quad if \quad \epsilon &lt; \tau \<br>M \quad \quad otherwise</p>
+<p>\end{array}<br>\right.<br>$$<br>其中，$O$ 是 one-to-one，$M$ 是 many-to-one；$\epsilon$ 是 expected length，即bucket包含的super node数量的平均值；$\tau$ 是调控的阈值。</p>
+<p>下面是两种mapping模式的算法伪代码。可以看出，one-to-one模式下，每个线程都独立处理一个key，每个key的查找过程可能不同、操作可能不同，因此它们的完成时间也可能不同，导致较低的执行效率。many-to-one模式下，将线程划分成 CG_SIZE 大小的tile，一个tile协同处理一个key，tile内可以使用cuda <code>shfl()</code> 与 <code>ballot()</code>原子操作来通信，tile执行的底层指令更可能相同。</p>
+<p><img src="/images/Paper Notes/GPGPU/DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs.assets/image-20231016134758480.png" srcset="/img/loading.gif" lazyload alt="image-20231016134758480" style="zoom:50%;"><img src="/images/Paper Notes/GPGPU/DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs.assets/image-20231016134839642.png" srcset="/img/loading.gif" lazyload alt="image-20231016134839642" style="zoom:50%;"></p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a name="[1]">[1]</a> Zhou, H., Troendle, D., Jang, B., 2021. DACHash: A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs, in: 2021 IEEE 33rd International Symposium on Computer Architecture and High Performance Computing (SBAC-PAD). pp. 1–10. <a target="_blank" rel="noopener" href="https://doi.org/10.1109/SBAC-PAD53543.2021.00012">https://doi.org/10.1109/SBAC-PAD53543.2021.00012</a></p>
+<p><a name="[2]">[2]</a> S. Ashkiani, M. Farach-Colton, and J. D. Owens, “A dynamic hash table for the gpu,” in 2018 IEEE International Parallel and Distributed Processing Symposium (IPDPS). IEEE, 2018, pp. 419–429  </p>
+<p>[3] <a target="_blank" rel="noopener" href="https://en.wikipedia.org/wiki/ABA_problem">https://en.wikipedia.org/wiki/ABA_problem</a></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/GPGPU/" class="category-chain-item">GPGPU</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs</div>
+      <div>http://example.com/2023/10/15/Paper Notes/GPGPU/DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>October 15, 2023</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/10/19/Rendering%20Blogs/GPGPU/Non-blocking%20Array-Based%20Stack/" title="">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile"></span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/" title="Compute Shader 实现 Pyramid Algorithm">
+                        <span class="hidden-mobile">Compute Shader 实现 Pyramid Algorithm</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

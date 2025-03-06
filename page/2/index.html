@@ -1,0 +1,1008 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta property="og:type" content="website">
+<meta property="og:title" content="Hexo">
+<meta property="og:url" content="http://example.com/page/2/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:locale" content="en_US">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 100vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="An elegant Material-Design theme for Hexo"></span>
+          
+        </div>
+
+        
+      </div>
+
+      
+        <div class="scroll-down-bar">
+          <i class="iconfont icon-arrowdown"></i>
+        </div>
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      <div class="container nopadding-x-md">
+        <div id="board"
+          style="margin-top: 0">
+          
+          <div class="container">
+            <div class="row">
+              <div class="col-12 col-md-10 m-auto">
+                
+
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Disney%20Principled%20BRDF/" target="_self">
+          Disney BRDF
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Disney%20Principled%20BRDF/" target="_self">
+        <div>
+          1 SummaryDisney Principled BRDF 是迪士尼动画工作室在 SIGGRAPH 2012 的 Physically-based shading at Disney [1] 提出。该工作室通过分析 MERL BRDF 材质库，总结出对 microfacet Cook-Torrance BRDF 的各项的观察，如 diffuse、specular D F G等四项。基于观察结论
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-10-14 14:13" pubdate>
+              2024-10-14
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/PBR/" class="category-chain-item">PBR</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Real-Time%20Physically%20Based%20Material%20Basics/" target="_self">
+          PBR Material
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Real-Time%20Physically%20Based%20Material%20Basics/" target="_self">
+        <div>
+          1 Summary2 Microfacet BRDF微表面模型认为宏观表面的着色区域上分布着很多微表面，不同材质具有不同的微表面法线分布。如集中的微表面法线分布对应 glossy 材质，反之分散的分布对应 diffuse 材质。有如下表面及入射光、视角，   入射光方向 $\boldsymbol{l}$、观察方向 $\boldsymbol{v}$、宏观表面法向量 $\boldsymbol{n}$、
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-10-14 14:08" pubdate>
+              2024-10-14
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/PBR/" class="category-chain-item">PBR</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/08/19/Rendering%20Blogs/GPGPU/Parrallel%20Scan/" target="_self">
+          SlabHash
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/08/19/Rendering%20Blogs/GPGPU/Parrallel%20Scan/" target="_self">
+        <div>
+          1 Introduction2 2-Phase Parallel Scan使用一种在并行计算中经常出现的算法模式：平衡树。其思想是，在输入数据上构建一棵平衡的二叉树，并通过自根向上和向下的遍历来计算前缀和。一棵有nn个叶子的二叉树有log⁡nlogn层，每一层d∈[0,n)d∈[0,n)有2d2d个节点。如果我们对每个节点执行一次加法操作，那么在一次树的遍历中，我们将执行O(n)O(n)次加法操作
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-08-19 20:09" pubdate>
+              2024-08-19
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/GPGPU/" class="category-chain-item">GPGPU</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/GPGPU/Scan/" class="category-chain-item">Scan</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/04/12/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination/" target="_self">
+          GI-1.0 - A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/04/12/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination/" target="_self">
+        <div>
+          1 Summary2 GI-1.0对于实时渲染，尽管是在目前的高端显卡上，也只能支持每像素很少的样本数量。本文提出的全局光照管线，通过设计的两级radiance cache，在空间、时间上复用样本的光照信息，如下图所示：  screen cache：将primary path上顶点的入射radiance缓存到直接可见表面上的probe中，具有精细的光照表示。 world cache：缓存了seco
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-04-12 14:18" pubdate>
+              2024-04-12
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/GI/" class="category-chain-item">GI</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/GI/Light-Probe/" class="category-chain-item">Light Probe</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/04/07/Paper%20Notes/Cloud%20Rendering/Surface%20Light%20Cones%20Sharing%20Direct%20Illumination%20for%20Efficient%20Multi-viewer%20Rendering/" target="_self">
+          Surface Light Cones - Sharing Direct Illumination for Efficient Multi-viewer Rendering
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/04/07/Paper%20Notes/Cloud%20Rendering/Surface%20Light%20Cones%20Sharing%20Direct%20Illumination%20for%20Efficient%20Multi-viewer%20Rendering/" target="_self">
+        <div>
+          1 Summary直接光照与视角相关，无法直接缓存，但渲染方程中表面着色点的入射radiance与视角无关。基于此，这篇论文提出了一种基于cone的缓存表面入射radiance的方法——surface light cone。依靠这些cones来表示主要可见光源的投影，允许跨帧甚至同一场景内的多个相机之间复用入射radiance。 作者提出的 surface light cone 方法主要分为两部分
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-04-07 17:01" pubdate>
+              2024-04-07
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/Cloud-Rendering/" class="category-chain-item">Cloud Rendering</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/01/07/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations/" target="_self">
+          SlabHash
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/01/07/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations/" target="_self">
+        <div>
+          1 Summary本文介绍投影变换的计算，包括正交投影、透视投影。最后介绍一些实际应用中的技巧、以及如何运用到 Vulkan 坐标系。  Settings：本文的向量采用列向量，与 glm 库的默认为列主序一致，只需将本文描述的公式整体转置即可转为行向量形式；clip 空间的深度值范围采用与 OpenGL 的 $[-1,1]$ ；相机 forward 方向为 $-z$，up 方向为 $+y$ 。相
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-01-07 17:53" pubdate>
+              2024-01-07
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/Projection/" class="category-chain-item">Projection</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2023/12/15/Paper%20Notes/Ray%20Tracing/Path%20Space%20Filtering/" target="_self">
+          Path Space Filtering
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/12/15/Paper%20Notes/Ray%20Tracing/Path%20Space%20Filtering/" target="_self">
+        <div>
+          1 Summary本文提出一种在path space对着色点平滑邻近区域的光线路径的算法，提高光线传播的蒙特卡洛追踪过程的效率。提出的平滑算法基于光子映射框架，采样着色点附近的光线路径，并基于几何、材质、可见性等方面的相似性设计平滑权重。 2 Background2.1 Particle Tracingparticle tracing算法从光源出发，进行追踪，与表面相交时在交点放置能量，然后再进行
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2023-12-15 13:48" pubdate>
+              2023-12-15
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/Ray-Tracing/" class="category-chain-item">Ray Tracing</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2023/12/03/Paper%20Notes/Ray%20Tracing/Massively%20Parallel%20Path%20Space%20Filtering/" target="_self">
+          Massively Parallel Path Space Filtering
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/12/03/Paper%20Notes/Ray%20Tracing/Massively%20Parallel%20Path%20Space%20Filtering/" target="_self">
+        <div>
+          1 Summary2 Background计算 $x$ 点处在 $\omega_r$ 方向上反射的 radiance $L_r$ 有如下四种方式：$$\begin{align}&amp;L_r(x, \omega_r) \&amp;&#x3D; \int_{S^2}L_i(x, \omega)f_r(\omega_r, x, \omega) \cos\theta_x \space d\omega
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2023-12-03 14:33" pubdate>
+              2023-12-03
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/Ray-Tracing/" class="category-chain-item">Ray Tracing</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/" target="_self">
+          SlabHash
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/" target="_self">
+        <div>
+          辐射度量学基础Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。 相关术语   物理量 公式 单位    Radiant Energy(辐射能) $Q&#x3D;\frac{hc}{\lambda}$ $J$(焦耳)   Radiant Flux(辐射通量)或Power(功率) $\Phi&
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2023-11-08 20:16" pubdate>
+              2023-11-08
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/Radiometry/" class="category-chain-item">Radiometry</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2023/10/24/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization/" target="_self">
+          SlabHash
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/24/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization/" target="_self">
+        <div>
+          1 Summary经常看到glsl的type修饰 coherent，系统整理下有关coherent的理解。 2 基础概念2.1 Coherent or Incoherent Memory Access [2]2.1.1 Coherent 内存访问以最简单的例子——单处理器系统来说，对于同一内存区域同时只会有一个线程访问。因此，当一个处理元件对某一内存区域写，然后另一处理元件对同一内存区域读时，总能
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2023-10-24 14:04" pubdate>
+              2023-10-24
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/GPGPU/" class="category-chain-item">GPGPU</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/GPGPU/Synchronization/" class="category-chain-item">Synchronization</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+
+
+  <nav aria-label="navigation">
+    <span class="pagination" id="pagination">
+      <a class="extend prev" rel="prev" href="/"><i class="iconfont icon-arrowleft"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/#board">3</a><a class="page-number" href="/page/4/#board">4</a><a class="extend next" rel="next" href="/page/3/#board"><i class="iconfont icon-arrowright"></i></a>
+    </span>
+  </nav>
+
+
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

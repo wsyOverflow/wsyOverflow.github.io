@@ -1,0 +1,864 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="1 Summary2 GI-1.0对于实时渲染，尽管是在目前的高端显卡上，也只能支持每像素很少的样本数量。本文提出的全局光照管线，通过设计的两级radiance cache，在空间、时间上复用样本的光照信息，如下图所示：  screen cache：将primary path上顶点的入射radiance缓存到直接可见表面上的probe中，具有精细的光照表示。 world cache：缓存了seco">
+<meta property="og:type" content="article">
+<meta property="og:title" content="GI-1.0 - A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination">
+<meta property="og:url" content="http://example.com/2024/04/12/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 Summary2 GI-1.0对于实时渲染，尽管是在目前的高端显卡上，也只能支持每像素很少的样本数量。本文提出的全局光照管线，通过设计的两级radiance cache，在空间、时间上复用样本的光照信息，如下图所示：  screen cache：将primary path上顶点的入射radiance缓存到直接可见表面上的probe中，具有精细的光照表示。 world cache：缓存了seco">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240412142048484.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240412152316538.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240412194247447.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415110725456.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415113213730.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415140118581.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415154453580.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415154324296.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415163819243.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240426140012373.png">
+<meta property="article:published_time" content="2024-04-12T06:18:02.299Z">
+<meta property="article:modified_time" content="2025-03-06T04:34:02.525Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240412142048484.png">
+  
+  
+  
+  <title>GI-1.0 - A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="GI-1.0 - A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-04-12 14:18" pubdate>
+          April 12, 2024 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          5.8k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          49 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">GI-1.0 - A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-Summary"><a href="#1-Summary" class="headerlink" title="1 Summary"></a>1 Summary</h1><h1 id="2-GI-1-0"><a href="#2-GI-1-0" class="headerlink" title="2 GI-1.0"></a>2 GI-1.0</h1><p>对于实时渲染，尽管是在目前的高端显卡上，也只能支持每像素很少的样本数量。本文提出的全局光照管线，通过设计的两级radiance cache，在空间、时间上复用样本的光照信息，如下图所示：</p>
+<ul>
+<li>screen cache：将primary path上顶点的入射radiance缓存到直接可见表面上的probe中，具有精细的光照表示。</li>
+<li>world cache：缓存了secondary path上顶点的出射radiance，相比于screen cache，不够精细但具有稳定和持久的优点。</li>
+</ul>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240412142048484.png" srcset="/img/loading.gif" lazyload alt="image-20240412142048484" style="zoom: 80%;">
+
+<p>基于这两级radiance cache，本文提出的GI管线可以提以 1&#x2F;4 spp 的采样率实现高保真的直接与间接光。</p>
+<h2 id="2-1-Screen-Cache"><a href="#2-1-Screen-Cache" class="headerlink" title="2.1 Screen Cache"></a>2.1 Screen Cache</h2><p>screen cache 是基于screen probe的实现，本章节会介绍如何将screen probe稀疏地生成在像素上；如何在帧间管理cache数据结构的完整性；以及如何应用 filtering 启发式策略来确保光照在任意距离下的时序稳定性。</p>
+<p>与 <a href="#%5B2%5D">[2]</a> 一样，在半球面入射的radiance会以八面体映射<a href="#%5B3%5D">[3]</a>的方式编码到 8x8 单元的地图集中。</p>
+<h3 id="2-1-1-Temporal-Upscale"><a href="#2-1-1-Temporal-Upscale" class="headerlink" title="2.1.1 Temporal Upscale"></a>2.1.1 Temporal Upscale</h3><p>前面提到，screen probe 只能在屏幕像素上稀疏地生成。在本文提出的方法中，screen probe的生成分摊在多帧。先预设屏幕多大tile放置一个probe，每帧生成不同tile的probe，然后通过重投影复用历史帧的probe，最终几帧后达到覆盖屏幕的全部 tile，即 upscale 到全分辨率。upscale 系数决定了采样率，可以作为性能与质量的权衡。本文的实现中选择使用一个 probe 来编码一个大小为 $8\times 8$ 的 tile 的半球radiance信息，同时每个probe分辨率为 $8\times 8$。因此，这里可以将生成screen probe的tile大小定义为 $8\cdot (upscale_x, upscale_y)$ ，其中 $upscale_x$、$upscale_y$ 分别表示 X、Y 上的时序 upscale 量，越大意味着需要更多帧达到全分辨率。</p>
+<p>在为每个tile生成一个screen probe时，作者使用 Halton 低差异序列在 tile 内抖动选择一个像素作为生成位置。当 upscale 选择 $(2,2)$​ 时，则需要4帧能够达到完全填充，即每个tile至少具有一个probe，如图 <a href="#Fig-2">Fig-2</a> 所示。</p>
+<blockquote>
+<p>这里的说法有点冲突。Halton序列应该是将spawn tile划分成立 upscale_x * upscale_y 份，每次在其中一份（probe grid&#x2F;tile）中抖动生成一个probe</p>
+</blockquote>
+<p><a name="Fig-2"></a></p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240412152316538.png" srcset="/img/loading.gif" lazyload alt="image-20240412152316538" style="zoom:67%;">
+
+<center>Fig-2: 图中将不存在probe的tile像素标为红色。左图为第一帧时的probe分布，此时只填充了1/4数量的tile；右图为4帧后的probe分布</center>
+
+<p>temporal upscale 依赖于probe重投影。为了不降低质量，需要确保重投影过程的准确性。在使用 motion vector 重投影上一帧probe时，得到的对应是当前帧的一个 probe tile，因此还需要确定重投影到tile的哪个像素上。作者提出一个启发式策略，用来在probe tile内找到与上一帧probe最匹配的像素。下面是确定最匹配像素的算法伪代码，其中 <code>cell_size</code> 是一个启发式参数，用于控制能够接受多大程度的 spatial error，该参数在后面也会用到。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function">_kernel <span class="hljs-title">reproject_screen_probes</span><span class="hljs-params">(pixel p)</span> <span class="hljs-comment">// 表示workgroup的一个线程任务，pixel p为local_lane对应的像素</span></span><br><span class="hljs-function"></span>&#123;<br>    _local uint reprojection_score = (<span class="hljs-built_in">pack_half</span>(<span class="hljs-number">65504.0</span>) &lt;&lt; <span class="hljs-number">16</span>) | <span class="hljs-number">0xFFFFu</span>;<br>    <span class="hljs-built_in">barrier</span>();<br>    <span class="hljs-keyword">if</span> (p is <span class="hljs-keyword">not</span> a sky pixel) &#123;<br>        q = p in previous frame;	<span class="hljs-comment">// 像素p投影回上一帧</span><br>    	<span class="hljs-keyword">if</span> (probe_q is valid) &#123; <span class="hljs-comment">// probe_q 是什么？</span><br>            <span class="hljs-comment">// world_probe、normal_probe 应该是重投影probe所位于的像素属性</span><br>            <span class="hljs-comment">// world_p、normal_p 是像素p的属性</span><br>            plane_dist = <span class="hljs-built_in">abs</span>(<span class="hljs-built_in">dot</span>(world_probe - world_p, normal_p));<br>            normal_check = <span class="hljs-built_in">dot</span>(normal_probe, normal_p);<br>            <span class="hljs-keyword">if</span> (plane_dist &lt; cell_size &amp;&amp; normal_check &gt; <span class="hljs-number">0.95</span>) &#123; <span class="hljs-comment">// 剔除掉平面距离与法线差异超出阈值的像素</span><br>                dist = <span class="hljs-built_in">distance</span>(world_probe, world_p);	<span class="hljs-comment">// 使用像素到重投影probe的距离作为分数</span><br>                uint probe_score = (<span class="hljs-built_in">pack_half</span>(dist) &lt;&lt; <span class="hljs-number">16</span>) | local_lane;<br>                <span class="hljs-built_in">atom_min</span>(reprojection_score, probe_socre);<br>            &#125;<br>		&#125;<br>    &#125;<br>    <span class="hljs-built_in">barrier</span>();<br>    <span class="hljs-comment">// decode and use 𝑙𝑜𝑐𝑎𝑙_𝑙𝑎𝑛𝑒 as destination pixel</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>上述算法应该是要先将上一帧probe所属tile投影到当前帧，得到 probe tile，然后再对 probe tile 内的每个像素执行上述打分过程，分数越高表示像素与重投影probe的差异越大，因此需要取其中的最小值。此外，算法使用一个 32bit 的高16位存储socre、低16位存储lane编号，这种做法是为了让比较过程由score的关系确定，而lane编号对比较没有影响。最终得到最小score时，同时可以得到lane编号，从而确定对应的pixel。但不知道 <code>pack_half</code> 怎么实现的？ :confused:</p>
+<h3 id="2-1-2-Adaptive-Sampling"><a href="#2-1-2-Adaptive-Sampling" class="headerlink" title="2.1.2 Adaptive Sampling"></a>2.1.2 Adaptive Sampling</h3><p>前一小节描述了重投影复用上一帧的probe，可以很快达到覆盖全分辨率，但实际中往往会发生去遮挡 (disocclusion) 情况，此时去遮挡区域会找不到重投影probe，如 <a href="#Fig-3">Fig-3</a> 左图所示</p>
+<p><a name="Fig-3"></a></p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240412194247447.png" srcset="/img/loading.gif" lazyload alt="image-20240412194247447" style="zoom:67%;">
+
+<center>Fig-3: 左图，相机移动出现无法找到重投影probe的去遮挡区域；右图，stochastic ray re-balancing 算法填充空洞后的结果</center>
+
+<p>当发生去遮挡时，一种解决办法可以是创建新的probe，来填充这些空白区域，但这会导致spp增大、开销增加。作者提出从时序重投影成功的tiles中随机挑选一部分，分配给这些空白tiles，这样可以保持稳定的开销。为此需要生成两个queues：</p>
+<ul>
+<li>empty_tiles buffer：存储重投影失败且没有新生成probe的tile列表</li>
+<li>override_tiles buffer：存储重投影成功且新生成probe的tile列表</li>
+</ul>
+<p>接下来，为每个 empty tile 随机选择一个 override tile，并放入<code>spawn_tiles</code>内，算法如下。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function">_kernel <span class="hljs-title">patch_screen_probes</span><span class="hljs-params">(uint global_id)</span> </span>&#123;	<span class="hljs-comment">// global_id 应该是在整个dispatch里的线程id</span><br>	tile = empty_tiles[global_id];<br>	index = <span class="hljs-built_in">random</span>(<span class="hljs-number">0</span>, override_tile_count - <span class="hljs-number">1</span>);<br>	<span class="hljs-built_in">atom_xchg</span>(spawn_tiles[override_tiles[index]], tile);	<span class="hljs-comment">// 使用数组将override tile重定向到empty tile</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>该算法通过重分配一定的光线样本预算，来填充时序空洞，效果如 <a href="#Fig-3">Fig-3</a> 右图所示。</p>
+<p>算法使用数组存储索引的方式来重定向tile，在生成光线样本阶段，会从 spawn_tiles 中获取真正的tile。spawn_tiles 应该是总tile数量的大小，存储的是每个tile索引对应要生成probe的tile索引。在没有重分配算法下，spawn_tiles[index] &#x3D; index。重分配算法中，会将其中一部分override tile修改为empty tile，即 spawn_tiles[override tile] &#x3D; empty tile。</p>
+<h3 id="2-1-3-Ray-Guiding"><a href="#2-1-3-Ray-Guiding" class="headerlink" title="2.1.3 Ray Guiding"></a>2.1.3 Ray Guiding</h3><p>前面小节完成了放置probe，接下来需要为probe生成光线样本，即如何在八面体的cells中分配光线。作者采用与 <a href="#%5B2%5D">[2]</a> 相同的方法，根据上一帧结果进行重要性采样。实现上，先将重投影的radiance的luminance写入Local Data Share (LDS)，再通过warp&#x2F;subgroup指令并行扫描，标准化为 Cumulative Distribution Function (CDF)，最后使用 CDF 随机选择一个cell。</p>
+<p><a name="Fig-4"></a></p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240415110725456.png" srcset="/img/loading.gif" lazyload alt="image-20240415110725456" style="zoom:67%;">
+
+<center>Fig-4: 左图为uniform sampling；右图为temporal ray guiding</center>
+
+<p>为了提高guiding过程的准确性，需要半球重建尽可能忠实。这里的重建在 3x3 tiles邻域内迭代重投影probe，并累积radiance值到还未计算的新生成probe中最匹配的cell上。但在不同probe的cell之间重用数据，需要先解决它们之间的视差问题，如 <a href="#Fig-5">Fig-5</a>。光线样本的 alpha 存储了hit距离，因此可以恢复出重投影cell的 hit position，基于此可以在重投影的radiance散布到新生成probe之前，执行视差矫正。</p>
+<p><a name="Fig-5"></a></p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240415113213730.png" srcset="/img/loading.gif" lazyload alt="image-20240415113213730" style="zoom: 67%;">
+
+<center>Fig-5: 不同probe的cell之间的视差</center>
+
+<p>radiance的scatering过程通过在LDS中分配 8x8 八面体图来高效实现重建与采样。与 2.1.1 小节类似，使用 cell_size 拒绝掉较远的probe。</p>
+<p>到此，probe的光线样本都已生成，接下来执行光追与场景求交。当无交点时，认为交到天空，将环境光加入光线；当有交点时，则需要计算交点处的光照，这是通过后面的hash cells data structure来实现的。</p>
+<h3 id="2-1-4-Radiance-Blending"><a href="#2-1-4-Radiance-Blending" class="headerlink" title="2.1.4 Radiance Blending"></a>2.1.4 Radiance Blending</h3><p>此时，我们得到了所有光线样本的radiance信息，但由于ray guiding，八面体的同一cell可能会由多个光线样本，这些样本直接使用重要性采样加权平均即可得到当前新的radiance。除此之外，还需要将新的radiance与上一小节重建的radiance进行时序混合。对于blend方式的选择，exponential moving average <a href="#%5B4%5D">[4]</a> 如下式所示<br>$$<br>s_t &#x3D; \alpha x_t + (1-\alpha)s_{t-1} &#x3D; \alpha\sum_{k&#x3D;0}^{\infty}(1-\alpha)^kx_{t-k}<br>$$<br>其中 $x_t$ 为 $t$ 时刻新的样本，$s_t$ 为 $t$ 时刻累积样本，可以看出历史数据是以指数级别衰减，即随着 k 增大，而在最终结果中占比降低。probe无论空间，还是方向上，都是相对比较稀疏的分布，因此八面体一个cell会占据半球面上相当大的区域。</p>
+<p>作者发现这种方式会明显损失真实感。相反，作者选择将新得到的光线样本radiance与重建的radiance之间的标准化差异作为temporal blending amount的一个因素。下面是blend过程的算法伪代码。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function">function <span class="hljs-title">temporal_blend</span><span class="hljs-params">(curr_radiance, prev_radiance)</span></span><br><span class="hljs-function"></span>&#123;<br>    l1 = <span class="hljs-built_in">dot</span>(curr_radiance, <span class="hljs-number">1.0</span> / <span class="hljs-number">3.0</span>);<br>    l2 = <span class="hljs-built_in">dot</span>(prev_radiance, <span class="hljs-number">1.0</span> / <span class="hljs-number">3.0</span>);<br>    alpha = <span class="hljs-built_in">max</span>(l1 - l2 - <span class="hljs-built_in">min</span>(l1, l2), <span class="hljs-number">0.0</span>) / <span class="hljs-built_in">max</span>(<span class="hljs-built_in">max</span>(l1, l2), <span class="hljs-number">1e-4</span>);<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">lerp</span>(curr_radiance, prev_radiance, alpha);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>上述算法以图像一定程度的变暗为代价，更好了保留了遮挡与阴影。除此之外，该算法还有荧光点去除的作用，过滤掉比八面体cell对应的立体角小得多的明亮信号，提高时序稳定性。</p>
+<p>另一点，由于guiding策略，会有部分cells不存在任何样本，这时如果直接重用时序重建的结果会导致明显的视觉artifact，然后对这些cells直接留空又会由于能量损失而过暗。对此，作者选择对已填充cell的radiance进行平均，并均匀分布到未追踪的cell中。这种做法是通过近似缺失的样本来恢复一些丢失的能量，如 <a href="#Fig-6">Fig-6</a> 所示。在测试中，这种情况只会应用到低概率cell上，同时没有发现明显的visual artifacts。</p>
+<blockquote>
+<p>这种情况的处理，非常trick。仅仅是求其他所有光追样本的平均值，作为没有追踪的cell的近似样本。</p>
+</blockquote>
+<p><a name="Fig-6"></a></p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240415140118581.png" srcset="/img/loading.gif" lazyload alt="image-20240415140118581" style="zoom:67%;">
+
+<center>Fig-6: 左图，由于空cells变暗；右图，使用平均值作为空cell的样本</center>
+
+<h3 id="2-1-5-Probe-Masking"><a href="#2-1-5-Probe-Masking" class="headerlink" title="2.1.5 Probe Masking"></a>2.1.5 Probe Masking</h3><p>probe是放置在 8x8 screen tiles内的任意一个像素上，因此使用 32-bit 整数编码 tile 内的像素坐标，来确定probe位置。该整数使用一张2D贴图存储 <code>probe_mask</code>。对于empty tile或者无效tile，使用一个 sentinel value 表示，如 <a href="#Fig-7">Fig-7</a> 所示。</p>
+<p><a name="Fig-7"></a></p>
+<p>![image-20240415151024688](&#x2F;images&#x2F;Paper Notes&#x2F;GI&#x2F;GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets&#x2F;image-20240415151024688.png)</p>
+<center>Fig-7: sentinel 被标记为红色。</center>
+
+<p>在运动中，有大量区域缺失probe。在采样probe时，通常需要查找某一方向上最近的probe。作者提出生成 probe_mask 的 mip chain 来实现高效查找最近的有效probe，其中 mip chain 维护了上一层 2x2 中第一个找到的有效probe。查找像素给定方向上的最近有效probe的算法如下所示</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function">function <span class="hljs-title">find_closest_probe</span><span class="hljs-params">(int2 pixel, int2 offset)</span></span><br><span class="hljs-function"></span>&#123;<br>    pixel /= <span class="hljs-number">8</span>;	<span class="hljs-comment">// 变换到 probe 空间</span><br>    foreach mip in [<span class="hljs-number">0</span>, mip)count - <span class="hljs-number">1</span>] <span class="hljs-keyword">do</span> &#123;<br>        int2 pos = pixel + offset;<br>        <span class="hljs-keyword">if</span> (pos is out of bounds) <span class="hljs-keyword">break</span>;<br>        <br>        uint porbe = probe_mask.<span class="hljs-built_in">Load</span>(pos, mip);<br>        <span class="hljs-keyword">if</span> (probe is <span class="hljs-keyword">not</span> sentinel) <span class="hljs-keyword">return</span> probe;	<span class="hljs-comment">// 找到 probe</span><br>        <br>        pixel /= <span class="hljs-number">2</span>;<br>    &#125;<br>    <span class="hljs-keyword">return</span> sentinel;	<span class="hljs-comment">// could not find any probe</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="2-1-6-Probe-Filtering"><a href="#2-1-6-Probe-Filtering" class="headerlink" title="2.1.6 Probe Filtering"></a>2.1.6 Probe Filtering</h3><p>由于probe的光线样本在八面体cell内每帧都会抖动，以及后面提出的hash cell返回的radiance也会很噪，因此导致probe非常噪。作者使用前一小节的高效搜索算法，再执行一次 7x7 稀疏blur。filter 算法伪代码如下所示，其中再次用到了 cell_size 来排除掉较远的probe以及避免light leaking。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function">__kernel <span class="hljs-title">filter_screen_probes</span><span class="hljs-params">(global_id, local_id, group_id)</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-comment">// 提取目标 probe 的信息，即 filter 到哪个probe内</span><br>    p = <span class="hljs-built_in">decode_probe_mask</span>(spawn_tiles[group_id]);<br>    dir = <span class="hljs-built_in">calculate_cell_direction</span>(local_id, normal_p);<br>    radiance = probe_buffer[global_id]; <span class="hljs-comment">// 应该是local_id吧。看前两行，globa_id对应probe，local_id对应cell</span><br>    hit_dist = radiance.a;<br>    weight = <span class="hljs-number">1.0</span>;<br>    <br>    foreach i in [<span class="hljs-number">0</span>, <span class="hljs-number">5</span>] <span class="hljs-keyword">do</span> &#123;	<span class="hljs-comment">// 6个周围probe加上自身整个 7x7 区域</span><br>        step = (((t &amp; <span class="hljs-number">1</span>) &lt;&lt; <span class="hljs-number">1</span>) - <span class="hljs-number">1</span>) * ((i &gt;&gt; <span class="hljs-number">1</span>) + <span class="hljs-number">1</span>);<br>        probe = <span class="hljs-built_in">find_closest_probe</span>(p, step * blur_direction);	<span class="hljs-comment">// blur_direction 应该用于控制filter方向，x、y 方向各一次</span><br>        <span class="hljs-keyword">if</span> (probe is sentinel) <span class="hljs-keyword">continue</span>;<br>        <br>        q = <span class="hljs-built_in">decode_probe_mask</span>(probe);	<span class="hljs-comment">// q下标为当前查找到的相邻probe</span><br>        plane_dist = <span class="hljs-built_in">abs</span>(<span class="hljs-built_in">dot</span>(world_q - world_p, normal_p));<br>        normal_check = <span class="hljs-built_in">dot</span>(direction, normal_q);<br>        <span class="hljs-keyword">if</span> (plane_dist &gt; cell_size <span class="hljs-keyword">or</span> normal_check &lt; <span class="hljs-number">0.0</span>) <span class="hljs-keyword">continue</span>;<br>        <br>        hit_dist_clamped = <span class="hljs-built_in">min</span>(hit_dist_q, hit_dist);<br>        hit_Point = world_q + dir * hit_dist_clamped;	<span class="hljs-comment">// 查找probe样本起点沿着目标光线样本方向行进，应该是用于计算视差</span><br>        angle_error = <span class="hljs-built_in">dot</span>(dir, <span class="hljs-built_in">normalize</span>(hit_point - world_p));<br>        <span class="hljs-keyword">if</span> (angle_error &lt; <span class="hljs-built_in">cos</span>(pi / <span class="hljs-number">50.0</span>)) <span class="hljs-keyword">continue</span>;	<span class="hljs-comment">// angle_error 为视差夹角余弦，越小表示偏差越大</span><br>        <br>        depth_weight = <span class="hljs-built_in">calculate_depth_weight</span>(depth_p, depth_q);<br>        radiance += depth_weight * <span class="hljs-built_in">float4</span>(radiance_q, hit_dist_clamped);<br>        weight += depth_weight;<br>        hit_dist = radiance.a / weight;<br>    &#125;<br>    <br>    <span class="hljs-comment">// store radiance/weight</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>注意：前面的ray guiding策略，会导致cell上对应的光线样本可能属于其它cell，但后续处理已经将每个cell的radiance结果处理到对应位置，因此上述算法仅仅对不同probe之间对应的cell进行filter。</p>
+<p>算法最后使用了与 <a href="#%5B2%5D">[2]</a> 相似的角度误差检测方法，用来保留一些小尺度的遮挡细节，如图 <a href="#Fig-8">Fig-8</a>。</p>
+<p><a name="Fig-8"></a></p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240415154453580.png" srcset="/img/loading.gif" lazyload alt="image-20240415154453580" style="zoom:67%;">
+
+<center>Fig-8: 7x7 probe space下的稀疏filter。左图不带有角度误差，右图带有角度误差</center>
+
+
+
+
+
+<h3 id="2-1-7-Adaptive-Cell-Size"><a href="#2-1-7-Adaptive-Cell-Size" class="headerlink" title="2.1.7 Adaptive Cell Size"></a>2.1.7 Adaptive Cell Size</h3><p>前面这些小节多次用到了<code>cell_size</code>，这个量直接关系到相邻probe之间的radiance重用对空间误差的容忍度。cell_size 的值越小能够保留更好的细节，但时序稳定性差，越大能有更好的时序稳定性，但降低光照质量。作者提出使用基于与相机的距离，自适应调整 cell_size，效果如 <a href="Fig-9">Fig-9</a> 所示。</p>
+<p><a name="Fig=9"></a></p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240415154324296.png" srcset="/img/loading.gif" lazyload alt="image-20240415154324296" style="zoom:80%;">
+
+<center>Fig-9: 基于距离的radiance重用启发式策略。左图，近距离下捕获细节；右图，远距离下优雅地退化细节</center>
+
+<p>自适应调整 cell_size 的算法伪代码如下，其中 fov_y 为垂直 fov，单位为radians；proj_size 是投影后cell size，单位为像素，作者选择 8.0，即相邻probe之间粗略的像素距离。此外，distance_scale 在每帧是固定，可以在 CPU 上计算好。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function">function <span class="hljs-title">calculate_cell_size</span><span class="hljs-params">(distance_to_camera)</span></span><br><span class="hljs-function"></span>&#123;<br>	distance_scale = <span class="hljs-built_in">tan</span>(<br>        fov_Y * proj_size * <br>        <span class="hljs-built_in">max</span>(<span class="hljs-number">1.0</span> / view_Height, view_height / <span class="hljs-built_in">pow2</span>(view_width))<br>    );<br>    <span class="hljs-keyword">return</span> distance_scale * distance_to_camera;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h3 id="2-1-8-Persistent-Least-Recently-Used-LRU-Side-Cache"><a href="#2-1-8-Persistent-Least-Recently-Used-LRU-Side-Cache" class="headerlink" title="2.1.8 Persistent Least-Recently Used (LRU) Side Cache"></a>2.1.8 Persistent Least-Recently Used (LRU) Side Cache</h3><p>对于具有细小几何特征的情况下，会出现probe的时序-空间的radiance重用一直失败的情况，从而导致时序上的不稳定性。例如 <a href="#Fig-10">Fig-10</a> 中，一个tile内的细小几何特征，有如下过程：</p>
+<ul>
+<li><p>第一帧 probe 1 生成在细小的几何特征上，并计算probe数据</p>
+</li>
+<li><p>第二帧 probe 2 （同一tile内）生成，但由于 cell_size 测试失败，无法重用来自上一帧 1 的信息。因此，它需要从头开始重新计算（在忽略掉 3x3 邻域重建过程的情况下）。</p>
+<blockquote>
+<p>这里的cell_size测试失败不理解，感觉更多是 probe 2 不在细小几何特征上，normal测试或者 probe 2 所在位置失效导致失败</p>
+</blockquote>
+</li>
+<li><p>第三帧 probe 3 重新生成在几何特征上，因此同样无法重用上一帧 2 的信息</p>
+</li>
+</ul>
+<p><a name="Fig-10"></a></p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240415163819243.png" srcset="/img/loading.gif" lazyload alt="image-20240415163819243" style="zoom: 67%;">
+
+<center>Fig-10: 由于细小几何导致时序重用失败</center>
+
+<p>上述情况中，probe 3 可以重用 probe 1 的信息，但由于 probe 2 由于重用失败，导致 probe 1 的信息已经被覆盖。因此在这种情况下，该tile内的时序重投影、ray guiding以及blending在每帧一直处于失败状态。作者提出使用一个 LRU queue 来维护被逐出的 (evicted) probe，这样就可以让这些probe能在任意帧后被使重用。当新生成的probe无法从同一tile的重投影probe中复用数据时，则尝试重用queue中的cache probe。</p>
+<p>queue中存储的是cache probe的索引，其数据存储在贴图中索引对应位置。由于cache probe可能会存在很多帧，无法使用depth buffer还原其世界坐标。因此需要为每个cache probe保存 float3 position 以及编码到单个 float 中的world normal，作者使用 128-bit integer存储。 </p>
+<p>在 2.1.3 小节的guiding策略前，需要 3x3 probe space 的半球重建。在这里，更新该半球重建过程为完成 3x3 重投影 tile 搜索后，再在 3x3 相邻 tile 上搜索 cache probe。与之前一样，radiance进行视差矫正并累积到 LDS 中。当完成搜索后，side cache 的更新有三种情况：</p>
+<ul>
+<li><p>当前一帧probe被新生成probe逐出且无有效cache entry时，创建一个新的cache entry，并在blending pass将重投影radiance更新到cache。</p>
+<blockquote>
+<p>上一帧probe被当前帧逐出，也就是说重投影失败。在blending pass写入cache应该是指重投影radiance以blend形式写入。</p>
+</blockquote>
+</li>
+<li><p>当前一帧被新生成probe逐出且找到匹配cache entry，在blending pass将重投影radiance写入cache，并将该cache entry放入 most-recently used (MRU) queue。</p>
+</li>
+<li><p>无论前一帧probe是否被逐出，都会识别参与重建的最匹配cache entry。如果有的话，则在blending pass将重投影radiance写入cache，这可以确保cache数据不会落后于光照状态改变。</p>
+<blockquote>
+<p>在cache中查找匹配cache entry，是在 3x3 相邻 tile 上进行的。如前所述，先将cache entry投影到屏幕，判断哪些位于 3x3 相邻tile。其中最匹配的cache entry的数据会被更新，这应该包括了第二种情况</p>
+</blockquote>
+</li>
+</ul>
+<p>每帧还要执行 re-ordering pass，将 MRU 中的cache entries永远放在LRU queue最前面。上述情况中，更新cache entry需要使用 atomic compare and swap，避免多个work groups在radiance blending阶段同时更新同一cache。</p>
+<h2 id="2-2-World-Cache"><a href="#2-2-World-Cache" class="headerlink" title="2.2 World Cache"></a>2.2 World Cache</h2><p>world cache 维护了次级光路顶点的出射radiance（按照forward path tracing的方向来看），作者基于 <a href="#%5B5%5D">[5]</a> 中的 hash cells 数据结构，提出新的 tiling 方法，该方法能够更高效地在相邻cells之间filter。</p>
+<h3 id="2-2-1-Caching-Outgoing-Radiance-for-Secondary-Path-Vertices"><a href="#2-2-1-Caching-Outgoing-Radiance-for-Secondary-Path-Vertices" class="headerlink" title="2.2.1 Caching Outgoing Radiance for Secondary Path Vertices"></a>2.2.1 Caching Outgoing Radiance for Secondary Path Vertices</h3><p>world cache通过对顶点描述的hash来寻址hash table中的radiance cell。寻址过程如下图所示，先使用一个fast hash定位bucket index；再使用另一个hash函数计算一个fingerprint，用于在bucket内 linear probing，确定cell的存储位置。作者选择了两个彼此之间几乎不会冲突的hash函数，即linear probing过程不会比较顶点描述，而是直接比较第二次hash生成fingerprint，忽略了第二次hash冲突的可能性。</p>
+<p>![image-20240426133627889](&#x2F;images&#x2F;Paper Notes&#x2F;GI&#x2F;GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets&#x2F;image-20240426133627889.png)</p>
+<p>作者构建的顶点描述包含：</p>
+<ul>
+<li>顶点坐标、光线方向：邻近顶点间的重用与filter</li>
+<li>层级：</li>
+<li>光线长度与cell_size的比较结果</li>
+</ul>
+<p>每个cell还会关联一个衰减值decay，用于管理cell entry的生命周期。在每次访问cell时都会重置decay，否则就会持续衰减，如果一个cell的decay到0，则释放cell entry。hash table的主要瓶颈来自于大量使用atomic，例如每次插入，这可以通过存储下来顶点的查找结果来避免。</p>
+<h3 id="2-2-2-Eliminating-Light-Leaks"><a href="#2-2-2-Eliminating-Light-Leaks" class="headerlink" title="2.2.2 Eliminating Light Leaks"></a>2.2.2 Eliminating Light Leaks</h3><p>在与周围顶点进行filter时，会存在light leaking异常效果，如下图所示情况。遮挡边缘的两个相邻顶点，离得近，同时secondary ray的方向接近评选，导致descriptor经过hash后落入同一cell。这种情况下，相邻顶点的filter会导致漏光</p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240426140012373.png" srcset="/img/loading.gif" lazyload alt="image-20240426140012373" style="zoom: 80%;">
+
+<p>作者发现这类light leaking大部分出现在次级光线长度小于要查找cell大小的情况下，也就是光线没有离开cell。对于此，向descriptor中加入比较结果 (ray_length &lt; cell_size)，可以避免这种情况发生。</p>
+<h3 id="2-2-3-Prefiltering-Radiance"><a href="#2-2-3-Prefiltering-Radiance" class="headerlink" title="2.2.3 Prefiltering Radiance"></a>2.2.3 Prefiltering Radiance</h3><p>cell之间filter需要访问 3x3x3 相邻cell，但在hash space的开销非常大。作者提出 two-level 数据结构，其中 cell 被组织到 tile 内，bucket 中索引的是tile，cell由tile内的局部坐标来索引，如下图所示。</p>
+<p>![image-20240426145746727](&#x2F;images&#x2F;Paper Notes&#x2F;GI&#x2F;GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets&#x2F;image-20240426145746727.png)</p>
+<p>每个tille表示了场景固定大小的区域，相当于一个比较大的voxel，但tile中的cell在三维空间下是相对稀疏的，同时小范围的表面接近于二维平面，因此作者选择将cell投影到2D tile上的方式，将cell向最大outgoing方向的轴向投影。</p>
+<blockquote>
+<p> 最大outgoing方向应该是值tile内所有cell的所有光线方向取最大</p>
+<p>tile 是一个超大的voxel，被hash table索引。cell是tile内连续的小voxel，按照局部位置连续排放。这也意味着tile需要更大的存储空间。对于 3x3x3 cells 的filter，如果没有这么多相邻cells呢？</p>
+</blockquote>
+<p>这种做法以不高的存储开销，使得tile之内相邻cell之间filter操作更加高效，但tile之间仍然无法解决，作者选择依赖于screen cache来掩盖这部分偏差。</p>
+<p>将方差降低到可接受的水平通常需要cell内几帧的累积。对于时序累积，第一层 mip level 使用 exponential moving average <a href="#%5B4%5D">[4]</a> ，后续层级都是上一层级使用box filter。在实现中，作者选择 8x8 tile size，这样性能最佳。最终，通过查询第一层，累积radiance到screen cache。</p>
+<h3 id="2-2-4-Evaluating-Lighting-at-Secondary-Path-Vertices"><a href="#2-2-4-Evaluating-Lighting-at-Secondary-Path-Vertices" class="headerlink" title="2.2.4 Evaluating Lighting at Secondary Path Vertices"></a>2.2.4 Evaluating Lighting at Secondary Path Vertices</h3><p>前面描述了如何在two-level hash数据结构中缓存和filter次级路径顶点的直接光照。但直接光照仍然需要计算。首先执行重投影，如果重投影成功则复用上一帧的光照；否则，需要计算顶点光照着色，这是 Light Sampling 小节的内容。</p>
+<p>对于重用的上一帧radiance样本，既包含了直接光照，又包含了间接光照。这种重用会为当前帧带来多一次间接路径，近似无限反弹，称为 temporal radiance feedback。</p>
+<blockquote>
+<p>但cell中的顶点只有直接光照，并没有间接光照。从PPT里看到，这里的重投影是在屏幕上执行的，即将顶点重投影到上一帧，看是否在屏幕上，在屏幕上则重投影成功，否则重投影失败。也就是world cache本身无法做到无限反弹，只有屏幕上看到的顶点具有无限反弹。</p>
+<p>无限反弹过程：</p>
+<ul>
+<li>第一帧<ul>
+<li>screen probe光追得到hash cell顶点，hash cell计算一次反射点的直接光</li>
+<li>screen probe从hash cell得到一次反射间接光</li>
+<li>计算屏幕的直接光照，从screen probe得到的一次反射间接光</li>
+</ul>
+</li>
+<li>第二帧<ul>
+<li>screen probe光追得到hash cell顶点<ul>
+<li>hash cell顶点重投影成功，得到其上一帧的直接光照与一次反射间接光。hash cell顶点作为一次反射点，意味着属于当前帧的一次反射间接光、二次反射间接光</li>
+<li>hash cell顶点重投影失败，计算其直接光照，即一次反射间接光</li>
+</ul>
+</li>
+<li>screen probe从hash cell得到间接光，此时融合了二次反射间接光</li>
+<li>计算屏幕像素的直接光照，从screen probe采样间接光，这里采样得到的最多反射是二次反射</li>
+</ul>
+</li>
+<li>第三帧：最大三次反射</li>
+</ul>
+<p>因此无限反弹只有部分cell顶点具有。</p>
+</blockquote>
+<h2 id="2-3-Light-Sampling"><a href="#2-3-Light-Sampling" class="headerlink" title="2.3 Light Sampling"></a>2.3 Light Sampling</h2><p>hit points 的着色</p>
+<h3 id="2-3-1-Reservoir-based-Resampling"><a href="#2-3-1-Reservoir-based-Resampling" class="headerlink" title="2.3.1 Reservoir-based Resampling"></a>2.3.1 Reservoir-based Resampling</h3><h3 id="2-3-2-Light-Grid-Lookup-Structure"><a href="#2-3-2-Light-Grid-Lookup-Structure" class="headerlink" title="2.3.2 Light Grid Lookup Structure"></a>2.3.2 Light Grid Lookup Structure</h3><h2 id="2-4-Irradiance-Estimation"><a href="#2-4-Irradiance-Estimation" class="headerlink" title="2.4 Irradiance Estimation"></a>2.4 Irradiance Estimation</h2><p>本小节使用probe数据评估屏幕像素的 irradiance。</p>
+<h3 id="2-4-1-Per-Pixel-Interpolation"><a href="#2-4-1-Per-Pixel-Interpolation" class="headerlink" title="2.4.1 Per-Pixel Interpolation"></a>2.4.1 Per-Pixel Interpolation</h3><p>使用像素周围的probe进行加权平均来重建像素光照。使用 2.1.5 小节定义的 <code>find_closest_probe</code> 函数查找四个方向上相邻probes，基于表面深度、normal的edge-aware function的权重设计。同样使用 cell_size 排除掉远离的probe，即赋予权重 0。</p>
+<p>对于周围4个probe权重都为0或很小的情况，使用均值代替。</p>
+<p>除此之外，在查找相邻probe之前，会先抖动像素位置，这样可以打破 structured artifact，但当抖动位置远离原像素所在平面时，则取消这次抖动。</p>
+<h3 id="2-4-2-Spherical-Harmonics"><a href="#2-4-2-Spherical-Harmonics" class="headerlink" title="2.4.2 Spherical Harmonics"></a>2.4.2 Spherical Harmonics</h3><p>在评估irradiance时，通常需要提取所有附近的radiance样本。更好的方式是在插值之前，先将probe投影到SH，SH 具有以下优点：</p>
+<ul>
+<li>只使用前三阶可以过滤掉高频噪声</li>
+<li>能够以低存储开销较好地表示 irradiance</li>
+<li>reprojection pass 可以只重投影 SH</li>
+</ul>
+<h3 id="2-4-3-Denoising"><a href="#2-4-3-Denoising" class="headerlink" title="2.4.3 Denoising"></a>2.4.3 Denoising</h3><p>自适应blur</p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a name="[1]">[1]</a> Boissé, G. and Meunier, S. 2022. GI-1.0: A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.</p>
+<p><a name="[2]">[2]</a> Daniel Wright. 2021. Radiance Caching for Real-Time Global Illumination. <a target="_blank" rel="noopener" href="https://advances.realtimerendering.com/s2021/index.html#_mrnver3hf0ag">https://advances.realtimerendering.com/s2021/index.html#_mrnver3hf0ag</a> </p>
+<p><a name="[3]">[3]</a> Zina H. Cigolle, Sam Donow, Daniel Evangelakos, Michael Mara, Morgan McGuire, and Quirin Meyer. 2014. A Survey of Efficient Representations for Independent Unit Vectors. Journal of Computer Graphics Techniques (JCGT) 3, 2 (17 April 2014), 1–30. <a target="_blank" rel="noopener" href="http://jcgt.org/published/0003/02/01/">http://jcgt.org/published/0003/02/01/</a> </p>
+<p><a name="[4]">[4]</a> Brian Karis. 2014. HIGH-QUALITY TEMPORAL SUPERSAMPLING. <a target="_blank" rel="noopener" href="http://advances.realtimerendering.com/s2014/#_HIGH-QUALITY_TEMPORAL_SUPERSAMPLING">http://advances.realtimerendering.com/s2014/#_HIGH-QUALITY_TEMPORAL_SUPERSAMPLING</a> </p>
+<p><a name="[5]">[5]</a> Binder, N., Fricke, S., and Keller, A. 2021. Massively Parallel Path Space Filtering. </p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/GI/" class="category-chain-item">GI</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/GI/Light-Probe/" class="category-chain-item">Light Probe</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>GI-1.0 - A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination</div>
+      <div>http://example.com/2024/04/12/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>April 12, 2024</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2024/08/19/Rendering%20Blogs/GPGPU/Parrallel%20Scan/" title="SlabHash">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">SlabHash</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2024/04/07/Paper%20Notes/Cloud%20Rendering/Surface%20Light%20Cones%20Sharing%20Direct%20Illumination%20for%20Efficient%20Multi-viewer%20Rendering/" title="Surface Light Cones - Sharing Direct Illumination for Efficient Multi-viewer Rendering">
+                        <span class="hidden-mobile">Surface Light Cones - Sharing Direct Illumination for Efficient Multi-viewer Rendering</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

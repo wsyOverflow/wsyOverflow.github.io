@@ -1,0 +1,772 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="GPGPU, GPU Hash Table">
+  
+    <meta name="description" content="1 源码分析使用到的warp操作：  unsigned __ballot_sync(unsigned mask, predicate)mask中的bit为1 表示对相应id的线程执行warp操作，该线程的predicate非0将返回值对应位置为1 int __ffs (int x)  返回最低非0有效位的位置。x为0，则返回0 T __shfl_sync(unsigned mask, T var,">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SlabHash">
+<meta property="og:url" content="http://example.com/2023/10/20/Rendering%20Blogs/GPGPU/SlabHash/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 源码分析使用到的warp操作：  unsigned __ballot_sync(unsigned mask, predicate)mask中的bit为1 表示对相应id的线程执行warp操作，该线程的predicate非0将返回值对应位置为1 int __ffs (int x)  返回最低非0有效位的位置。x为0，则返回0 T __shfl_sync(unsigned mask, T var,">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-10-20T07:13:32.413Z">
+<meta property="article:modified_time" content="2023-10-23T05:24:29.700Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>SlabHash - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="SlabHash"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-10-20 15:13" pubdate>
+          October 20, 2023 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          1.9k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          16 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">SlabHash</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-源码分析"><a href="#1-源码分析" class="headerlink" title="1 源码分析"></a>1 源码分析</h1><p>使用到的warp操作：</p>
+<ul>
+<li><code>unsigned __ballot_sync(unsigned mask, predicate)</code><br>mask中的bit为1 表示对相应id的线程执行warp操作，该线程的predicate非0将返回值对应位置为1</li>
+<li><code>int __ffs (int x)</code><br>  返回最低非0有效位的位置。x为0，则返回0</li>
+<li><code>T __shfl_sync(unsigned mask, T var, int srcLane, int width=warpSize)</code><br>从指定lane拷贝var变量。width控制lane索引，srcLane % width</li>
+</ul>
+<h2 id="1-1-searchKey"><a href="#1-1-searchKey" class="headerlink" title="1.1 searchKey"></a>1.1 searchKey</h2><p>函数声明如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs c++">GpuSlabHashContext&lt;KeyT, ValueT, SlabHashTypeT::ConcurrentMap&gt;::<span class="hljs-built_in">searchKey</span>(<br>    <span class="hljs-type">bool</span>&amp; to_be_searched,<br>    <span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>&amp; laneId,<br>    <span class="hljs-type">const</span> KeyT&amp; myKey,<br>    ValueT&amp; myValue,<br>    <span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span> bucket_id)<br></code></pre></td></tr></table></figure>
+
+<p>给一批keys，以32个为一组，对于一个warp内的lane，一个lane( <code>laneId</code> )绑定一个 <code>myKey</code> ，查找完成返回 <code>myValue</code> 。实际查找过程是先组成一个work_queue，对这个work_queue的每一个key，warp进行逐个key查找，直至work_queue完成。函数实现如下：</p>
+<ul>
+<li><p>line 5 组装work_queue：worke_queue为32bit整数，每一位表示对于lane是否完成查找。<br>__ballot_sync 设置work_queue中bit，1表示对应lane需要查找key，0表示已完成查找或不需要</p>
+</li>
+<li><p>line 6~7 设置查找位置。<br>如果work_queue发生了变化，表示上一个lane的查找已经完成，那么处理下一个key，则需要在对应bucket从头开始查找。 <code>SlabHashT::A_INDEX_POINTER</code><br>否则，表示需要继续查找下一个slab。</p>
+</li>
+<li><p>line 8~17 获取当前迭代的查找目标信息以及查找位置的数据</p>
+<ul>
+<li>获取当前warp迭代查找目标信息：lane id，bucket，key<br>__ffs得到work_queue中的当前warp迭代的查找目标 <code>src_lane</code> (由小到大)，减1是因为 __ffs 的返回值0是保留给参数0的，而bit位从1开始，lane id从0开始<br>__shfl_sync从查找目标lane中拷贝其 bucket_id<br>__shfl_sync从查找目标lane中拷贝其要查找的key</li>
+<li>获取warp每个线程对应的查找位置的数据。<br>两种查找位置，一个是bucket，一个是slab，返回的是当前线程的laneId位置处的数据(warp中每个线程负责一个位置)</li>
+</ul>
+</li>
+<li><p>line 18~20 比较查找目标与查找位置的key，相同表示匹配，不同表示不匹配。warp是否已有线程查找到目标key<br>__ballot_sync 得到warp所有线程的比较结果。注意后面 &amp; 操作是用于处理slab中key-value的存放方式。</p>
+<ul>
+<li><code>REGULAR_NODE_KEY_MASK = 0x15555555</code> 意味着key-value是连续存放方式，因此一个warp的线程只有REGULAR_NODE_KEY_MASK 中bit为1处才是取得是key，其他取得是value。</li>
+</ul>
+<p>__ffs 则是获取匹配上的lane id，后面-1为了处理lane id从0开始计数。</p>
+</li>
+<li><p>line 21~30 处理本次warp迭代没有找到目标key。<br>__shfl_sync拷贝warp最后一个lane(31)读取到的数据，slab的存储是next指针</p>
+<ul>
+<li>如果next指针空，表示bucket查找结束，意味着hash table不存在目标key<br>查找目标lane将查找结果返回，并结束其查找任务 <code>to_be_searched = false</code></li>
+<li>next指针不为空，表示需要继续查找bucket的下一个slab</li>
+</ul>
+</li>
+<li><p>line 31~38 处理本次warp迭代找到目标key。<br>__shfl_sync拷贝found_lane+1读取到的数据，即目标key对应的value<br>查找目标lane将查找结果返回，并结束其查找任务 <code>to_be_searched = false</code></p>
+</li>
+</ul>
+<p>可以看出key-value连续存储，而查找过程中，lane是连续读的，因此32个lane只能处理(16-1)个key-value对，最后一个是next指针。因此每个slab的大小是15个key-value对，末尾加上一个next指针。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">uint32_t</span> work_queue = <span class="hljs-number">0</span>;<br><span class="hljs-type">uint32_t</span> last_work_queue = work_queue;<br><span class="hljs-type">uint32_t</span> next = SlabHashT::A_INDEX_POINTER;<br> <br><span class="hljs-keyword">while</span> ((work_queue = __ballot_sync(<span class="hljs-number">0xFFFFFFFF</span>, to_be_searched))) &#123;<br>    next = (last_work_queue != work_queue) ? SlabHashT::A_INDEX_POINTER<br>                                           : next;  <span class="hljs-comment">// a successfull insertion in the warp</span><br>    <span class="hljs-type">uint32_t</span> src_lane = __ffs(work_queue) - <span class="hljs-number">1</span>;<br>    <span class="hljs-type">uint32_t</span> src_bucket = __shfl_sync(<span class="hljs-number">0xFFFFFFFF</span>, bucket_id, src_lane, <span class="hljs-number">32</span>);<br>    <span class="hljs-type">uint32_t</span> wanted_key = __shfl_sync(<span class="hljs-number">0xFFFFFFFF</span>,<br>                                      *<span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>*&gt;(<br>                                          <span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span>*&gt;(&amp;myKey)),<br>                                      src_lane,<br>                                      <span class="hljs-number">32</span>);<br>    <span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span> src_unit_data = (next == SlabHashT::A_INDEX_POINTER)<br>                                       ? *(<span class="hljs-built_in">getPointerFromBucket</span>(src_bucket, laneId))<br>                                       : *(<span class="hljs-built_in">getPointerFromSlab</span>(next, laneId));<br>    <span class="hljs-type">int</span> found_lane = __ffs(__ballot_sync(<span class="hljs-number">0xFFFFFFFF</span>, src_unit_data == wanted_key) &amp;<br>                           SlabHashT::REGULAR_NODE_KEY_MASK) -<br>                     <span class="hljs-number">1</span>;<br>    <span class="hljs-keyword">if</span> (found_lane &lt; <span class="hljs-number">0</span>) &#123;  <span class="hljs-comment">// not found</span><br>        <span class="hljs-type">uint32_t</span> next_ptr = __shfl_sync(<span class="hljs-number">0xFFFFFFFF</span>, src_unit_data, <span class="hljs-number">31</span>, <span class="hljs-number">32</span>);<br>        <span class="hljs-keyword">if</span> (next_ptr == SlabHashT::EMPTY_INDEX_POINTER) &#123;  <span class="hljs-comment">// not found</span><br>            <span class="hljs-keyword">if</span> (laneId == src_lane) &#123;<br>                myValue = <span class="hljs-built_in">static_cast</span>&lt;ValueT&gt;(SEARCH_NOT_FOUND);<br>                to_be_searched = <span class="hljs-literal">false</span>;<br>            &#125;<br>        &#125; <span class="hljs-keyword">else</span> &#123;<br>            next = next_ptr;<br>        &#125;<br>    &#125; <span class="hljs-keyword">else</span> &#123;  <span class="hljs-comment">// found the key:</span><br>        <span class="hljs-type">uint32_t</span> found_value = __shfl_sync(<span class="hljs-number">0xFFFFFFFF</span>, src_unit_data, found_lane + <span class="hljs-number">1</span>, <span class="hljs-number">32</span>);<br>        <span class="hljs-keyword">if</span> (laneId == src_lane) &#123;<br>            myValue = *<span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> ValueT*&gt;(<br>            <span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span>*&gt;(&amp;found_value));<br>            to_be_searched = <span class="hljs-literal">false</span>;<br>        &#125;<br>    &#125;<br>    last_work_queue = work_queue;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h2 id="1-2-insertPair"><a href="#1-2-insertPair" class="headerlink" title="1.2 insertPair"></a>1.2 insertPair</h2><p>查找到empty slot后，将新的key-value放入该位置。该插入方式不会查找被插入key是否已存在。</p>
+<p>函数声明</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c++">GpuSlabHashContext&lt;KeyT, ValueT, SlabHashTypeT::ConcurrentMap&gt;::<span class="hljs-built_in">insertPair</span>(<br>    <span class="hljs-type">bool</span>&amp; to_be_inserted,<br>    <span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>&amp; laneId,<br>    <span class="hljs-type">const</span> KeyT&amp; myKey,<br>    <span class="hljs-type">const</span> ValueT&amp; myValue,<br>    <span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span> bucket_id,<br>    AllocatorContextT&amp; local_allocator_ctx)<br></code></pre></td></tr></table></figure>
+
+<p>函数实现如下：</p>
+<ul>
+<li><p>line 5~14 与searchKey过程相同。组装work_queue、获取目标查找数据以及查找位置的数据</p>
+</li>
+<li><p>line 17~18 比较warp各线程查找位置是否为空，即比较查找位置数据与EMPTY_KEY</p>
+</li>
+<li><p>line 19~40 当前warp迭代没有找到empty slot<br>__shfl_sync 从warp最后一个lane获取next指针</p>
+<ul>
+<li>line 21~37 如果next指针为空，则申请新的结点</li>
+</ul>
+</li>
+<li><p>line 41~57 当前warp迭代找到empty slot<br>line 42 __ffs得到最小empty slot位置对应的lane <code>dest_lane</code></p>
+<ul>
+<li><p>line 43~57 查找目标lane在 <code>dest_lane</code>的查找位置执行最后的插入操作<br>为了保证插入操作的原子性，key-value 组成64 bit，使用 atomicCAS 原语操作</p>
+<blockquote>
+<p>如果key 64bit，value 32bit，此时超过了原子类型长度，应该怎么做？</p>
+<p>方案1：if (atomicCAS(dest_key, EMPTY_KEY, key) &#x3D;&#x3D; EMPTY_KEY)  dest_value &#x3D; value;</p>
+<p>这样不可行，因为 atomicCAS 成功后，又来了另一个对同一key的update操作，会导致数据错误</p>
+<p>方案2：key 64bit的最高位作为保留位，1表示锁，0表示未锁</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c++">lock_key = key || <span class="hljs-number">0x8FFFFFFFFFFFFFFF</span>;<br><span class="hljs-keyword">while</span> (dest_key &amp; <span class="hljs-number">0x7FFFFFFFFFFFFFFF</span> == key) &#123;<br>    <span class="hljs-keyword">if</span> (key == <span class="hljs-built_in">atomicCAS</span>(dest_key, key, lock_key)) &#123;	<span class="hljs-comment">// lock</span><br>        update value;<br>        <span class="hljs-built_in">atomicCAS</span>(dest_key, lock_key, key);				<span class="hljs-comment">// unlock</span><br>    &#125;<br>&#125;<br></code></pre></td></tr></table></figure></blockquote>
+</li>
+<li><p>插入成功则终止本迭代的目标插入操作 <code>to_be_inserted = false</code>。否则继续迭代执行</p>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">uint32_t</span> work_queue = <span class="hljs-number">0</span>;<br><span class="hljs-type">uint32_t</span> last_work_queue = <span class="hljs-number">0</span>;<br><span class="hljs-type">uint32_t</span> next = SlabHashT::A_INDEX_POINTER;<br><br><span class="hljs-keyword">while</span> ((work_queue = __ballot_sync(<span class="hljs-number">0xFFFFFFFF</span>, to_be_inserted))) &#123;<br>    <span class="hljs-comment">// to know whether it is a base node, or a regular node</span><br>    next = (last_work_queue != work_queue) ? SlabHashT::A_INDEX_POINTER<br>                                           : next;  <span class="hljs-comment">// a successfull insertion in the warp</span><br>    <span class="hljs-type">uint32_t</span> src_lane = __ffs(work_queue) - <span class="hljs-number">1</span>;<br>    <span class="hljs-type">uint32_t</span> src_bucket = __shfl_sync(<span class="hljs-number">0xFFFFFFFF</span>, bucket_id, src_lane, <span class="hljs-number">32</span>);<br><br>    <span class="hljs-type">uint32_t</span> src_unit_data = (next == SlabHashT::A_INDEX_POINTER)<br>                                 ? *(<span class="hljs-built_in">getPointerFromBucket</span>(src_bucket, laneId))<br>                                 : *(<span class="hljs-built_in">getPointerFromSlab</span>(next, laneId));<br>    <span class="hljs-type">uint64_t</span> old_key_value_pair = <span class="hljs-number">0</span>;<br><br>    <span class="hljs-type">uint32_t</span> isEmpty = (__ballot_sync(<span class="hljs-number">0xFFFFFFFF</span>, src_unit_data == EMPTY_KEY)) &amp;<br>                       SlabHashT::REGULAR_NODE_KEY_MASK;<br>    <span class="hljs-keyword">if</span> (isEmpty == <span class="hljs-number">0</span>) &#123;  <span class="hljs-comment">// no empty slot available:</span><br>      	<span class="hljs-type">uint32_t</span> next_ptr = __shfl_sync(<span class="hljs-number">0xFFFFFFFF</span>, src_unit_data, <span class="hljs-number">31</span>, <span class="hljs-number">32</span>);<br>      	<span class="hljs-keyword">if</span> (next_ptr == SlabHashT::EMPTY_INDEX_POINTER) &#123;<br>        	<span class="hljs-comment">// allocate a new node:</span><br>        	<span class="hljs-type">uint32_t</span> new_node_ptr = <span class="hljs-built_in">allocateSlab</span>(local_allocator_ctx, laneId);<br><br>        	<span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> experiment if it&#x27;s better to use lane 0 instead</span><br>        	<span class="hljs-keyword">if</span> (laneId == <span class="hljs-number">31</span>) &#123;<br>          		<span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>* p = (next == SlabHashT::A_INDEX_POINTER)<br>                                  	? <span class="hljs-built_in">getPointerFromBucket</span>(src_bucket, <span class="hljs-number">31</span>)<br>                                  	: <span class="hljs-built_in">getPointerFromSlab</span>(next, <span class="hljs-number">31</span>);<br><br>          		<span class="hljs-type">uint32_t</span> temp = <span class="hljs-built_in">atomicCAS</span>((<span class="hljs-type">unsigned</span> <span class="hljs-type">int</span>*)p, SlabHashT::EMPTY_INDEX_POINTER, new_node_ptr);<br>          		<span class="hljs-comment">// check whether it was successful, and</span><br>          		<span class="hljs-comment">// free the allocated memory otherwise</span><br>          		<span class="hljs-keyword">if</span> (temp != SlabHashT::EMPTY_INDEX_POINTER) &#123;<br>            		<span class="hljs-built_in">freeSlab</span>(new_node_ptr);<br>          		&#125;<br>        	&#125;<br>      	&#125; <span class="hljs-keyword">else</span> &#123;<br>			next = next_ptr;<br>      	&#125;<br>    &#125; <span class="hljs-keyword">else</span> &#123;  <span class="hljs-comment">// there is an empty slot available</span><br>      	<span class="hljs-type">int</span> dest_lane = __ffs(isEmpty &amp; SlabHashT::REGULAR_NODE_KEY_MASK) - <span class="hljs-number">1</span>;<br>      	<span class="hljs-keyword">if</span> (laneId == src_lane) &#123;<br>        	<span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>* p = (next == SlabHashT::A_INDEX_POINTER)<br>                                	? <span class="hljs-built_in">getPointerFromBucket</span>(src_bucket, dest_lane)<br>                                	: <span class="hljs-built_in">getPointerFromSlab</span>(next, dest_lane);<br><br>        	old_key_value_pair = <span class="hljs-built_in">atomicCAS</span>((<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> <span class="hljs-type">long</span> <span class="hljs-type">int</span>*)p,<br>                      EMPTY_PAIR_64,<br>                      ((<span class="hljs-type">uint64_t</span>)(*<span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>*&gt;(<br>                           <span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span>*&gt;(&amp;myValue)))<br>                       &lt;&lt; <span class="hljs-number">32</span>) |<br>                          *<span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>*&gt;(<br>                              <span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span>*&gt;(&amp;myKey)));<br>        	<span class="hljs-keyword">if</span> (old_key_value_pair == EMPTY_PAIR_64)<br>          		to_be_inserted = <span class="hljs-literal">false</span>;  <span class="hljs-comment">// succesfful insertion</span><br>      	&#125;<br>    &#125;<br>	last_work_queue = work_queue;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+<h2 id="1-3-insertPairUnique"><a href="#1-3-insertPairUnique" class="headerlink" title="1.3 insertPairUnique"></a>1.3 insertPairUnique</h2><p>查找是否存在目标key，如果不存在插入到empty slot，存在则无操作。</p>
+<p>函数声明</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c++">GpuSlabHashContext&lt;KeyT, ValueT, SlabHashTypeT::ConcurrentMap&gt;::<span class="hljs-built_in">insertPairUnique</span>(<br>    <span class="hljs-type">bool</span>&amp; to_be_inserted,<br>    <span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>&amp; laneId,<br>    <span class="hljs-type">const</span> KeyT&amp; myKey,<br>    <span class="hljs-type">const</span> ValueT&amp; myValue,<br>    <span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span> bucket_id,<br>    AllocatorContextT&amp; local_allocator_ctx)<br></code></pre></td></tr></table></figure>
+
+
+
+<p>函数实现如下：</p>
+<ul>
+<li>line 5~14与searchKey过程相同。组装work_queue，以及获取目标查找数据<br>line 20 获取目标查找key src_key </li>
+<li>line 17<del>18 获取本次warp迭代，哪些lane查找到了empty slot<br>line 21</del>22 获取本次warp迭代，哪个lane查找到了目标key</li>
+<li>line 23~25 存在目标key时，结束查找任务</li>
+<li>line 26~66 不存在目标key时，选择插入到empty slot<ul>
+<li><p>line 27~47 没有empty slot<br>得到next指针</p>
+<ul>
+<li>如果next指针是空，则需要申请新的slab</li>
+<li>如果next指针不为空，则移动到next执行下次warp迭代</li>
+</ul>
+</li>
+<li><p>line 48~64 存在empty slot。<br>最小索引的empty slot作为目标插入位置，dest_lane</p>
+</li>
+</ul>
+</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br><span class="line">32</span><br><span class="line">33</span><br><span class="line">34</span><br><span class="line">35</span><br><span class="line">36</span><br><span class="line">37</span><br><span class="line">38</span><br><span class="line">39</span><br><span class="line">40</span><br><span class="line">41</span><br><span class="line">42</span><br><span class="line">43</span><br><span class="line">44</span><br><span class="line">45</span><br><span class="line">46</span><br><span class="line">47</span><br><span class="line">48</span><br><span class="line">49</span><br><span class="line">50</span><br><span class="line">51</span><br><span class="line">52</span><br><span class="line">53</span><br><span class="line">54</span><br><span class="line">55</span><br><span class="line">56</span><br><span class="line">57</span><br><span class="line">58</span><br><span class="line">59</span><br><span class="line">60</span><br><span class="line">61</span><br><span class="line">62</span><br><span class="line">63</span><br><span class="line">64</span><br><span class="line">65</span><br><span class="line">66</span><br><span class="line">67</span><br><span class="line">68</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">uint32_t</span> work_queue = <span class="hljs-number">0</span>;<br><span class="hljs-type">uint32_t</span> last_work_queue = <span class="hljs-number">0</span>;<br><span class="hljs-type">uint32_t</span> next = SlabHashT::A_INDEX_POINTER;<br><span class="hljs-type">bool</span> new_insertion = <span class="hljs-literal">false</span>;<br><span class="hljs-keyword">while</span> ((work_queue = __ballot_sync(<span class="hljs-number">0xFFFFFFFF</span>, to_be_inserted))) &#123;<br>	<span class="hljs-comment">// to know whether it is a base node, or a regular node</span><br>	next = (last_work_queue != work_queue) ? SlabHashT::A_INDEX_POINTER<br>                                           : next;  <span class="hljs-comment">// a successful insertion in the warp</span><br>    <span class="hljs-type">uint32_t</span> src_lane = __ffs(work_queue) - <span class="hljs-number">1</span>;<br>    <span class="hljs-type">uint32_t</span> src_bucket = __shfl_sync(<span class="hljs-number">0xFFFFFFFF</span>, bucket_id, src_lane, <span class="hljs-number">32</span>);<br><br>    <span class="hljs-type">uint32_t</span> src_unit_data = (next == SlabHashT::A_INDEX_POINTER)<br>                                 ? *(<span class="hljs-built_in">getPointerFromBucket</span>(src_bucket, laneId))<br>                                 : *(<span class="hljs-built_in">getPointerFromSlab</span>(next, laneId));<br>    <span class="hljs-type">uint64_t</span> old_key_value_pair = <span class="hljs-number">0</span>;<br><br>    <span class="hljs-type">uint32_t</span> isEmpty = (__ballot_sync(<span class="hljs-number">0xFFFFFFFF</span>, src_unit_data == EMPTY_KEY)) &amp;<br>                       SlabHashT::REGULAR_NODE_KEY_MASK;<br><br>    <span class="hljs-type">uint32_t</span> src_key = __shfl_sync(<span class="hljs-number">0xFFFFFFFF</span>, myKey, src_lane, <span class="hljs-number">32</span>);<br>    <span class="hljs-type">uint32_t</span> isExisting = (__ballot_sync(<span class="hljs-number">0xFFFFFFFF</span>, src_unit_data == src_key)) &amp;<br>                          SlabHashT::REGULAR_NODE_KEY_MASK;<br>    <span class="hljs-keyword">if</span> (isExisting) &#123;  <span class="hljs-comment">// key exist in the hash table</span><br>      	<span class="hljs-keyword">if</span> (laneId == src_lane)<br>        	to_be_inserted = <span class="hljs-literal">false</span>;<br>    &#125; <span class="hljs-keyword">else</span> &#123;<br>      	<span class="hljs-keyword">if</span> (isEmpty == <span class="hljs-number">0</span>) &#123;  <span class="hljs-comment">// no empty slot available:</span><br>        	<span class="hljs-type">uint32_t</span> next_ptr = __shfl_sync(<span class="hljs-number">0xFFFFFFFF</span>, src_unit_data, <span class="hljs-number">31</span>, <span class="hljs-number">32</span>);<br>        	<span class="hljs-keyword">if</span> (next_ptr == SlabHashT::EMPTY_INDEX_POINTER) &#123;<br>          		<span class="hljs-comment">// allocate a new node:</span><br>          		<span class="hljs-type">uint32_t</span> new_node_ptr = <span class="hljs-built_in">allocateSlab</span>(local_allocator_ctx, laneId);<br><br>          		<span class="hljs-keyword">if</span> (laneId == <span class="hljs-number">31</span>) &#123;<br>            		<span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>* p = (next == SlabHashT::A_INDEX_POINTER)<br>                                    		? <span class="hljs-built_in">getPointerFromBucket</span>(src_bucket, <span class="hljs-number">31</span>)<br>                                    		: <span class="hljs-built_in">getPointerFromSlab</span>(next, <span class="hljs-number">31</span>);<br><br>            		<span class="hljs-type">uint32_t</span> temp = <span class="hljs-built_in">atomicCAS</span>((<span class="hljs-type">unsigned</span> <span class="hljs-type">int</span>*)p, SlabHashT::EMPTY_INDEX_POINTER, new_node_ptr);<br>            		<span class="hljs-comment">// check whether it was successful, and</span><br>            		<span class="hljs-comment">// free the allocated memory otherwise</span><br>            		<span class="hljs-keyword">if</span> (temp != SlabHashT::EMPTY_INDEX_POINTER) &#123;<br>              			<span class="hljs-built_in">freeSlab</span>(new_node_ptr);<br>            		&#125;<br>          		&#125;<br>        	&#125; <span class="hljs-keyword">else</span> &#123;<br>          		next = next_ptr;<br>        	&#125;<br>      	&#125; <span class="hljs-keyword">else</span> &#123;  <span class="hljs-comment">// there is an empty slot available</span><br>        	<span class="hljs-type">int</span> dest_lane = __ffs(isEmpty &amp; SlabHashT::REGULAR_NODE_KEY_MASK) - <span class="hljs-number">1</span>;<br>        	<span class="hljs-keyword">if</span> (laneId == src_lane) &#123;<br>          		<span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>* p = (next == SlabHashT::A_INDEX_POINTER)<br>                                  		? <span class="hljs-built_in">getPointerFromBucket</span>(src_bucket, dest_lane)<br>                                  		: <span class="hljs-built_in">getPointerFromSlab</span>(next, dest_lane);<br><br>          		old_key_value_pair = <span class="hljs-built_in">atomicCAS</span>((<span class="hljs-type">unsigned</span> <span class="hljs-type">long</span> <span class="hljs-type">long</span> <span class="hljs-type">int</span>*)p,<br>                        	EMPTY_PAIR_64,<br>                        	((<span class="hljs-type">uint64_t</span>)(*<span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>*&gt;(<br>                             	<span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span>*&gt;(&amp;myValue))) &lt;&lt; <span class="hljs-number">32</span>) |<br>                            	*<span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">uint32_t</span>*&gt;(<span class="hljs-built_in">reinterpret_cast</span>&lt;<span class="hljs-type">const</span> <span class="hljs-type">unsigned</span> <span class="hljs-type">char</span>*&gt;(&amp;myKey)));<br>          		<span class="hljs-keyword">if</span> (old_key_value_pair == EMPTY_PAIR_64) &#123;<br>            		to_be_inserted = <span class="hljs-literal">false</span>;  <span class="hljs-comment">// successful insertion</span><br>            		new_insertion = <span class="hljs-literal">true</span>;<br>          		&#125;<br>    		&#125;<br>  		&#125;<br>	&#125;<br>	last_work_queue = work_queue;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<p><a name="[1]">[1]</a> <a target="_blank" rel="noopener" href="https://github.com/owensgroup/SlabHash">https://github.com/owensgroup/SlabHash</a></p>
+<p><a name="[2]">[2]</a> S. Ashkiani, M. Farach-Colton, and J. D. Owens, “A dynamic hash table for the gpu,” in 2018 IEEE International Parallel and Distributed Processing Symposium (IPDPS). IEEE, 2018, pp. 419–429.   </p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/GPGPU/" class="category-chain-item">GPGPU</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>SlabHash</div>
+      <div>http://example.com/2023/10/20/Rendering Blogs/GPGPU/SlabHash/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>October 20, 2023</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/10/22/C++/Entity%20Component%20System/" title="">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile"></span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/10/19/Rendering%20Blogs/GPGPU/Non-blocking%20Array-Based%20Stack/" title="">
+                        <span class="hidden-mobile"></span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

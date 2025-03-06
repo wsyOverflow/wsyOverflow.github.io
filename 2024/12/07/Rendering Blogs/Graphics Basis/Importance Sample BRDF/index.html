@@ -1,0 +1,743 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="Graphics, PBR">
+  
+    <meta name="description" content="1 Summary本文主要介绍微表面模型的 BRDF 的重要性采样过程，即使用重要性采样来计算渲染方程的积分。 2 Background假设如下图所示的反射过程：    Fig 1: 微表面反射图示  有渲染方程$$L_o(P, \boldsymbol{v})&#x3D;L_e(P, \boldsymbol{v})+\int_{\Omega^+}L_i(\boldsymbol{l})f(\bold">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Importance Sample BRDF">
+<meta property="og:url" content="http://example.com/2024/12/07/Rendering%20Blogs/Graphics%20Basis/Importance%20Sample%20BRDF/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 Summary本文主要介绍微表面模型的 BRDF 的重要性采样过程，即使用重要性采样来计算渲染方程的积分。 2 Background假设如下图所示的反射过程：    Fig 1: 微表面反射图示  有渲染方程$$L_o(P, \boldsymbol{v})&#x3D;L_e(P, \boldsymbol{v})+\int_{\Omega^+}L_i(\boldsymbol{l})f(\bold">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Importance%20Sample%20BRDF.assets/image-20211223113437451.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Importance%20Sample%20BRDF.assets/image-20220107210022958.png">
+<meta property="article:published_time" content="2024-12-07T07:28:51.503Z">
+<meta property="article:modified_time" content="2024-12-07T07:36:06.397Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Importance%20Sample%20BRDF.assets/image-20211223113437451.png">
+  
+  
+  
+  <title>Importance Sample BRDF - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Importance Sample BRDF"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-12-07 15:28" pubdate>
+          December 7, 2024 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.3k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          36 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Importance Sample BRDF</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-Summary"><a href="#1-Summary" class="headerlink" title="1 Summary"></a>1 Summary</h1><p>本文主要介绍微表面模型的 BRDF 的重要性采样过程，即使用重要性采样来计算渲染方程的积分。</p>
+<h1 id="2-Background"><a href="#2-Background" class="headerlink" title="2 Background"></a>2 Background</h1><p>假设如下图所示的反射过程：</p>
+<p><a name="Reflection Fig"></a></p>
+<img src="/images/Rendering Blogs/Graphics Basis/Importance Sample BRDF.assets/image-20211223113437451.png" srcset="/img/loading.gif" lazyload alt="image-20211223113437451" style="zoom:67%;">
+
+<center>Fig 1: 微表面反射图示</center>
+
+<p>有渲染方程<br>$$<br>L_o(P, \boldsymbol{v})&#x3D;L_e(P, \boldsymbol{v})+\int_{\Omega^+}L_i(\boldsymbol{l})f(\boldsymbol{l}, \boldsymbol{v}) \cos\theta_l \space d\boldsymbol{l}<br>$$</p>
+<p>其中 $P$ 为着色点，$\boldsymbol{l}$ 为入射光方向(指向光源)，$\boldsymbol{v}$ 为观察方向；第一项 $L_e$ 为着色点 $P$ 自发光，第二项为反射光，记为 $L_r$，本文主要关注第二项。第二项中 $L_i(\boldsymbol{l})$ 为入射光的属性，如颜色等；$f(\boldsymbol{l},\boldsymbol{v})$ 为 BRDF，本文只关注 microfacet BRDF。注意这里的 $\boldsymbol{l}$ 相当于单位立体角的方向，其他地方常记作 $\omega_i$ ，反射项的积分即在法线方向的半球上对立体角的积分。 </p>
+<h2 id="2-1-蒙特卡洛积分"><a href="#2-1-蒙特卡洛积分" class="headerlink" title="2.1 蒙特卡洛积分"></a>2.1 蒙特卡洛积分</h2><p>$L_r$ 积分没有解析解，直接求复杂很高，通常使用蒙特卡洛求积分的估计值。假设要求积分 $\int f(x) \space dx$，并且自变量服从一个分布 $X \sim P(x)$，概率密度为 $p(x)$。这时我们可以在积分区间内，以分布 $X \sim p(x)$ 进行很多次采样，得到 $X_1, X_2, …, X_N$。使用这些采样点可以得到积分的估计，方法如下：<br>$$<br>\int f(x) \space dx &#x3D; \int \frac{f(x)}{p(x)}\cdot p(x) \space dx&#x3D;E\left[\frac{f(x)}{p(x)}\right]<br>$$<br>我们将求积分转为了求期望 $E\left[\frac{f(x)}{p(x)}\right]$，对于期望，可以进行无偏估计(样本均值)：<br>$$<br>E\left[\frac{f(x)}{p(x)}\right] \approx \frac{1}{N}\sum\limits_{i&#x3D;1}^{N}\frac{f(X_i)}{p(X_i)}<br>$$<br>将采样点代入上式，即可得到积分的估计。</p>
+<p><strong>使用蒙特卡洛积分后的 $L_r$</strong><br>$$<br>L_r&#x3D;\int_{\Omega^+}L_i(\boldsymbol{l})f(\boldsymbol{l}, \boldsymbol{v}) \cos\theta_l \space d\boldsymbol{l}\approx\frac{1}{N}\sum\limits_{k&#x3D;1}^N\frac{L_i(\boldsymbol{l}_k)f(\boldsymbol{l}<em>k,\boldsymbol{v})\cos\theta</em>{l_k}}{p(\boldsymbol{l}_k)} \tag{1} \label{BRDF MC}<br>$$<br>想要求上述积分，除了很多采样点之外，还需要知道 $\boldsymbol{l}$ 的概率密度 $p(\boldsymbol{l})$，而这个概率密度的选取要尽量接近被积函数的分布，即采用重要性采样的思想。</p>
+<h2 id="2-2-重要性采样-5"><a href="#2-2-重要性采样-5" class="headerlink" title="2.2 重要性采样 [5]"></a>2.2 重要性采样 <a href="#%5B5%5D">[5]</a></h2><p>在蒙特卡洛积分中，采样概率密度的选取能够影响到积分结果的方差。如果选取的分布接近被积函数的分布，那么蒙特卡洛积分的收敛速度会更快。例如 $\eqref{BRDF MC}$ 的被积函数，其中有一个 $\cos\theta_l$ 项，如果采样得到的样本 $\boldsymbol{l}<em>k$ 垂直于法线，即 $\cos\theta</em>{l_k}&#x3D;0$，此时，被积函数值为 0，因此这类采样点对积分结果无任何共享。</p>
+<p>为了节省蒙特卡洛采样次数，应该避免采样到无用点，因此需要调整采样概率密度。当光源项与 BRDF 项未知时，使得采样概率密度 $p(\boldsymbol{l})$ 正比于 $\cos\theta_l$，经常称为 <strong>cosine-weighted sample hemisphere</strong>。<br>$$<br>p(\boldsymbol{l}) &#x3D; c\propto \cos\theta_l \qquad \quad where\space c &gt; 0<br>$$<br>我们还知道入射光方向分布在 hemisphere，因此概率密度在 hemisphere 范围内的积分为 1，有<br>$$<br>\begin{align}<br>\int_{\Omega^+}p(\boldsymbol{l})\space d\omega_l &amp;&#x3D; \int_{\Omega^+} c\cdot \cos\theta_l\space d\omega_l \<br>&amp;&#x3D;c\cdot \int_0^{2\pi}\int_0^{\pi&#x2F;2}\cos\theta_l\sin\theta_l\space d\theta_ld\phi_l \<br>&amp;&#x3D;c\cdot \pi &#x3D;1<br>\end{align} \label{cosine-int}\tag{1}<br>$$<br>因此 $\Large c&#x3D;\frac{1}{\pi}$，将入射方向 $\boldsymbol{l}$ 的概率密度 $p(\boldsymbol{l})$ 在<strong>数值上</strong>可按下式计算：<br>$$<br>p(\boldsymbol{l})&#x3D;\frac{1}{\pi}\cdot \cos\theta_l<br>$$</p>
+<h3 id="2-2-1-采样过程"><a href="#2-2-1-采样过程" class="headerlink" title="2.2.1 采样过程"></a>2.2.1 采样过程</h3><p>实际的采样无法直接采样立体角，需要将立体角形式的概率密度转换到球坐标的概率密度，如 $\eqref{cosine-int}$ 式的变换：<br>$$<br>p(\boldsymbol{l}) &#x3D; p_{\boldsymbol{l}}(\phi_l,\theta_l) &#x3D;\frac{1}{\pi}\cdot \cos\theta_l\cdot \sin\theta_l<br>$$</p>
+<ul>
+<li>边缘概率密度</li>
+</ul>
+<p>$\phi_l$ 的边缘概率密度为<br>$$<br>\begin{align}<br>p_{\boldsymbol{l}}(\phi_l)&amp;&#x3D; \int_0^{\frac{\pi}{2}} p_{\boldsymbol{l}}(\phi_l,\theta_l) \space d\theta_l \<br>&amp;&#x3D;\int_0^{\frac{\pi}{2}} \frac{1}{\pi}\cdot \cos\theta_l\cdot \sin\theta_l\space d\theta_l \<br>&amp;&#x3D;\frac{1}{2\pi}<br>\end{align}<br>$$<br>$\theta_l$ 的边缘概率密度为<br>$$<br>\begin{align}<br>p_{\boldsymbol{l}}(\theta_l)&amp;&#x3D;\int_0^{2\pi} p_{\boldsymbol{l}}(\phi_l,\theta_l) \space d\phi \<br>&amp;&#x3D;\int_0^{2\pi} \frac{1}{\pi}\cdot \cos\theta_l\cdot \sin\theta_l \space d\phi_l \<br>&amp;&#x3D;2\cdot\cos\theta_l\sin\theta_l<br>\end{align}<br>$$</p>
+<ul>
+<li>边缘概率分布</li>
+</ul>
+<p>$\phi_l$ 的边缘概率分布为<br>$$<br>\begin{align}<br>P_{\boldsymbol{l}}(\phi_{l_k})&amp;&#x3D;\int_0^{\phi_{l_k}} p_{\boldsymbol{l}}(\phi_l) \space d\phi_l \<br>&amp;&#x3D;\int_0^{\phi_{l_k}} \frac{1}{2\pi} \space d\phi_l \<br>&amp;&#x3D;\frac{1}{2\pi}\cdot \phi_{l_k}<br>\end{align}<br>$$</p>
+<p>$\theta_l$ 的边缘概率分布为<br>$$<br>\begin{align}<br>P_{\boldsymbol{l}}(\theta_{l_k})&amp;&#x3D;\int_0^{\theta_{l_k}} p_{\boldsymbol{l}}(\theta_l) \space d\theta_l \<br>&amp;&#x3D;\int_0^{\theta_{l_k}} 2\cdot\cos\theta_l\sin\theta_l \space d\theta_l \<br>&amp;&#x3D;1-\cos^2\theta_{l_k}<br>\end{align}<br>$$</p>
+<ul>
+<li>均匀采样变换到球坐标采样</li>
+</ul>
+<p>假设计算伪随机生成 $[0,1]\times [0,1]$ 的随机数 $x,y$，作为球坐标 $(\phi_l,\theta_l)&#x3D;(\phi_{l_k},\theta_{l_k})$ 的概率，可列<br>$$<br>\begin{cases}<br>P_{\boldsymbol{l}}(\phi_{l_k})&#x3D;\frac{1}{2\pi}\cdot \phi_{l_k}&#x3D;x \<br>P_{\boldsymbol{l}}(\theta_{l_k})&#x3D;1-\cos^2\theta_{l_k}&#x3D;y<br>\end{cases}<br>$$<br>因此有变换<br>$$<br>\begin{cases}<br>\phi_{l_k}&#x3D; 2\pi\cdot x\<br>\cos\theta_{l_k} &#x3D; \sqrt{1-y}<br>\end{cases}<br>$$</p>
+<p>对于特殊光源、特殊 BRDF，可以得到被积函数不同的近似分布，使得采样分布接近被积函数的分布。下面即介绍不同微表面 BRDF 的重要性采样。</p>
+<h2 id="2-3-Microfacet-BRDF"><a href="#2-3-Microfacet-BRDF" class="headerlink" title="2.3 Microfacet BRDF"></a>2.3 Microfacet BRDF</h2><p>这里只关注法线分布模型 NDF，微表面 BRDF 的详细细节请看 <a href="#%5B1%5D">[1]</a>，定义如下<br>$$<br>\begin{align}<br>f(\boldsymbol{l},\boldsymbol{v})&amp;&#x3D;\frac{F(\boldsymbol{l},\boldsymbol{v})\cdot G(\boldsymbol{l},\boldsymbol{v},\boldsymbol{h})\cdot D(\boldsymbol{h})}{4(\boldsymbol{n}\cdot \boldsymbol{l})(\boldsymbol{n}\cdot \boldsymbol{v})} \<br>&amp;&#x3D;\frac{F(\theta_d)\cdot G(\theta_l, \theta_v)\cdot D(\theta_h)}{4\cdot \cos\theta_l\cdot \cos\theta_v}<br>\end{align}<br>$$</p>
+<p>对于微表面分布函数，$D(\boldsymbol{h})$ 有几个重要性质：</p>
+<ul>
+<li>所有微表面的面积之和始终不小于宏观表面的单位微平面的面积</li>
+<li>所有微表面在宏观表面的单位微平面的投影面积之和为该宏观表面的单位微平面的面积，约定为 1。</li>
+</ul>
+<p>宏观表面的微平面与微表面如下图所示，</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Importance Sample BRDF.assets/image-20220107210022958.png" srcset="/img/loading.gif" lazyload alt="image-20220107210022958" style="zoom: 33%;">
+
+<p>有，<br>$$<br>\int_{\Omega^+} D(\boldsymbol{h}) \space d\boldsymbol{h} \geq 1 \tag{2} \label{NDF Int}<br>$$</p>
+<p>$$<br>\int_{\Omega^+} D(\boldsymbol{h}) \cos\theta_h \space d\boldsymbol{h} &#x3D; 1 \tag{3} \label{NDF Projected Area}<br>$$</p>
+<p><strong>因此蒙特卡洛积分重要性采样的概率密度要依据 $D(\boldsymbol{h}) \cos\theta_h$  设定</strong>，但蒙特卡洛积分是对入射光方向 $\boldsymbol{l}$，而 $D(\boldsymbol{h}) \cos\theta_h$ 是微表面法线的概率密度。但计算 BRDF 只需要关注能够反射到观察方向的入射光方向即可，而反射过程与微表面法线具有反射定律的关系，可以根据此关系推导出入射光方向 $\boldsymbol{l}$ 的概率密度。下面介绍几种微表面分布函数，</p>
+<h3 id="2-3-1-Blinn-Phong-NDF"><a href="#2-3-1-Blinn-Phong-NDF" class="headerlink" title="2.3.1 Blinn Phong NDF"></a>2.3.1 Blinn Phong NDF</h3><p>$$<br>D_p(\boldsymbol{h})&#x3D;\frac{\alpha_p+2}{2\pi}(\cos\theta_h)^{\alpha_p}<br>$$</p>
+<p>其中 $\alpha_p$ 表示表面的光滑程度，当为 $\infty$ 时，表示绝对光滑表面。该参数带来的视觉变换非常不线性，不便调控。 UE4 中使用映射 $\alpha_p&#x3D;2\alpha^{-2}-2$ ，$\alpha$ 为 roughness。</p>
+<h3 id="2-3-2-Beckmann-NDF"><a href="#2-3-2-Beckmann-NDF" class="headerlink" title="2.3.2 Beckmann NDF"></a>2.3.2 Beckmann NDF</h3><p>$$<br>D_b(\boldsymbol{h})&#x3D;\frac{1}{\pi\alpha^2(\cos\theta_h)^4}\cdot exp(\frac{\cos^2\theta_h-1}{\alpha^2\cos^2\theta_h})<br>$$</p>
+<h3 id="2-3-3-GGX-Trowbridge-Reitz-NDF"><a href="#2-3-3-GGX-Trowbridge-Reitz-NDF" class="headerlink" title="2.3.3 GGX(Trowbridge-Reitz) NDF"></a>2.3.3 GGX(Trowbridge-Reitz) NDF</h3><p>$$<br>D_{GGX}(\boldsymbol{h})&#x3D;\frac{\alpha^2}{\pi((\cos\theta_h)^2(\alpha^2-1)+1)^2}<br>$$</p>
+<h1 id="3-根据-NDF-得到蒙特卡洛积分的重要性采样概率密度"><a href="#3-根据-NDF-得到蒙特卡洛积分的重要性采样概率密度" class="headerlink" title="3 根据 NDF 得到蒙特卡洛积分的重要性采样概率密度"></a>3 根据 NDF 得到蒙特卡洛积分的重要性采样概率密度</h1><p>求 $\eqref{BRDF MC}$ 中的积分，需要一个关于入射方向的概率密度函数 $p(\boldsymbol{l})$。$p(\boldsymbol{l})$ 无法直接获取，需要通过微表面法线概率密度函数得到。 因此第一步是先求得微表面法线概率密度函数 $p(\boldsymbol{h})$。</p>
+<h2 id="3-1-NDF-到微表面法线-PDF、CDF"><a href="#3-1-NDF-到微表面法线-PDF、CDF" class="headerlink" title="3.1 NDF 到微表面法线 PDF、CDF"></a>3.1 NDF 到微表面法线 PDF、CDF</h2><p>由 $\eqref{NDF Int}$ 可知，NDF 并不是真正的概率密度函数，因为其在定义域的积分 $\geq1$ ，而 $\eqref{NDF Projected Area}$ 中的 $D(\boldsymbol{h})\cos\theta_h$ 才是真正的概率密度。对微表面法线概率密度 $p(\boldsymbol{h})$ 进行球坐标参数化有：</p>
+<p>对于 $z$ 坐标轴为宏平面法线 $\boldsymbol{n}$ 的 hemisphere，$\boldsymbol{h}$ 的球坐标为 $(\phi_h,\theta_h)$，其中 $\phi_h \in [0,2\pi],\theta_h \in [0,\pi&#x2F;2]$，并且 $\phi_h,\theta_h$ 相互独立。NDF $D(\boldsymbol{h})$ 对应的概率密度函数 PDF 为<br>$$<br>p_{\boldsymbol{h}}(\phi_h,\theta_h)&#x3D;D(\boldsymbol{h})\cos\theta_h&#x3D;D(\phi_h,\theta_h)\cos\theta_h<br>$$<br>计算机中的采样只能通过伪随机数生成服从均匀分布 $ U [0,1]$ 的采样点，需要通过变换转到服从其他分布的采样点 <a href="#%5B2%5D">[2]</a>。对于本文过程如下：在 $[0,1]\times[0,1]$ 进行均匀采样得到 $(x,y)$，用以表示采样点 $\boldsymbol{h}<em>k(\phi</em>{h_k},\theta_{h_k})$ 的概率，即<br>$$<br>P_k(\boldsymbol{h}<em>k)&#x3D;P_k(\phi</em>{h_k},\theta_{h_k})&#x3D;(x,y)<br>$$<br>$\eqref{NDF Projected Area}$ 为概率密度在随机变量的值域上的积分，将该积分的积分的微分立体角 $d\boldsymbol{h}$ 转换为球坐标有 $sin\theta_h\space d\phi_h d\theta_h$</p>
+<p>计算边缘概率密度 $p_{\boldsymbol{h}}(\phi_h),p_{\boldsymbol{h}}(\theta_h)$ 有，<br>$$<br>\begin{align}<br>p_{\boldsymbol{h}}(\phi_h) &amp;&#x3D; \int_0^{\pi&#x2F;2} p_{\boldsymbol{h}}(\phi_h,\theta_h) \sin\theta_h \space d\theta_h \<br>p_{\boldsymbol{h}}(\theta_h) &amp;&#x3D; \int_0^{2\pi} p_{\boldsymbol{h}}(\phi_h,\theta_h) \sin\theta_h \space d\phi_h<br>\end{align}<br>$$<br>再对边缘概率密度 $p_{\boldsymbol{h}}(\phi_h),p_{\boldsymbol{h}}(\theta_h)$ 进行积分得到的边缘概率分布 $P_{\boldsymbol{h}}(\phi_h),P_{\boldsymbol{h}}(\theta_h)$ 联立方程，<br>$$<br>P_{\boldsymbol{h}}(\phi_{h_k}) &#x3D; \int_0^{\phi_{h_k}} p_{\boldsymbol{h}}(\phi_h)\space d\phi_h &#x3D; x \<br>P_{\boldsymbol{h}}(\theta_{h_k}) &#x3D; \int_0^{\theta_{h_k}} p_{\boldsymbol{h}}(\theta_h)\space d\theta_h &#x3D; y<br>$$<br>即可求得方程的解 $\phi_{h_k},\theta_{h_k}$，代入得到所求概率密度 $p_k(\boldsymbol{h}<em>k) &#x3D;p <em>k(\phi</em>{h_k},\theta</em>{h_k})$。</p>
+<h2 id="3-2-常用的-NDF-到微表面法线-PDF、CDF-的推导"><a href="#3-2-常用的-NDF-到微表面法线-PDF、CDF-的推导" class="headerlink" title="3.2 常用的 NDF 到微表面法线 PDF、CDF 的推导"></a>3.2 常用的 NDF 到微表面法线 PDF、CDF 的推导</h2><p>下面按照第一小节中的步骤推导几个常用的 NDF 对应的微表面法线的概率密度函数。</p>
+<h3 id="3-2-1-Blinn-Phong-NDF-到-PDF、CDF"><a href="#3-2-1-Blinn-Phong-NDF-到-PDF、CDF" class="headerlink" title="3.2.1 Blinn Phong NDF 到 PDF、CDF"></a>3.2.1 Blinn Phong NDF 到 PDF、CDF</h3><p>Blinn Phong NDF 对应的概率密度为：<br>$$<br>p_{\boldsymbol{h}}(\theta_h,\phi_h)&#x3D;D_p(\boldsymbol{h})\cos\theta_h&#x3D;\frac{\alpha_p+2}{2\pi}(\cos\theta_h)^{\alpha_p+1}<br>$$</p>
+<ul>
+<li><p>计算边缘概率密度<br>$$<br>\begin{align}<br>p_{\boldsymbol{h}}(\phi_h) &amp;&#x3D; \int_0^{\pi&#x2F;2} p_{\boldsymbol{h}}(\phi_h,\theta_h) \sin\theta_h \space d\theta_h&#x3D;\int_0^{\pi&#x2F;2} \frac{\alpha_p+2}{2\pi}(\cos\theta_h)^{\alpha_p+1}\sin\theta_h\space d\theta_h \<br>&amp;&#x3D; -\int_0^{\pi&#x2F;2}\frac{\alpha_p+2}{2\pi}(\cos\theta_h)^{\alpha_p+1} \space d(\cos\theta_h) &#x3D; -\frac{1}{2\pi}(\cos\theta_h)^{\alpha_p+2}\bigg|_0^{\pi&#x2F;2} \<br>&amp;&#x3D; \frac{1}{2\pi}<br>\end{align}<br>$$</p>
+<p>$$<br>\begin{align}<br>p_{\boldsymbol{h}}(\theta_h) &amp;&#x3D; \int_0^{2\pi} p_{\boldsymbol{h}}(\phi_h,\theta_h) \sin\theta_h \space d\phi_h &#x3D; \int_0^{2\pi} \frac{\alpha_p+2}{2\pi}(\cos\theta_h)^{\alpha_p+1} \sin\theta_h \space d\phi_h \<br>&amp;&#x3D; (\alpha_p+2)(\cos\theta_h)^{\alpha_p+1} \sin\theta_h<br>\end{align}<br>$$</p>
+</li>
+<li><p>计算边缘概率分布<br>$$<br>\begin{align}<br>P_{\boldsymbol{h}}(\phi_{h_k}) &amp;&#x3D; \int_0^{\phi_{h_k}} p_{\boldsymbol{h}}(\phi_h)\space d\phi_h &#x3D; \int_0^{\phi_{h_k}} \frac{1}{2\pi} \space d\phi_h \<br>&amp;&#x3D; \frac{\phi_{h_k}}{2\pi}<br>\end{align}<br>$$</p>
+<p>$$<br>\begin{align}<br>P_{\boldsymbol{h}}(\theta_{h_k}) &amp;&#x3D; \int_0^{\theta_{h_k}} p_{\boldsymbol{h}}(\theta_h)\space d\theta_h &#x3D; \int_0^{\theta_{h_k}} (\alpha_p+2)(\cos\theta_h)^{\alpha_p+1} \sin\theta_h\space d\theta_h \<br>&amp;&#x3D; -\int_0^{\theta_{h_k}} (\alpha_p+2)(\cos\theta_h)^{\alpha_p+1}\space d(\cos\theta_h) &#x3D; -(\cos\theta_h)^{\alpha_p+2}\bigg|<em>0^{\theta</em>{h_k}} \<br>&amp;&#x3D; 1-(\cos\theta_{h_k})^{\alpha_p+2}<br>\end{align}<br>$$</p>
+</li>
+<li><p>根据均匀分布的采样点 $(x,y)$ 得到 Blinn Phong NDF 的采样点<br>$$<br>\begin{cases}<br>\frac{\phi_{h_k}}{2\pi} &#x3D; x \<br>1-(\cos\theta_{h_k})^{\alpha_p+2} &#x3D; y<br>\end{cases}<br>$$</p>
+<p>$$<br>\begin{cases}<br>\phi_{h_k} &#x3D; x\cdot 2\pi \<br>\cos\theta_{h_k} &#x3D; (1-y)^{\frac{1}{\alpha_p+2}}<br>\end{cases} \tag{4}\label{Blinn Phong Sampled Microface Normal}<br>$$</p>
+</li>
+</ul>
+<h3 id="3-2-2-GGX-NDF-到-PDF、CDF"><a href="#3-2-2-GGX-NDF-到-PDF、CDF" class="headerlink" title="3.2.2 GGX NDF 到 PDF、CDF"></a>3.2.2 GGX NDF 到 PDF、CDF</h3><p>GGX NDF 对应的概率密度为：<br>$$<br>p_{\boldsymbol{h}}(\theta_h,\phi_h)&#x3D;D_{GGX}(\boldsymbol{h})\cos\theta_h&#x3D;\frac{\alpha^2\cdot \cos\theta_h}{\pi((\cos\theta_h)^2(\alpha^2-1)+1)^2}<br>$$</p>
+<ul>
+<li><p>计算边缘概率密度<br>$$<br>\begin{align}<br>p_{\boldsymbol{h}}(\phi_h) &amp;&#x3D; \int_0^{\pi&#x2F;2} p_{\boldsymbol{h}}(\phi_h,\theta_h) \sin\theta_h \space d\theta_h&#x3D;\int_0^{\pi&#x2F;2} \frac{\alpha^2\cdot \cos\theta_h}{\pi((\cos\theta_h)^2(\alpha^2-1)+1)^2} \sin\theta_h \space d\theta_h \<br>&amp;&#x3D; -\int_0^{\pi&#x2F;2} \frac{\alpha^2\cdot \cos\theta_h}{\pi((\cos\theta_h)^2(\alpha^2-1)+1)^2} \space d(\cos\theta_h) \<br>&amp;&#x3D; -\frac{\alpha^2}{2\pi}\int_0^{\pi&#x2F;2} ((\cos\theta_h)^2(\alpha^2-1)+1)^{-2} \space d(\cos\theta_h)^2 \<br>&amp;&#x3D; \frac{\alpha^2}{2\pi(\alpha^2-1)}\cdot\frac{1}{(\cos\theta_h)^2(\alpha^2-1)+1}\bigg|_0^{\pi&#x2F;2} \<br>&amp;&#x3D; \frac{1}{2\pi}<br>\end{align}<br>$$</p>
+<p>$$<br>\begin{align}<br>p_{\boldsymbol{h}}(\theta_h) &amp;&#x3D; \int_0^{2\pi} p_{\boldsymbol{h}}(\phi_h,\theta_h) \sin\theta_h \space d\phi_h &#x3D; \int_0^{2\pi} \frac{\alpha^2\cdot \cos\theta_h}{\pi((\cos\theta_h)^2(\alpha^2-1)+1)^2} \sin\theta_h \space d\phi_h \<br>&amp;&#x3D; \frac{2\alpha^2\cdot\cos\theta_h\cdot\sin\theta_h}{((\cos\theta_h)^2(\alpha^2-1)+1)^2}<br>\end{align}<br>$$</p>
+</li>
+<li><p>计算边缘概率分布<br>$$<br>\begin{align}<br>P_{\boldsymbol{h}}(\phi_{h_k}) &amp;&#x3D; \int_0^{\phi_{h_k}} p_{\boldsymbol{h}}(\phi_h)\space d\phi_h &#x3D; \int_0^{\phi_{h_k}} \frac{1}{2\pi} \space d\phi_h \<br>&amp;&#x3D; \frac{\phi_{h_k}}{2\pi}<br>\end{align}<br>$$</p>
+<p>$$<br>\begin{align}<br>P_{\boldsymbol{h}}(\theta_{h_k}) &amp;&#x3D; \int_0^{\theta_{h_k}} p_{\boldsymbol{h}}(\theta_h)\space d\theta_h &#x3D; \int_0^{\theta_{h_k}} \frac{2\alpha^2\cdot\cos\theta_h\cdot\sin\theta_h}{((\cos\theta_h)^2(\alpha^2-1)+1)^2}\space d\theta_h \<br>&amp;&#x3D; -\int_0^{\theta_{h_k}} \frac{2\alpha^2\cdot\cos\theta_h}{((\cos\theta_h)^2(\alpha^2-1)+1)^2}\space d(\cos\theta_h) \<br>&amp;&#x3D; -\alpha^2\int_0^{\theta_{h_k}} \frac{1}{((\cos\theta_h)^2(\alpha^2-1)+1)^2}\space d(\cos\theta_h)^2 \<br>&amp;&#x3D; \frac{\alpha^2}{(\alpha^2-1)}\cdot\frac{1}{(\cos\theta_h)^2(\alpha^2-1)+1}\bigg|<em>0^{\theta</em>{h_k}} \<br>&amp;&#x3D; \frac{\alpha^2}{(\alpha^2-1)[(\cos\theta_{h_k})^2(\alpha^2-1)+1]}-\frac{1}{\alpha^2-1}<br>\end{align}<br>$$</p>
+</li>
+<li><p>根据均匀分布的采样点 $(x,y)$ 得到 GGX NDF 的采样点<br>$$<br>\begin{cases}<br>\frac{\phi_{h_k}}{2\pi}&#x3D;x \<br>\frac{\alpha^2}{(\alpha^2-1)[(\cos\theta_{h_k})^2(\alpha^2-1)+1]}-\frac{1}{\alpha^2-1} &#x3D; y<br>\end{cases}<br>$$</p>
+<p>$$<br>\begin{cases}<br>\phi_{h_k} &#x3D; x\cdot 2\pi \<br>\cos\theta_{h_k} &#x3D; \sqrt{\frac{1-y}{(\alpha^2-1)y+1}}<br>\end{cases} \tag{5}\label{GGX Sampled Microface Normal}<br>$$</p>
+</li>
+</ul>
+<h2 id="3-3-微表面法线概率密度函数到入射方向的概率密度（推导失败）"><a href="#3-3-微表面法线概率密度函数到入射方向的概率密度（推导失败）" class="headerlink" title="3.3 微表面法线概率密度函数到入射方向的概率密度（推导失败）"></a>3.3 微表面法线概率密度函数到入射方向的概率密度（推导失败）</h2><p>首先思考一个问题：假设已知概率密度 $p_1(u,v)$，并且存在变换 $s&#x3D;s(u,v),t&#x3D;t(u,v)$ ，求概率密度 $p_2(s,t)$ 。</p>
+<p>由概率密度在随机变量的取值空间积分为 1，设 $(u,v)\in \Omega_1$，$(s,t)\in \Omega_2$有：<br>$$<br>\begin{align}<br>\int_{\Omega_1} p_1(u,v)\space dudv &amp;&#x3D; \int_{\Omega_2} p_2(s,t)\space dsdt \<br>&amp;&#x3D; \int_{\Omega_1}p_2\Big(s(u,v),t(u,v)\Big) \space ds(u,v)dt(u,v) \<br>&amp;&#x3D; \int_{\Omega_1}p_2\Big(s(u,v),t(u,v)\Big)\left|\frac{\part (s,t)}{\part (u,v)}\right| \space dudv<br>\end{align}<br>$$<br>因此有：<br>$$<br>p_1(u,v)&#x3D;p_2\Big(s(u,v),t(u,v)\Big)\left|\frac{\part (s,t)}{\part (u,v)}\right| \tag{6} \label{Transform PDF}<br>$$<br>其中 $\Large \left|\frac{\part (s,t)}{\part (u,v)}\right|$ 为雅可比行列式的绝对值 <a href="#%5B4%5D">[4]</a>，<br>$$<br>\left|\frac{\part (s,t)}{\part (u,v)}\right|&#x3D;\left|\frac{\part s}{\part u}\cdot \frac{\part t}{\part v}-\frac{\part s}{\part v}\cdot\frac{\part t}{\part u}\right|<br>$$<br>下面只需要找到入射方向 $\boldsymbol{l}$ 与微表面法线 $\boldsymbol{h}$ 的关系即可利用 $\eqref{Transform PDF}$ 来得到入射方向的概率密度。</p>
+<p>$\boldsymbol{h}$ 的概率密度为 $p_\boldsymbol{h}(\boldsymbol{h})$，$\boldsymbol{l}$ 的概率密度为 $p_\boldsymbol{l}(\boldsymbol{l})$。对于 $z$ 坐标轴为宏平面法线 $\boldsymbol{n}$ 的 hemisphere区域 $\Omega^+$，有积分<br>$$<br>\int_{\Omega^+} p_\boldsymbol{h}(\boldsymbol{h}) \space d\boldsymbol{h}&#x3D;\int_{\Omega^+} p_\boldsymbol{l}(\boldsymbol{l}) \space d\boldsymbol{l}<br>$$</p>
+<p>使用球坐标表示有：<br>$$<br>\begin{cases}<br>\boldsymbol{l}&#x3D;(\phi_l,\theta_l) \<br>\boldsymbol{h}&#x3D;(\phi_h,\theta_h)<br>\end{cases}<br>$$</p>
+<p>$$<br>\iint_{\Omega^+} p_\boldsymbol{h}(\phi_h,\theta_h) \sin\theta_h \space d\theta_hd\phi_h&#x3D;\iint_{\Omega^+} p_\boldsymbol{l}(\phi_l,\theta_l) \sin\theta_l\space d\theta_ld\phi_l<br>$$</p>
+<p>由于 $\boldsymbol{l}$ 与 $\boldsymbol{h}$ 位于同一平面内，因此 $\phi_l&#x3D;\phi_h$；观察 [Fig 1](#Reflection Fig) 有，$\theta_l+\theta_h&#x3D;\theta_v-\theta_h \$ 。因此，<br>$$<br>\begin{cases}<br>\phi_l&#x3D;\phi_h \<br>\theta_l&#x3D;\theta_v-2\theta_h<br>\end{cases}<br>$$<br>因此雅可比行列式有：<br>$$<br>\left|\frac{\part \phi_l}{\part \phi_h}\cdot \frac{\part \theta_l}{\part\theta_h}-\frac{\part \phi_l}{\part\theta_h }\cdot \frac{\part\theta_l}{\part \phi_h}\right|&#x3D;\left|1\times(-2)-0\times 0\right|&#x3D;2<br>$$</p>
+<p>代入有：<br>$$<br>p_\boldsymbol{h}\sin\theta_h&#x3D;2\cdot p_\boldsymbol{l}\sin\theta_l \<br>p_\boldsymbol{l} &#x3D; \frac{p_\boldsymbol{h}}{2\sin\theta_l&#x2F;\sin\theta_h}<br>$$<br>????</p>
+<p><a href="#%5B3%5D">[3]</a> 通过构造新的坐标系得到<br>$$<br>p_\boldsymbol{l}(\boldsymbol{l})&#x3D;\frac{p_\boldsymbol{h}(\boldsymbol{h})}{4(\boldsymbol{l}\cdot \boldsymbol{h})}&#x3D;\frac{p_\boldsymbol{h}(\boldsymbol{h})}{4(\boldsymbol{v}\cdot \boldsymbol{h})}<br>$$</p>
+<h1 id="4-最终的渲染方程积分"><a href="#4-最终的渲染方程积分" class="headerlink" title="4 最终的渲染方程积分"></a>4 最终的渲染方程积分</h1><p>至此我们已经可以计算 $\eqref{BRDF MC}$ 的积分了，由上述可知<br>$$<br>p_{\boldsymbol{l}}(\boldsymbol{l})&#x3D;\frac{p_\boldsymbol{h}(\boldsymbol{h})}{4(\boldsymbol{v}\cdot \boldsymbol{h})}&#x3D;\frac{D(\boldsymbol{h})\cdot \cos\theta_h}{4(\boldsymbol{v}\cdot \boldsymbol{h})}<br>$$<br>$\eqref{BRDF MC}$ 中的 $p(\boldsymbol{l}<em>k)$ 即为上式的 $p</em>{\boldsymbol{l}}(\boldsymbol{l})$。假设第 $k$ 次均匀分布采样点为 $(x_k,y_k)\in[0,1]\times[0,1]$，经过 $\eqref{Blinn Phong Sampled Microface Normal}$ 与 $\eqref{GGX Sampled Microface Normal}$ 可以得到该采样点在 NDF 上对应的微表面法线 $\boldsymbol{h}_k$ ，有：<br>$$<br>p(\boldsymbol{l}_k)&#x3D;\frac{D(\boldsymbol{h}<em>k)\cdot \cos\theta</em>{h_k}}{4(\boldsymbol{v}\cdot \boldsymbol{h}_k)}&#x3D;\frac{D(\boldsymbol{h}_k)\cdot \boldsymbol{h}_k\cdot \boldsymbol{n}}{4(\boldsymbol{v}\cdot \boldsymbol{h}_k)}<br>$$<br> $\eqref{BRDF MC}$ 中第 $k$ 次采样结果代入上式有，<br>$$<br>\begin{align}<br>&amp; \frac{L_i(\boldsymbol{l}_k)f(\boldsymbol{l}<em>k,\boldsymbol{v})\cos\theta</em>{l_k}}{p(\boldsymbol{l}_k)} \<br>&amp;&#x3D; \frac{L_i(\boldsymbol{l}_k)\cdot(\boldsymbol{l}_k\cdot\boldsymbol{n})}{p(\boldsymbol{l}_k)}\cdot \frac{F(\boldsymbol{l}_k,\boldsymbol{v})\cdot G(\boldsymbol{l}_k,\boldsymbol{v},\boldsymbol{h}_k)\cdot D(\boldsymbol{h}_k)}{4(\boldsymbol{n}\cdot \boldsymbol{l}_k)(\boldsymbol{n}\cdot \boldsymbol{v})} \<br>&amp;&#x3D; \frac{L_i(\boldsymbol{l}_k)\cdot(\boldsymbol{l}_k\cdot\boldsymbol{n})}{\frac{D(\boldsymbol{h}_k)\cdot (\boldsymbol{h}_k\cdot \boldsymbol{n})}{4\boldsymbol{v}\cdot \boldsymbol{h}_k}}\cdot \frac{F(\boldsymbol{l}_k,\boldsymbol{v})\cdot G(\boldsymbol{l}_k,\boldsymbol{v},\boldsymbol{h}_k)\cdot D(\boldsymbol{h}_k)}{4(\boldsymbol{n}\cdot \boldsymbol{l}_k)(\boldsymbol{n}\cdot \boldsymbol{v})} \<br>&amp;&#x3D; \frac{L_i(\boldsymbol{l}_k)\cdot(\boldsymbol{v}\cdot \boldsymbol{h}_k)}{(\boldsymbol{h}_k\cdot \boldsymbol{n})}\cdot \frac{F(\boldsymbol{l}_k,\boldsymbol{v})\cdot G(\boldsymbol{l}_k,\boldsymbol{v},\boldsymbol{h}_k)}{(\boldsymbol{n}\cdot \boldsymbol{v})} \<br>&amp;&#x3D; \frac{L_i(\boldsymbol{l}_k)\cdot F(\boldsymbol{l}_k,\boldsymbol{v})\cdot G(\boldsymbol{l}_k,\boldsymbol{v},\boldsymbol{h}_k)\cdot (\boldsymbol{v}\cdot \boldsymbol{h}_k)}{(\boldsymbol{h}_k\cdot \boldsymbol{n})\cdot (\boldsymbol{n}\cdot \boldsymbol{v})}<br>\end{align}<br>$$<br>由上式可知，最终 BRDF 中的 NDF 项被舍去。</p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a name="[1]">[1]</a> [Real-Time Physically Based Material Basics](.&#x2F;2. Real-Time Physically Based Material Basics)</p>
+<p><a name="[2]">[2]</a> [Introduction of Sampling in Computer](..&#x2F;Sample Algorithm&#x2F;2. Introduction of Sampling in Computer.md)</p>
+<p><a name="[3]">[3]</a> <a target="_blank" rel="noopener" href="https://www.graphics.cornell.edu/~bjw/wardnotes.pdf">https://www.graphics.cornell.edu/~bjw/wardnotes.pdf</a></p>
+<p><a name="[4]">[4]</a> [Jacobian Matrix](..&#x2F;Math&#x2F;Jacobian Matrix.md)</p>
+<p><a name="[5]">[5]</a> <a target="_blank" rel="noopener" href="https://www.pbr-book.org/3ed-2018/Monte_Carlo_Integration/Importance_Sampling#sec:importance-sampling">https://www.pbr-book.org/3ed-2018/Monte_Carlo_Integration/Importance_Sampling#sec:importance-sampling</a></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/PBR/" class="category-chain-item">PBR</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Importance Sample BRDF</div>
+      <div>http://example.com/2024/12/07/Rendering Blogs/Graphics Basis/Importance Sample BRDF/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>December 7, 2024</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/03/04/Render%20Engine/UE5/Mesh%20Drawing%20Pipeline/" title="">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile"></span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2024/12/07/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination/" title="Radiance Caching with On-Surface Caches for Real-Time Global Illumination">
+                        <span class="hidden-mobile">Radiance Caching with On-Surface Caches for Real-Time Global Illumination</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

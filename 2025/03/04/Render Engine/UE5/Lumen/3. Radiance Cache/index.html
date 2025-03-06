@@ -1,0 +1,903 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="Render Engine, UE5">
+  
+    <meta name="description" content="1 概述Lumen 中的 radiance cache 是基于 world probe 实现的，与 DDGI 不同，radiance cache probe 仅用于补充世界空间的 radiance 信息，例如 screen probe、reflection 的光线样本都有可能采样到 radiance cache。 LumenRadianceCache::UpdateRadianceCaches为r">
+<meta property="og:type" content="article">
+<meta property="og:title" content="3. Lumen - Radiance Cache">
+<meta property="og:url" content="http://example.com/2025/03/04/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 概述Lumen 中的 radiance cache 是基于 world probe 实现的，与 DDGI 不同，radiance cache probe 仅用于补充世界空间的 radiance 信息，例如 screen probe、reflection 的光线样本都有可能采样到 radiance cache。 LumenRadianceCache::UpdateRadianceCaches为r">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/image-20250214104203219.png">
+<meta property="og:image" content="http://example.com/images/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/image-20250214104350600.png">
+<meta property="og:image" content="http://example.com/images/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/v2-10d3d573f85b66583a847b8653946aa8_r.jpg">
+<meta property="article:published_time" content="2025-03-04T13:54:00.076Z">
+<meta property="article:modified_time" content="2025-03-06T13:13:20.126Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/image-20250214104203219.png">
+  
+  
+  
+  <title>3. Lumen - Radiance Cache - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="3. Lumen - Radiance Cache"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-03-04 21:54" pubdate>
+          March 4, 2025 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.9k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          33 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">3. Lumen - Radiance Cache</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-概述"><a href="#1-概述" class="headerlink" title="1 概述"></a>1 概述</h1><p>Lumen 中的 radiance cache 是基于 world probe 实现的，与 DDGI 不同，radiance cache probe 仅用于补充世界空间的 radiance 信息，例如 screen probe、reflection 的光线样本都有可能采样到 radiance cache。</p>
+<p><code>LumenRadianceCache::UpdateRadianceCaches</code>为radiance cache更新入口，被IrradianceFieldGather、ScreenProbe、TranslucencyVolumeLighting三处调用到，其中IrradianceFieldGather与ScreenProbe是为像素提供indirect diffuse的两种方式，本文仅讲述 ScreenProbe 部分的调用。</p>
+<h1 id="2-宏观逻辑"><a href="#2-宏观逻辑" class="headerlink" title="2 宏观逻辑"></a>2 宏观逻辑</h1><h1 id="3-实现"><a href="#3-实现" class="headerlink" title="3 实现"></a>3 实现</h1><h2 id="3-1-层级分布"><a href="#3-1-层级分布" class="headerlink" title="3.1 层级分布"></a>3.1 层级分布</h2><p>radiance cache 的 world probe 是基于 clipmap 的分布方式</p>
+<h3 id="3-1-1-Clipmap-介绍"><a href="#3-1-1-Clipmap-介绍" class="headerlink" title="3.1.1 Clipmap 介绍"></a>3.1.1 Clipmap 介绍</h3><p>Clipmap <a href="#%5B1%5D">[1]</a>  提出是为了解决mipmap的内存开销问题，一个非常大的mipmap实际渲染中，只会根据相机视角用到很小的部分。Clipmap的字面意思就是将原 mipmap 裁剪得到一个将会被使用的较小区域，物理显存中只会维持这个区域，根据视角加载原mipmap的相关数据。下面左图是mipmap执行clip操作的示意图，右图是clipmap的两部分，</p>
+<ul>
+<li>Clipmap Stack：层级大小超过clip size，这部分不同层的大小都是 clip size</li>
+<li>Clipmap Pyramid：层级大小低于clip size，这部分不同层的大小与原mipmap对应层级相同</li>
+</ul>
+<img src="/images/Render Engine/UE5/Lumen/3. Radiance Cache/image-20250214104203219.png" srcset="/img/loading.gif" lazyload alt="image-20250214104203219" style="zoom:80%;">
+
+<p>在clipmap stack部分，虽然每一层级的大小都相同，但覆盖范围会越来越大。在视角移动加载数据时，clipmap使用环形寻址的方式来避免多次加载相同的数据，如下示意图，</p>
+<img src="/images/Render Engine/UE5/Lumen/3. Radiance Cache/image-20250214104350600.png" srcset="/img/loading.gif" lazyload alt="image-20250214104350600" style="zoom:80%;">
+
+<h3 id="3-1-2-World-Probe-的-3D-clipmap-结构"><a href="#3-1-2-World-Probe-的-3D-clipmap-结构" class="headerlink" title="3.1.2 World Probe 的 3D clipmap 结构"></a>3.1.2 World Probe 的 3D clipmap 结构</h3><p>二维clipmap中的一个texel在3D clipmap中对应一个3D cell (probe)，world probe 的3D clipmap结构是以相机为中心的包围盒区域，每个层级的probe数量相同，但覆盖范围不同，也就是层级越高的grid对应的3D区域越大。</p>
+<img src="/images/Render Engine/UE5/Lumen/3. Radiance Cache/v2-10d3d573f85b66583a847b8653946aa8_r.jpg" srcset="/img/loading.gif" lazyload alt="v2-10d3d573f85b66583a847b8653946aa8_r" style="zoom:67%;">
+
+<p>world probe 的分布记录在 <code>FRadianceCacheState</code> 的下面成员中，<code>UpdateRadianceCacheState</code>负责 world probe 的层级分布的更新。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c++">TArray&lt;FRadianceCacheClipmap&gt; Clipmaps;<br><span class="hljs-type">float</span> ClipmapWorldExtent = <span class="hljs-number">0.0f</span>;	<span class="hljs-comment">// 覆盖范围的一半</span><br><span class="hljs-type">float</span> ClipmapDistributionBase = <span class="hljs-number">0.0f</span>;<br></code></pre></td></tr></table></figure>
+
+<p>clipmap的层级数量、每一层级的grid数量以及每一层级的覆盖范围，都有对应命令行调整</p>
+<table>
+<thead>
+<tr>
+<th>cmd</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>r.Lumen.ScreenProbeGather.RadianceCache.NumClipmaps</td>
+<td>int32</td>
+<td>一共多少层级</td>
+</tr>
+<tr>
+<td>r.Lumen.ScreenProbeGather.RadianceCache.ClipmapWorldExtent</td>
+<td>float</td>
+<td>0级覆盖的世界范围的一半，立方体区域</td>
+</tr>
+<tr>
+<td>r.Lumen.ScreenProbeGather.RadianceCache.ClipmapDistributionBase</td>
+<td>float</td>
+<td>0级之后的世界范围指数增长的base，即 extent * pow(level)</td>
+</tr>
+<tr>
+<td>r.Lumen.ScreenProbeGather.RadianceCache.GridResolution</td>
+<td>int32</td>
+<td>每一层的probe数量，每个维度probe数量相同</td>
+</tr>
+</tbody></table>
+<p>下面是基于这些配置参数对层级分布的更新，主要是以相机位置为中心构建clipmap空间。一个clipmap空间，坐标单位是CellSize，原点为 clipmap 起点，中心点为相机所位于cell的中心。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-keyword">class</span> <span class="hljs-title class_">FRadianceCacheClipmap</span><br>&#123;<br><span class="hljs-keyword">public</span>:<br>	FVector Center; 	<span class="hljs-comment">// clipmap 包围盒</span><br>	<span class="hljs-type">float</span> Extent;<br><br>	FVector3f CornerTranslatedWorldSpace;	<span class="hljs-comment">// clipmap 包围盒起点相对于相机中心点的偏移，一个世界坐标点可通过此偏移变换到clipmap空间下</span><br><br>	<span class="hljs-type">float</span> ProbeTMin;	<span class="hljs-comment">// 用于光追</span><br><br>	<span class="hljs-comment">/** Offset applied to UVs so that only new or dirty areas of the volume texture have to be updated. */</span><br>	FVector VolumeUVOffset;<br>	<span class="hljs-type">float</span> CellSize;		<span class="hljs-comment">// 两个相邻 probe 之间的距离</span><br>&#125;;<br></code></pre></td></tr></table></figure>
+
+<p>相机位置 NewViewOrigin，各成员计算为</p>
+<ul>
+<li>Center &#x3D; SnappedOrigin &#x3D; floor(NewViewOrigin &#x2F; CellSize) * CellSize，相机位置对齐到 CellSize 的世界坐标</li>
+<li>Extent：clipmap 包围盒范围的一半</li>
+<li>CornerTranslatedWorldSpace：SnappedOrigin - 0.5 * CellSize - Extent + PreViewTranslation<br>clipmap 的起始位置，再偏移 0.5 * CellSize 到 cell 中心点，也就是以起点为原点的坐标系的偏移量</li>
+<li>ProbeTMin：用于光追 TMin，CellLength * ProbeTMinScale (半透明情况下ProbeTMinScale 为 1，否则为 0.1)</li>
+</ul>
+<h3 id="3-1-3-shader-中的-clipmap-变换"><a href="#3-1-3-shader-中的-clipmap-变换" class="headerlink" title="3.1.3 shader 中的 clipmap 变换"></a>3.1.3 shader 中的 clipmap 变换</h3><h4 id="3-1-3-1-ProbeCoord-ProbeWorldPosition"><a href="#3-1-3-1-ProbeCoord-ProbeWorldPosition" class="headerlink" title="3.1.3.1 ProbeCoord &lt;-&gt; ProbeWorldPosition"></a>3.1.3.1 ProbeCoord &lt;-&gt; ProbeWorldPosition</h4><p>有了clipmap，在 shader 可以将一个世界坐标变换为指定层级的clipmap空间下 probe coord，以及将 probe coord 变换到世界空间下，例如</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function">float3 <span class="hljs-title">GetRadianceProbeCoordFloat</span><span class="hljs-params">(float3 ProbeWorldPosition, uint ClipmapIndex)</span></span><br><span class="hljs-function"></span>&#123;<br>	<span class="hljs-type">const</span> float3 ProbeTranslatedWorldPosition = ProbeWorldPosition + <span class="hljs-built_in">DFHackToFloat</span>(PrimaryView.PreViewTranslation);<br><br>	<span class="hljs-type">const</span> float3 CornerTranslatedWorldPosition = <span class="hljs-built_in">GetRadianceProbeClipmapCornerTWS</span>(ClipmapIndex);<br>	<span class="hljs-type">const</span> float3 CornerToProbe = ProbeTranslatedWorldPosition - CornerTranslatedWorldPosition;<br>	<span class="hljs-type">const</span> <span class="hljs-type">float</span> CellSize = <span class="hljs-built_in">GetRadianceProbeClipmapCellSize</span>(ClipmapIndex);<br>	<span class="hljs-keyword">return</span> CornerToProbe / CellSize;<br>&#125;<br><br><span class="hljs-function">float3 <span class="hljs-title">GetProbeTranslatedWorldPositionNoOffset</span><span class="hljs-params">(uint3 ProbeCoord, uint ClipmapIndex)</span></span><br><span class="hljs-function"></span>&#123;<br>	<span class="hljs-type">const</span> float3 CornerTranslatedWorldPosition = <span class="hljs-built_in">GetRadianceProbeClipmapCornerTWS</span>(ClipmapIndex);<br>	<span class="hljs-type">const</span> <span class="hljs-type">float</span> CellSize = <span class="hljs-built_in">GetRadianceProbeClipmapCellSize</span>(ClipmapIndex);<br><br>	<span class="hljs-type">const</span> float3 CornerToProbe = (ProbeCoord + <span class="hljs-number">0.5</span>) * CellSize;<br>	<span class="hljs-keyword">return</span> CornerTranslatedWorldPosition + CornerToProbe;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<h4 id="3-1-3-2-查找给定WorldPosition"><a href="#3-1-3-2-查找给定WorldPosition" class="headerlink" title="3.1.3.2 查找给定WorldPosition"></a>3.1.3.2 查找给定WorldPosition</h4><p>对于一个被 level i 覆盖的世界坐标，肯定会被后续大于 i 层级覆盖，那么到底采样哪一层级？优先选择最低层级，因此在仅给定世界坐标来获取probe coord以及层级时，从最低层级到最高层级依次遍历，直至找到覆盖该坐标的层级为止。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function">FRadianceProbeCoord <span class="hljs-title">GetRadianceProbeCoord</span><span class="hljs-params">(float3 WorldPosition, <span class="hljs-type">float</span> ClipmapDitherRandom)</span></span><br><span class="hljs-function"></span>&#123;<br>	FRadianceProbeCoord Out = (FRadianceProbeCoord)<span class="hljs-number">0</span>;<br>	Out.ClipmapIndex = NumRadianceProbeClipmapsForMark;<br><br>	uint ClipmapIndex = <span class="hljs-number">0</span>;<br>	<span class="hljs-keyword">for</span> (; ClipmapIndex &lt; NumRadianceProbeClipmapsForMark; ++ClipmapIndex) &#123;<br>		float3 ProbeCoordFloat = <span class="hljs-built_in">GetRadianceProbeCoordFloatForMark</span>(WorldPosition, ClipmapIndex);<br>		float3 BottomEdgeFades = <span class="hljs-built_in">saturate</span>((ProbeCoordFloat - <span class="hljs-number">.5f</span>) * InvClipmapFadeSizeForMark);<br>		float3 TopEdgeFades = <span class="hljs-built_in">saturate</span>(((float3)RadianceProbeClipmapResolutionForMark - <span class="hljs-number">.5f</span> - ProbeCoordFloat) * InvClipmapFadeSizeForMark);<br>		<span class="hljs-type">float</span> EdgeFade = <span class="hljs-built_in">min</span>(<span class="hljs-built_in">min3</span>(BottomEdgeFades.x, BottomEdgeFades.y, BottomEdgeFades.z), <span class="hljs-built_in">min3</span>(TopEdgeFades.x, TopEdgeFades.y, TopEdgeFades.z));<br><br>		int3 ProbeMinCoord;<br>		int3 ProbeMaxCoord;<br>		ProbeMinCoord = <span class="hljs-built_in">floor</span>(ProbeCoordFloat - <span class="hljs-number">0.5f</span>);<br>		ProbeMaxCoord = ProbeMinCoord + <span class="hljs-number">1</span>;<br><br>		<span class="hljs-keyword">if</span> (EdgeFade &gt; ClipmapDitherRandom) &#123;<br>			Out.ProbeMinCoord = ProbeMinCoord;<br>			Out.ProbeMaxCoord = ProbeMaxCoord;<br>			Out.ClipmapIndex  = ClipmapIndex;<br>			<span class="hljs-keyword">return</span> Out;<br>		&#125;<br>	&#125;<br>	<span class="hljs-keyword">return</span> Out;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>在实际实现中，相邻两个层级的边界上由于层级跳变，效果上会出现明显的边界感。因此在层级边缘会设置一定范围的fade区域，当采样到fade区域时，会引入一个抖动值 <code>ClipmapDitherRandom</code>。fade 区域定义为距clipmap边界的grid单位，默认 <code>GLumenTranslucencyVolumeRadianceCacheClipmapFadeSize(4)</code>，上述中的 <code>InvClipmapFadeSizeForMark</code> 为倒数：</p>
+<ul>
+<li>当不在fade区域时，EdgeFade &gt;&#x3D; 1，EdgeFade &gt; ClipmapDitherRandom 恒为 true</li>
+<li>当在fade区域时，EdgeFade &lt; 1，最终在上下相邻层级中随机采样一个</li>
+</ul>
+<h2 id="3-2-构建probe更新列表"><a href="#3-2-构建probe更新列表" class="headerlink" title="3.2 构建probe更新列表"></a>3.2 构建probe更新列表</h2><h3 id="3-2-1-indirect-数据更新"><a href="#3-2-1-indirect-数据更新" class="headerlink" title="3.2.1 indirect 数据更新"></a>3.2.1 indirect 数据更新</h3><p>DDGI 的world probe负责插值得到某一点的irradiance，同时在计算光线radiance时还会采样上一帧的irradiance来近似无限反弹的结果，这意味着像素会采样周围probe得到其接收的间接 irradiance，而次级反射点同样需要采样其周围world probe。在 Lumen 里，无限反弹由 surface cache 的 radiosity 部分完成，radiance cache probe 的 radiance 来采样 surface cache 得到的，已经具有无限反弹的结果，因此只需要更新被使用到的 probe。</p>
+<p>在标记使用状态之前，先将 <code>RadianceProbeIndirectionTexture</code> 中的每个probe状态重置为 <code>INVALID_PROBE_INDEX</code>。RadianceProbeIndirectionTexture 是一个 3D texture，记录了所有clipmap层级的每个probe的使用状态。每个层级的probe数量相同，在 x 维度逐层级并排排列在贴图中，假如 probe 数量为 48x48x48，有层级0 [0<del>47, 0</del>47, 0<del>47]，层级 1 [48</del>95, 0<del>47, 0</del>47]。</p>
+<p><code>ScreenGatherMarkUsedProbes</code>表示被screen probe使用到的 world probe，主要实现在 shader <code>MarkRadianceProbesUsedByScreenProbesCS</code>中，遍历每个screen probe：</p>
+<ul>
+<li><p>通过变换得到 screen probe 的 WorldPosition</p>
+</li>
+<li><p>获取覆盖screen probe的最小clipmap层级<br><code>uint ClipmapIndex = GetRadianceProbeClipmapForMark(WorldPosition, 0);</code></p>
+</li>
+<li><p>层级有效，在 indirection texture 将包裹screen probe的 8 个 world probes 标记为使用状态</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function"><span class="hljs-type">void</span> <span class="hljs-title">MarkPositionUsedInIndirectionTexture</span><span class="hljs-params">(float3 WorldPosition, uint ClipmapIndex)</span></span><br><span class="hljs-function"></span>&#123;<br>	float3 ProbeCoordFloat = <span class="hljs-built_in">GetRadianceProbeCoordFloatForMark</span>(WorldPosition, ClipmapIndex);<br>	int3 BottomCornerProbeCoord = <span class="hljs-built_in">floor</span>(ProbeCoordFloat - <span class="hljs-number">0.5f</span>);<br><br>	<span class="hljs-built_in">MarkProbeIndirectionTextureCoord</span>(BottomCornerProbeCoord + <span class="hljs-built_in">int3</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>), ClipmapIndex);<br>	<span class="hljs-built_in">MarkProbeIndirectionTextureCoord</span>(BottomCornerProbeCoord + <span class="hljs-built_in">int3</span>(<span class="hljs-number">0</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>), ClipmapIndex);<br>	<span class="hljs-built_in">MarkProbeIndirectionTextureCoord</span>(BottomCornerProbeCoord + <span class="hljs-built_in">int3</span>(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>), ClipmapIndex);<br>	<span class="hljs-built_in">MarkProbeIndirectionTextureCoord</span>(BottomCornerProbeCoord + <span class="hljs-built_in">int3</span>(<span class="hljs-number">0</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>), ClipmapIndex);<br>	<span class="hljs-built_in">MarkProbeIndirectionTextureCoord</span>(BottomCornerProbeCoord + <span class="hljs-built_in">int3</span>(<span class="hljs-number">1</span>, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>), ClipmapIndex);<br>	<span class="hljs-built_in">MarkProbeIndirectionTextureCoord</span>(BottomCornerProbeCoord + <span class="hljs-built_in">int3</span>(<span class="hljs-number">1</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>), ClipmapIndex);<br>	<span class="hljs-built_in">MarkProbeIndirectionTextureCoord</span>(BottomCornerProbeCoord + <span class="hljs-built_in">int3</span>(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">0</span>), ClipmapIndex);<br>	<span class="hljs-built_in">MarkProbeIndirectionTextureCoord</span>(BottomCornerProbeCoord + <span class="hljs-built_in">int3</span>(<span class="hljs-number">1</span>, <span class="hljs-number">1</span>, <span class="hljs-number">1</span>), ClipmapIndex);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>结果记录到 <code>RadianceProbeIndirectionTexture</code> 中，对应位置设置为 USED_PROBE_INDEX。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">int3 IndirectionTextureCoord = ProbeCoord + <span class="hljs-built_in">int3</span>(ClipmapIndex * RadianceProbeClipmapResolutionForMark, <span class="hljs-number">0</span>, <span class="hljs-number">0</span>);<br>RWRadianceProbeIndirectionTexture[IndirectionTextureCoord] = USED_PROBE_INDEX;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="3-2-2-Probe重用、分配与释放"><a href="#3-2-2-Probe重用、分配与释放" class="headerlink" title="3.2.2 Probe重用、分配与释放"></a>3.2.2 Probe重用、分配与释放</h3><p>整个clipmap的probe数量比较多，但只会更新其中一部分，如果按照clipmap分布为所有probe分配数据会非常浪费。因此使用buffer来紧凑管理需要分配数据存储的probe列表。<code>RWProbeFreeList</code> 存放空闲的probe数据索引，可使用时从中申请以及释放时归还，其中的 ProbeIndex 唯一标识probe的数据位置，包括：</p>
+<ul>
+<li>RWProbeLastUsedFrame[ProbeIndex] 记录probe上次使用的帧数</li>
+<li>光追结果 RadianceProbeAtlasTexture, DepthProbeAtlasTexture 等等</li>
+</ul>
+<h4 id="3-2-2-1-上一帧-Probe-重用与释放"><a href="#3-2-2-1-上一帧-Probe-重用与释放" class="headerlink" title="3.2.2.1 上一帧 Probe 重用与释放"></a>3.2.2.1 上一帧 Probe 重用与释放</h4><p>如前所述，clipmap以相机为中心，会随着相机的移动而移动，往往上一帧的clipmap与当前帧有重叠，因此可以重用这部分probe。主要实现在 shader <code>UpdateCacheForUsedProbesCS</code>中，遍历每个LastFrameProbe：</p>
+<ol>
+<li>当前遍历的 ClipmapIndex 以及 LastFrameProbeCoord可以从线程ID中得到</li>
+<li>LastFrameProbeCoord -&gt; ProbeTranslatedWorldPosition -&gt; ProbeCoord 变换到当前帧clipmap下<ul>
+<li>从 LastFrameRadianceProbeIndirectionTexture 中得到 <code>LastFrameProbeIndex</code> (probe唯一ID，分配得到的，非变换得到)</li>
+<li>使用上一帧的clipmap变换，得到probe世界坐标 <code>ProbeTranslatedWorldPosition</code>，再变换到当前帧的clipmap中，得到 <code>ProbeCoord</code>。ProbeCoord有效，表示上一帧probe也在当前帧clipmap中，继续执行重用逻辑</li>
+</ul>
+</li>
+<li>按照 probe 在当前帧是否被使用到以及其中数据是否过旧来更新重用状态<ul>
+<li>从 RadianceProbeIndirectionTexture 得到当前帧probe的<code>ProbeUsedMarker</code></li>
+<li>probe上次更新帧数<code>LastUsedFrameNumber = RWProbeLastUsedFrame[LastFrameProbeIndex]</code></li>
+<li>probe 被当前帧使用或者<code>(FrameNumber - LastUsedFrameNumber)</code>在阈值范围内<ul>
+<li>标记为重用 bReused &#x3D; true</li>
+<li>将 LastFrameProbeIndex 分配给当前帧probe，更新到 RadianceProbeIndirectionTexture 中</li>
+<li>被当前帧使用，则更新 <code>RWProbeLastUsedFrame[LastFrameProbeIndex] = FrameNumber</code></li>
+</ul>
+</li>
+</ul>
+</li>
+<li>如果上一帧probe没有被重用，则释放probe索引 LastFrameProbeIndex，归还到 RWProbeFreeList 中</li>
+</ol>
+<h4 id="3-2-2-2-Probe-分配索引、优先级与开销预算评估"><a href="#3-2-2-2-Probe-分配索引、优先级与开销预算评估" class="headerlink" title="3.2.2.2 Probe 分配索引、优先级与开销预算评估"></a>3.2.2.2 Probe 分配索引、优先级与开销预算评估</h4><p>处理完上一帧probe，接下来需要为当前帧被使用到的probe分配数据索引。这部分在 shader <code>AllocateUsedProbesCS</code>中，遍历 RadianceProbeIndirectionTexture 的每个texel的ProbeUsedMarker：</p>
+<ul>
+<li>当前probe被使用到，还未被分配数据索引 (ProbeUsedMarker &#x3D;&#x3D; USED_PROBE_INDEX)。从 ProbeFreeList 中分配一个ProbeIndex</li>
+<li>否则表示，当前probe为重用probe，已有数据索引，即 ProbeIndex&#x3D;ProbeUsedMarker</li>
+<li>每帧trace更新probe的开销是有限的，因此需要评估probe的更新优先级以及trace开销<ul>
+<li>更新优先级，基于 LastTracedFrameIndex, LastUsedFrameIndex, ClipmapIndex 来划分PriorityBucketIndex，bucket越靠前优先级越高。<code>GetPriorityBucketIndex</code><ul>
+<li>如果probe从未trace过，返回 bucket 0</li>
+<li>否则，根据“clipmap层级越高重要性越低”、”经历越久帧未trace，优先级越高“来确定 UpdateImportance，最终得到 BucketIndex</li>
+</ul>
+</li>
+<li>ProbeTraceCost：probe的光线样本分辨率不同，根据probe到相机的距离具有不同的trace cost<ul>
+<li>如果低于 SupersampleDistanceFromCameraSq 为16</li>
+<li>如果低于 DownsampleDistanceFromCameraSq 为 4</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>累积 trace cost，<code>RWPriorityHistogram[PriorityBucketIndex] += ProbeTraceCost</code></li>
+</ul>
+<p>这里通过probe的上次trace帧、上次使用帧以及层级，将probe映射到bucket中，得到了一个不严格的优先级列表 <code>RWPriorityHistogram</code>。</p>
+<h3 id="3-2-3-为预算内的probe构建-trace-data"><a href="#3-2-3-为预算内的probe构建-trace-data" class="headerlink" title="3.2.3 为预算内的probe构建 trace data"></a>3.2.3 为预算内的probe构建 trace data</h3><h4 id="3-2-3-1-为probe创建trace-data"><a href="#3-2-3-1-为probe创建trace-data" class="headerlink" title="3.2.3.1 为probe创建trace data"></a>3.2.3.1 为probe创建trace data</h4><p>首先基于probe的trace cost优先级队列 <code>RWPriorityHistogram</code>，确定更新预算内的bucket。在 shader <code>SelectMaxPriorityBucketCS</code> 中，按照bucket从前往后累积 trace cost，直至达到预设 NumTracesBudget，即查找到最后一个更新的bucket <code>MaxUpdateBucketIndex</code>，以及记录最后一个bucket剩余多少trace cost <code>MaxTracesFromMaxUpdateBucket</code>。</p>
+<p>在 shader <code>AllocateProbeTracesCS</code> 中，遍历 RadianceProbeIndirectionTexture 每个texel，对于分配ProbeIndex的probe：</p>
+<ul>
+<li>以同样的方式得到 probe 的 ProbeTraceCost, PriorityBucketIndex</li>
+<li>位于更新开销内的probe (<code>PriorityBucketIndex &lt;= MaxUpdateBucketIndex</code>)<ul>
+<li>如果 probe 位于最后一个bucket中MaxUpdateBucketIndex，还需要判断是否已消耗完最后一个bucket的剩余预算，已消耗完则不进行trace</li>
+<li>为能够 trace 的probe分配 TraceIndex：<ul>
+<li>累积 ProbeTraceCost 到 ProbesToUpdateTraceCost[0]</li>
+<li>构建 trace data <code>RWProbeTraceData[TraceIndex] = float4(ProbeWorldPosition, asfloat((ClipmapIndex &lt;&lt; 24) | ProbeIndex));</code></li>
+<li>更新trace帧 <code>RWProbeLastTracedFrame[ProbeIndex] = FrameNumber;</code></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<p>按照预算开销，构建了要执行trace的probe列表 RWProbeTraceData，其中每个元素打包了 ProbeWorldPosition, ClipmapIndex, ProbeIndex。</p>
+<h4 id="3-2-3-2-probe-偏移与PDF估计"><a href="#3-2-3-2-probe-偏移与PDF估计" class="headerlink" title="3.2.3.2 probe 偏移与PDF估计"></a>3.2.3.2 probe 偏移与PDF估计</h4><p>避免probe距物体表面过近，会为每个需要trace的probe计算一个偏移量，实现在 shader <code>ComputeProbeWorldOffsetsCS</code> 中。主要思想是，通过查询 SDF 可以得知 probe 位置到最近表面的距离，若距离小于阈值，则：</p>
+<ul>
+<li>每个group负责一个probe trace data</li>
+<li>将一个cell划分为 4x4x4 voxels， 在不同的 voxels 方向上对于 probe 位置施加一个偏移量，再次查询SDF最近距离</li>
+<li>在所有查询结果中，取偏最近距离最大的一个偏移量</li>
+</ul>
+<p>world probe 在不同的方向上重要性不同，后面会根据重要性来执行超采样逻辑，即具有更高分辨率的光线样本。重要性的其中一方面是需要PDF估计，这里使用screen probe的数据来评估world probe pdf。具体做法在 shader<code>ScatterScreenProbeBRDFToRadianceProbesCS</code>中，通过将 screen probe 的BRDF扩散到其周围的8个world probe实现：</p>
+<ul>
+<li>每个group负责一个screen probe</li>
+<li>根据 screen probe 的 WorldPosition 可以查询到其周围8个world probe。得到最小的 BottomCornerProbeCoord，再加上 <code>int3(GroupThreadId.x &amp; 0x1, (GroupThreadId.x &amp; 0x2) &gt;&gt; 1, (GroupThreadId.x &amp; 0x4) &gt;&gt; 2)</code>，就可以定位其中一个probe</li>
+<li>通过 <code>RadianceProbeIndirectionTexture</code> 查找到 ProbeIndex</li>
+<li>ProbeIndex 可以找到 probe 的SH数据位置，将screen probe的SH系数<code>BRDFProbabilityDensityFunctionSH</code>累加到 <code>RWRadianceProbeSH_PDF</code></li>
+</ul>
+<h2 id="3-3-构建用于更新probe的trace-tile"><a href="#3-3-构建用于更新probe的trace-tile" class="headerlink" title="3.3 构建用于更新probe的trace tile"></a>3.3 构建用于更新probe的trace tile</h2><h3 id="3-3-1-创建-probe-trace-tile-列表"><a href="#3-3-1-创建-probe-trace-tile-列表" class="headerlink" title="3.3.1 创建 probe trace tile 列表"></a>3.3.1 创建 probe trace tile 列表</h3><p>前面讲到 world probe 会根据重要性来执行超采样而达到更高分辨率的光线样本，主要是通过对probe trace tile进行不同的层级划分实现的，实现在 shader <code>GenerateProbeTraceTilesCS</code>：</p>
+<ol>
+<li>每个 group 负责一个probe。BaseTraceTileResolution 为 ProbeResolution(默认为 32) 的 1&#x2F;16，即 2x2</li>
+<li>确定 probe trace tile 的层级数量 <code>NumLevels</code>:<ul>
+<li>如果ProbesToUpdateTraceCost超出预算的2倍，取 1</li>
+<li>否则根据probe到相机的距离 <code>DistanceFromCameraSq</code>：SupersampleDistanceFromCameraSq 取 3，DownsampleDistanceFromCameraSq 取 2</li>
+</ul>
+</li>
+<li>BaseTraceTile 每个 texel 都表示一个立体角区域，划分则是为其中的立体角区域再细分一个tile，<ul>
+<li>NumLevels &gt; 1 并且 TraceTileCoord 方向上PDF高于阈值，为该方向细分 1 个 L1 trace tile (2x2)，添加到<code>PendingTraceTileList</code>，待后续进一步划分<ul>
+<li>TraceTileList 的每个元素打包了 uint2：<ul>
+<li>x: 低16位，TraceTileCoord * 2 + uint2(0&#x2F;1, 0&#x2F;1)；高16位，Level&#x3D;1</li>
+<li>y: ProbeTraceIndex</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>否则，表示不需要再细分，则添加一个 L0 trace tile 到最终结果 <code>CompletedTraceTileList</code></li>
+</ul>
+</li>
+<li>遍历 PendingTraceTileList，继续划分NumLevels 3, 2的 trace tile 如果 PDF 高于超采样阈值，则L1划分4个L2，L2划分4个L3<ul>
+<li>划分 NumLevels &gt; 2 的 trace tile<ul>
+<li>划分 L1<ul>
+<li>如果TraceTileCoord 方向上 PDF 高于 <code>SupersampleTileBRDFThreshold</code>，添加 4 个 L2 tiles 到 <code>PendingTraceTileList</code></li>
+<li>否则，添加1个 L1 tile 到最终结果 <code>CompletedTraceTileList</code></li>
+</ul>
+</li>
+<li>收集 L2：将 PendingTraceTileList 中的 L2 tile 加入到结果<code>CompletedTraceTileList</code>中</li>
+</ul>
+</li>
+<li>划分 NumLevels &gt; 1 的 trace tile<ul>
+<li>将 PendingTraceTileList 中的 L1 tile 加入到结果<code>CompletedTraceTileList</code>中</li>
+</ul>
+</li>
+</ul>
+</li>
+<li>按照 probe 次序，将将CompletedTraceTileList的所有trace tile写入RWProbeTraceTileData，每个元素 uint2<ul>
+<li>x：低 16位，TraceTileCoord * 2 + uint2(0&#x2F;1, 0&#x2F;1)；高16位，level</li>
+<li>y：ProbeTraceIndex</li>
+</ul>
+</li>
+</ol>
+<p>上述，针对probe做了以trace tile为单位的划分，每个trace tile表示一定分辨率。假如每个trace tile具有 8x8 分辨率，而一个 probe 最少有 2x2 个 trace tile，即最小分辨率为 16x16；最多有 8x8 个 trace tile，即最大分辨率为 64x64。但注意一个probe的trace tile划分不是均匀，例如一个PDF较高的方向上可能划分更多trace tile。</p>
+<h3 id="3-3-2-trace-tile-排序"><a href="#3-3-2-trace-tile-排序" class="headerlink" title="3.3.2 trace tile 排序"></a>3.3.2 trace tile 排序</h3><p>trace tile的每个texel都对应了球面上一个立体角范围，可以在该立体角范围内采样光线，执行光追得到radiance。为了光追效率，还会额外做一次trace tile排序，将方向相近的trace tile相邻存放。具体做法是：将光线方向范围划分为一定数量的bin，再把trace tile划分到对应的bin中，最后按照bin顺序排列trace tile。实现在 shader <code>SortProbeTraceTilesCS</code> 中：</p>
+<ol>
+<li>只有一个group，一个线程负责一个trace tile，能够得到 TraceTileCoord, TraceTileLevel, ProbeTraceIndex</li>
+<li>确定 trace tile 所位于层级的probe分辨率 <code>TraceResolution=(RadianceProbeResolution/2) &lt;&lt; TraceTileLevel</code><ul>
+<li>RadianceProbeResolution 默认为 32，对应了 trace tile 默认 8x8 的分辨率</li>
+</ul>
+</li>
+<li>trace tile 在所处层级分辨率下的texel <code>ProbeTexelCoord=TraceTileCoord * RADIANCE_CACHE_TRACE_TILE_SIZE_2D(8)</code>。这是在给定球面分辨率下，表示trace tile方向的texel坐标</li>
+<li>给定指定bin数量，投影trace tile到bin中：<ul>
+<li><code>DirectionalBin=ProbeTexelCoord * NUM_DIRECTION_BINS_2D(8) / TraceResolution</code>。把整个球面分辨率划分为8份</li>
+<li>记录每个bin内的trace tile数量。DirectionalBin转为一维索引 FinalBinIndex，<code>SharedNumTraceTileBins[FinalBinIndex] +=1</code></li>
+</ul>
+</li>
+<li>按照Bin的顺序排列trace tile<ul>
+<li>统计当前 TraceTile 所属bin之前所有Bin的trace tile数量 <code>SortedTraceTileOffset</code>，以及累积所属bin已存放trace tile数量</li>
+<li>写入 RWProbeTraceTileData[SortedTraceTileOffset]</li>
+</ul>
+</li>
+</ol>
+<h2 id="3-4-执行光追更新probe"><a href="#3-4-执行光追更新probe" class="headerlink" title="3.4 执行光追更新probe"></a>3.4 执行光追更新probe</h2><h3 id="3-4-1-为每个trace-tile执行光追"><a href="#3-4-1-为每个trace-tile执行光追" class="headerlink" title="3.4.1 为每个trace tile执行光追"></a>3.4.1 为每个trace tile执行光追</h3><p>下面就是为每个trace tile执行光追，生成每个texel方向上的radiance，实现在shader <code>LumenRadianceCacheHardwareRayTracingCS</code>中：</p>
+<ul>
+<li><p>一个group负责一个trace tile，一个线程负责一个光线样本，每个trace tile 8x8 分辨率</p>
+</li>
+<li><p>线程索引得到trace tile内的texel坐标 <code>TexelCoord</code>，执行<code>TraceRadianceCacheProbeTexel</code>：</p>
+<ul>
+<li><p>TraceTileIndex -&gt; ProbeTraceIndex -&gt; TraceData -&gt; ProbeIndex，可以获取到probe的所有相关信息</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-keyword">struct</span> <span class="hljs-title class_">FRadianceCache</span><br>&#123;<br>	uint2 TraceTileCoord;<br>	uint TraceTileLevel;<br>	uint ProbeTraceIndex;<br><br>	float3 ProbeWorldCenter;<br>	uint ClipmapIndex;<br>	uint ProbeIndex;<br><br>	uint ProbeResolution;<br>	<span class="hljs-type">float</span> ProbeTMin;<br>	uint ProbeAtlasResolutionModuloMask;<br>	uint ProbeAtlasResolutionDivideShift;<br><br>	<span class="hljs-type">bool</span> bFarField;<br>&#125;;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>构造光线</p>
+<ul>
+<li><code>Ray.Direction</code>：将局部 TexelCoord 变换到球面上的 ProbeTexelCoord，通过 spherical mapping 可得到texel中心点的方向</li>
+<li><code>Ray.Origin</code>：probe的世界坐标</li>
+<li><code>Ray.TMin</code>：ProbeTMin，0.1 * cell_size</li>
+<li><code>Ray.TMax</code>：限制到near field内</li>
+</ul>
+</li>
+<li><p>追踪并采样surface cache <code>TraceAndCalculateRayTracedLightingFromSurfaceCache</code></p>
+</li>
+<li><p>追踪结果按照trace tile排列，存放在 RWTraceRadianceTexture, RWTraceHitTexture</p>
+</li>
+</ul>
+</li>
+</ul>
+<p>上面的追踪同样在 far field 内执行一次</p>
+<h3 id="3-4-2-Resolve到统一分辨率下"><a href="#3-4-2-Resolve到统一分辨率下" class="headerlink" title="3.4.2 Resolve到统一分辨率下"></a>3.4.2 Resolve到统一分辨率下</h3><p>如前所述的trace tile划分，为probe分配了不同的分辨率，最终需要 resolve 到统一分辨率下。实现在 shader <code>SplatRadianceCacheIntoAtlasCS</code> 中：</p>
+<ul>
+<li>一个group负责一个trace tile</li>
+<li>获取trace tile基本信息，TraceTileIndex -&gt; ProbeTraceIndex -&gt; TraceData -&gt; ProbeIndex，得到 FRadianceCache</li>
+</ul>
+<h2 id="3-5-采样"><a href="#3-5-采样" class="headerlink" title="3.5 采样"></a>3.5 采样</h2><p>Radiance Cache 本质上只提供稍远距离的radiance信息（可能是 radiance cache 分辨率不足提供近光会有比较明显的artifact吧，例如反射过于模糊？），这个由 probeTMin 控制。反射、screen probe 会首先尝试 trace probeTMin 范围内，如果没有近距离交点且被radiance cache覆盖，则会采样 radiance cache 得到 radiance 信息。shader 函数 <code>SampleRadianceCacheAndApply</code> 提供了采样radiance cache的功能。</p>
+<h1 id="References"><a href="#References" class="headerlink" title="References"></a>References</h1><p><a name="[1]">[1]</a> Christopher C. Tanner, Christopher J. Migdal, and Michael T. Jones. 1998. The clipmap: a virtual mipmap. In Proceedings of the 25th annual conference on Computer graphics and interactive techniques (SIGGRAPH ‘98). Association for Computing Machinery, New York, NY, USA, 151–158.</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>3. Lumen - Radiance Cache</div>
+      <div>http://example.com/2025/03/04/Render Engine/UE5/Lumen/3. Radiance Cache/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>March 4, 2025</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/03/06/render-engine-test/" title="render engine/test">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">render engine/test</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/03/04/Render%20Engine/UE5/Lumen/2.%20Surface%20Cache/" title="2. Lumen - Surface Cache">
+                        <span class="hidden-mobile">2. Lumen - Surface Cache</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

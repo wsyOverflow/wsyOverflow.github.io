@@ -1,0 +1,770 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="使用 compute shader 生成 mipmap本文是参考 https:&#x2F;&#x2F;github.com&#x2F;nvpro-samples&#x2F;vk_compute_mipmaps 的算法复现。 将输入层级记为 $L$，将 $L$ 的 2x2 样本区域生成一个样本则得到 $L+1$ 层级。下面介绍从 $L$ 到 $L+M$ 层级的生成算法，$M\in[1,6]$，算法输入为 $L$ 层级的大小为 $2^M\t">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Compute Shader 实现 Pyramid Algorithm">
+<meta property="og:url" content="http://example.com/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="使用 compute shader 生成 mipmap本文是参考 https:&#x2F;&#x2F;github.com&#x2F;nvpro-samples&#x2F;vk_compute_mipmaps 的算法复现。 将输入层级记为 $L$，将 $L$ 的 2x2 样本区域生成一个样本则得到 $L+1$ 层级。下面介绍从 $L$ 到 $L+M$ 层级的生成算法，$M\in[1,6]$，算法输入为 $L$ 层级的大小为 $2^M\t">
+<meta property="og:locale" content="en_US">
+<meta property="article:published_time" content="2023-09-20T15:21:10.868Z">
+<meta property="article:modified_time" content="2023-07-27T06:27:20.752Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Compute Shader 实现 Pyramid Algorithm - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Compute Shader 实现 Pyramid Algorithm"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-09-20 23:21" pubdate>
+          September 20, 2023 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          3.7k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          31 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Compute Shader 实现 Pyramid Algorithm</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="使用-compute-shader-生成-mipmap"><a href="#使用-compute-shader-生成-mipmap" class="headerlink" title="使用 compute shader 生成 mipmap"></a>使用 compute shader 生成 mipmap</h1><p>本文是参考 <a target="_blank" rel="noopener" href="https://github.com/nvpro-samples/vk_compute_mipmaps">https://github.com/nvpro-samples/vk_compute_mipmaps</a> 的算法复现。</p>
+<p>将输入层级记为 $L$，将 $L$ 的 2x2 样本区域生成一个样本则得到 $L+1$ 层级。下面介绍从 $L$ 到 $L+M$ 层级的生成算法，$M\in[1,6]$，算法输入为 $L$ 层级的大小为 $2^M\times 2^M$ 的 tiles。</p>
+<h1 id="宽高为-2-的幂次"><a href="#宽高为-2-的幂次" class="headerlink" title="宽高为 2 的幂次"></a>宽高为 2 的幂次</h1><p>首先将输入层级划分为多个大小为 $2^M\times 2^M$ 的 tile，每个 tile 作为 compute shader 中一个 local workgroup 的输入 tile，每个 local workgroup 负责生成其输入 tile 的层级。假设输入层级大小为 $X,Y$，那么一次 dispatch 产生的 local workgroup 数量为 $(X&#x2F;2^M, Y&#x2F;2^M)$，因此使用 workgroup id 作为 tile id，进而得到输入 tile 在输入层级中的起始位置，用以获取输入层级的样本。</p>
+<ul>
+<li><p>假设 workgroup id 为 $(m,n)$，该 workgroup 的输入 tile id 为 $(m,n)$。该输入 tile 在输入层级中的起始位置设为 (xOffset, yOffset)，其计算方式为</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">xOffset = m &lt;&lt; M;<br>yOffset = n &lt;&lt; M;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>为了能够利用到 subgroup 内部数据同步的高效性，将 workgroup 的线程&#x2F;invocation 划分为大小为 16 的子组。这里使用 1D 的 invocation ID，<code>gl_LocalInvocationIndex</code> 来划分组，划分方式为</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++">teamID = (ID &amp; <span class="hljs-number">0x00F0</span>) &gt;&gt; <span class="hljs-number">4</span>;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>想要生成当前层级的样本，则需要确定当前层级样本在上一层级中对应的 $2\times 2$ 区域，即该区域在上一层级中的起始偏移量 (xBlockOffset, yBlockOffset)。该偏移量有三部分组成，当前 workgroup 对应的输入 tile 在输入层级中的起始偏移量 (xOffset, yOffset)、当前 invocation 所属组在输入 tile 中的起始偏移量 (tx, ty)、当前 invocation 在其所属组的起始偏移量 (x, y)。最终有</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">xBlockOffset = xOffset + tx + x;<br>yBlockOffset = yOffset + ty + y;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h2 id="1-Level"><a href="#1-Level" class="headerlink" title="1-Level"></a>1-Level</h2><p>输入层级划分为 $2\times 2$ tiles，每个线程加载一个 $2\times2$ tile 生成一个样本。1 level 算法比较简单，输入层级有多少个 $2\times 2$ tiles 就分发多少个 invocation，即 global group size 与 tile 数量相等。直接使用 <code>gl_GlobalInvocationID</code> 来索引 $L$ 层级的样本。以下为一个 tile 中的 4 个样本的索引</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs glsl"><span class="hljs-built_in">gl_GlobalInvocationID</span>*<span class="hljs-number">4</span>+<span class="hljs-number">0</span>, <span class="hljs-built_in">gl_GlobalInvocationID</span>*<span class="hljs-number">4</span>+<span class="hljs-number">1</span>, <br><span class="hljs-built_in">gl_GlobalInvocationID</span>*<span class="hljs-number">4</span>+<span class="hljs-number">2</span>, <span class="hljs-built_in">gl_GlobalInvocationID</span>*<span class="hljs-number">4</span>+<span class="hljs-number">3</span><br></code></pre></td></tr></table></figure>
+
+<p>或者按照下述算法形式实现。</p>
+<h2 id="2-Levels"><a href="#2-Levels" class="headerlink" title="2-Levels"></a>2-Levels</h2><p>输入层级划分为 $4\times 4$ tiles，local workgroup size 使用 4。一个输入 tile 可以划分为 4 个 $2\times 2$ blocks，每个 block 对应 $L+1$ 层的一个样本。因此每个 local workgroup 负责一个输入 tile，生成 4 个 $L+1$ 层级样本，4 个 $L+1$ 层级样本又可生成 1 个 $L+2$  层级样本。算法过程如下示意，</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs c++">   <span class="hljs-built_in">L</span>(<span class="hljs-number">4</span>x4)            L<span class="hljs-number">+1</span>(<span class="hljs-number">2</span>x2)             L<span class="hljs-number">+2</span><br>+---------+       +-----+-----+       +---------+<br>|         |       |  <span class="hljs-number">0</span>  |  <span class="hljs-number">1</span>  |       |         |<br>|   <span class="hljs-number">4</span>x4   | ===&gt;  +-----+-----+ ====&gt; |    <span class="hljs-number">0</span>    |<br>|         |       |  <span class="hljs-number">2</span>  |  <span class="hljs-number">3</span>  |       |         |<br>+---------+       +-----+-----+       +---------+<br></code></pre></td></tr></table></figure>
+
+<p>确定 $L+1$ 层每个样本在 $L$ 层对应的 $2\times 2$ block 的起始位置，</p>
+<ul>
+<li><p>输入 tile 在 $L$ 层级的起始位置：$M&#x3D;2$ 代入</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">xOffset = m &lt;&lt; M;<br>yOffset = n &lt;&lt; M;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>local workgroup 内线程的分组 ID：由于 local workgroup size 为 4，因此只有一个分组，teamID 恒为 0，</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++">teamID = (ID &amp; <span class="hljs-number">0x00F0</span>) &gt;&gt; <span class="hljs-number">4</span>;<br></code></pre></td></tr></table></figure>
+
+<p>当前分组在输入 tile 中的偏移量也恒为 tx&#x3D;0,  ty&#x3D;0</p>
+</li>
+<li><p>当前 invocation 在其所属分组的偏移量：<code>gl_LocalInvocationIndex</code> 为当前 invocation 的索引，记为 id。$L+1$ 层的 4 个样本如下，以及对应的组内偏移量</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs c++"> L<span class="hljs-number">+1</span> 样本编号       L<span class="hljs-number">+1</span> 样本编号二进制    L<span class="hljs-number">+1</span> 样本的组内起始偏移量<br>+-----+-----+       +-----+-----+       +-----+-----+<br>|  <span class="hljs-number">0</span>  |  <span class="hljs-number">1</span>  |       |  <span class="hljs-number">00</span> |  <span class="hljs-number">01</span> |       |(<span class="hljs-number">0</span>,<span class="hljs-number">0</span>)|(<span class="hljs-number">0</span>,<span class="hljs-number">2</span>)|<br>+-----+-----+       +-----+-----+       +-----+-----+<br>|  <span class="hljs-number">2</span>  |  <span class="hljs-number">3</span>  |       |  <span class="hljs-number">10</span> |  <span class="hljs-number">11</span> |       |(<span class="hljs-number">2</span>,<span class="hljs-number">0</span>)|(<span class="hljs-number">2</span>,<span class="hljs-number">2</span>)|<br>+-----+-----+       +-----+-----+       +-----+-----+<br></code></pre></td></tr></table></figure>
+
+<p>当前 invocation 组内的偏移量的计算方式如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">x = (id &amp; <span class="hljs-number">2</span>);<br>y = (id &amp; <span class="hljs-number">1</span>) &lt;&lt; <span class="hljs-number">1</span>;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>最终得到 $L+1$ 层样本在 $L$ 层对应的 $2\times 2$ block 的起始偏移量：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">xBlockOffset = xOffset + x;<br>yBlockOffset = yOffset + y;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p>得到 (xBlockOffset, yBlockOffset) 后，则可加载该 2x2 区域的 4 个 $L$ 层样本，即</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">(xBlockOffset<span class="hljs-number">+0</span>, yBlockOffset<span class="hljs-number">+0</span>), (xBlockOffset<span class="hljs-number">+0</span>, yBlockOffset<span class="hljs-number">+1</span>)<br>(xBlockOffset<span class="hljs-number">+1</span>, yBlockOffset<span class="hljs-number">+0</span>), (xBlockOffset<span class="hljs-number">+1</span>, yBlockOffset<span class="hljs-number">+1</span>)<br></code></pre></td></tr></table></figure>
+
+<p>4 个 $L$ 层样本生成一个 $L+1$ 层样本，这样下来，每个 local workgroup 都得到了 $L+1$ 层级的 4 个样本。$L+1$ 层样本的写入位置为 (xBlockOffset &gt;&gt; 1, yBlockOffset &gt;&gt; 1)。</p>
+<p>由于 local workgroup size 为 4，即 local workgroup 的所有 invocation 执行于同一个 subgroup，因此可利用 subgroup 内部的高效数据同步。每个 local workgroup 的 0 号线程再使用 <code>subgroupShuffleXor</code> 得到 1、2、3 号线程的样本，生成 $L+2$ 层级的一个样本，写入位置为 (xBlockOffset &gt;&gt; 2, yBlockOffset &gt;&gt; 2)。</p>
+<h2 id="3-Levels"><a href="#3-Levels" class="headerlink" title="3-Levels"></a>3-Levels</h2><p>3 levels 通过不同区域分别应用 2 levels 算法。输入层级划分为 $8\times 8$ tiles，local workgroup size 使用 16。将 local workgroup 的 16 个线程分为 4 个 subtiles，每个 subtile 大小为 $2\times 2$，具有 4 个线程，如下所示</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs c++">workgroup 内的 subtile，<span class="hljs-string">&quot;|| =&quot;</span> 为 subtile 边界<br>      +---+---++---+---+                              <br>      | <span class="hljs-number">0</span> | <span class="hljs-number">1</span> || <span class="hljs-number">4</span> | <span class="hljs-number">5</span> |                               <br>      +---+---++---+---+                              <br>      | <span class="hljs-number">2</span> | <span class="hljs-number">3</span> || <span class="hljs-number">6</span> | <span class="hljs-number">7</span> |                              <br>      +===+===++===+===+                              <br>      | <span class="hljs-number">8</span> | <span class="hljs-number">9</span> ||<span class="hljs-number">12</span> |<span class="hljs-number">13</span> |                              <br>      +---+---++---+---+                               <br>      |<span class="hljs-number">10</span> |<span class="hljs-number">11</span> ||<span class="hljs-number">14</span> |<span class="hljs-number">15</span> |                               <br>      +---+---++---+---+                               <br></code></pre></td></tr></table></figure>
+
+<p>local workgroup 的每个 subtile 应用 2 levels 算法来生成 $L+1$、$L+2$ 的样本，在执行完 2 levels 算法后，每个 subtile 得到一个 $L+2$ 层样本。每个 workgroup 共得到 4 个 $L+2$ 层样本，最后生成 1 个 $L+3$ 层样本，过程如下所示，</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs c++">     <span class="hljs-built_in">L</span>(<span class="hljs-number">8</span>x8)                  L<span class="hljs-number">+1</span>(<span class="hljs-number">4</span>x4)                  L<span class="hljs-number">+2</span>(<span class="hljs-number">2</span>x2)<br>+---------------+       +---+---++---+---+       +-------++-------+<br>|               |       | <span class="hljs-number">0</span> | <span class="hljs-number">1</span> || <span class="hljs-number">4</span> | <span class="hljs-number">5</span> |       |       ||       |<br>|               |       +---+---++---+---+       |   <span class="hljs-number">0</span>   ||   <span class="hljs-number">4</span>   |<br>|               |       | <span class="hljs-number">2</span> | <span class="hljs-number">3</span> || <span class="hljs-number">6</span> | <span class="hljs-number">7</span> |       |       ||       |<br>|      <span class="hljs-number">8</span>x8      | ====&gt; +===+===++===+===+ ====&gt; +=======++=======+<br>|               |       | <span class="hljs-number">8</span> | <span class="hljs-number">9</span> ||<span class="hljs-number">12</span> |<span class="hljs-number">13</span> |       |       ||       |<br>|               |       +---+---++---+---+       |   <span class="hljs-number">8</span>   ||  <span class="hljs-number">12</span>   |<br>|               |       |<span class="hljs-number">10</span> |<span class="hljs-number">11</span> ||<span class="hljs-number">14</span> |<span class="hljs-number">15</span> |       |       ||       |<br>+---------------+       +---+---++---+---+       +-------++-------+<br></code></pre></td></tr></table></figure>
+
+<p>首先确定 $L+1$ 层每个样本在 $L$ 层对应的 $2\times 2$ block 的起始位置，</p>
+<ul>
+<li><p>输入 tile 在 $L$ 层级的起始位置：$M&#x3D;3$ 代入 (xOffset, yOffset) 的计算</p>
+</li>
+<li><p>local workgroup 内线程的分组编号：local workgroup size 为 16，只有一个分组，teamID 恒为 0，当前分组在输入 tile 中的偏移量也恒为 tx&#x3D;0,  ty&#x3D;0</p>
+</li>
+<li><p>当前 invocation 在其所属分组的偏移量：<code>gl_LocalInvocationIndex</code> 为当前 invocation 的索引，记为 id。$L+1$ 层的 16 个样本编号以及对应的组内偏移量，如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs c++">         L<span class="hljs-number">+1</span> 层编号二进制              L<span class="hljs-number">+1</span> 层编号对应的输入 tile 的偏移量<br>+------+------++------+------+       +------+------++------+------+<br>| <span class="hljs-number">0000</span> | <span class="hljs-number">0001</span> || <span class="hljs-number">0100</span> | <span class="hljs-number">0101</span> |       |(<span class="hljs-number">0</span>,<span class="hljs-number">0</span>) |(<span class="hljs-number">0</span>,<span class="hljs-number">2</span>) ||(<span class="hljs-number">0</span>,<span class="hljs-number">4</span>) |(<span class="hljs-number">0</span>,<span class="hljs-number">6</span>) |<br>+------+------++------+------+       +------+------++------+------+<br>| <span class="hljs-number">0010</span> | <span class="hljs-number">0011</span> || <span class="hljs-number">0110</span> | <span class="hljs-number">0111</span> |       |(<span class="hljs-number">2</span>,<span class="hljs-number">0</span>) |(<span class="hljs-number">2</span>,<span class="hljs-number">2</span>) ||(<span class="hljs-number">2</span>,<span class="hljs-number">4</span>) |(<span class="hljs-number">2</span>,<span class="hljs-number">6</span>) |<br>+======+======++======+======+       +======+======++======+======+<br>| <span class="hljs-number">1000</span> | <span class="hljs-number">1001</span> || <span class="hljs-number">1100</span> | <span class="hljs-number">1101</span> |       |(<span class="hljs-number">4</span>,<span class="hljs-number">0</span>) |(<span class="hljs-number">4</span>,<span class="hljs-number">2</span>) ||(<span class="hljs-number">4</span>,<span class="hljs-number">4</span>) |(<span class="hljs-number">4</span>,<span class="hljs-number">6</span>) |<br>+------+------++------+------+       +------+------++------+------+<br>| <span class="hljs-number">1010</span> | <span class="hljs-number">1011</span> || <span class="hljs-number">1110</span> | <span class="hljs-number">1111</span> |       |(<span class="hljs-number">6</span>,<span class="hljs-number">0</span>) |(<span class="hljs-number">6</span>,<span class="hljs-number">2</span>) ||(<span class="hljs-number">6</span>,<span class="hljs-number">4</span>) |(<span class="hljs-number">6</span>,<span class="hljs-number">6</span>) |<br>+------+------++------+------+       +------+------++------+------+<br></code></pre></td></tr></table></figure>
+
+<p>当前 invocation 组内的偏移量的计算方式如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">x = (id &amp; <span class="hljs-number">2</span>) | (id &amp; <span class="hljs-number">8</span>) &gt;&gt; <span class="hljs-number">1</span>;<br>y = (id &amp; <span class="hljs-number">1</span>) &lt;&lt; <span class="hljs-number">1</span> | (id &amp; <span class="hljs-number">4</span>);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>最终得到 $L+1$ 层样本在 $L$ 层对应的 $2\times 2$ block 的起始偏移量：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">xBlockOffset = xOffset + x;<br>yBlockOffset = yOffset + y;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p>与 2 levels 算法相似，得到 (xBlockOffset, yBlockOffset) 后，即可得到 $L$ 层级的 4 个样本，从而生成 $L+1$ 层级样本。每个 local workgroup 共生成 16 个 $L+1$ 层级样本，写入位置为 (xBlockOffset &gt;&gt; 1, yBlockOffset &gt;&gt; 1)。</p>
+<p>每个 local workgroup 在同一个 subgroup 内执行，因此利用 subgroup 内部的高效数据同步，每个 subtile 的第一个线程收集其他线程生成的 $L+1$ 层级样本，然后生成一个 $L+2$ 层级样本。每个 subtile 的第一个线程为 <code>id&amp;3 == 0</code>，通过 使用 mask 参数分别为 1、2、3 的<code>subgroupShuffleXor</code> ，得到 subtile 的其他线程生成的 $L+1$ 层级样本，过程如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-number">0</span> (<span class="hljs-number">0000</span>) ^ (<span class="hljs-number">0001</span>, <span class="hljs-number">0010</span>, <span class="hljs-number">0011</span>) = (<span class="hljs-number">0001</span>, <span class="hljs-number">0010</span>, <span class="hljs-number">0011</span>) = (<span class="hljs-number">1</span>, <span class="hljs-number">2</span>, <span class="hljs-number">3</span>)<br><span class="hljs-number">4</span> (<span class="hljs-number">0100</span>) ^ (<span class="hljs-number">0001</span>, <span class="hljs-number">0010</span>, <span class="hljs-number">0011</span>) = (<span class="hljs-number">0101</span>, <span class="hljs-number">0110</span>, <span class="hljs-number">0111</span>) = (<span class="hljs-number">5</span>, <span class="hljs-number">6</span>, <span class="hljs-number">7</span>)<br><span class="hljs-number">8</span> (<span class="hljs-number">1000</span>) ^ (<span class="hljs-number">0001</span>, <span class="hljs-number">0010</span>, <span class="hljs-number">0011</span>) = (<span class="hljs-number">1001</span>, <span class="hljs-number">1010</span>, <span class="hljs-number">1011</span>) = (<span class="hljs-number">9</span>, <span class="hljs-number">10</span>, <span class="hljs-number">11</span>)<br><span class="hljs-number">12</span>(<span class="hljs-number">1100</span>) ^ (<span class="hljs-number">0001</span>, <span class="hljs-number">0010</span>, <span class="hljs-number">0011</span>) = (<span class="hljs-number">1101</span>, <span class="hljs-number">1110</span>, <span class="hljs-number">1111</span>) = (<span class="hljs-number">13</span>, <span class="hljs-number">14</span>, <span class="hljs-number">15</span>)<br></code></pre></td></tr></table></figure>
+
+<p>每个 local workgroup 生成 4 个 $L+2$ 层级样本，写入位置为 (xBlockOffset &gt;&gt; 2, yBlockOffset &gt;&gt; 2)。每个 local workgroup 中的第一个线程使用 <code>subgroupShuffleXor</code> 得到 4、8、12 号线程的 $L+2$ 层级样本，生成一个 $L+3$ 层级样本，写入位置为 (xBlockOffset &gt;&gt; 3, yBlockOffset &gt;&gt; 3)。每个 local workgroup 的第一个线程为 <code>id&amp;15 == 0</code>，过程如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-number">0</span>(<span class="hljs-number">0000</span>) ^ (<span class="hljs-number">0100</span>, <span class="hljs-number">1000</span>, <span class="hljs-number">1100</span>) = (<span class="hljs-number">0100</span>, <span class="hljs-number">1000</span>, <span class="hljs-number">1100</span>)<br></code></pre></td></tr></table></figure>
+
+<h2 id="4-5-Levels"><a href="#4-5-Levels" class="headerlink" title="4&#x2F;5-Levels"></a>4&#x2F;5-Levels</h2><p>理论上，上述算法可以继续递归应用得到 4&#x2F;5 levels 算法，例如对于 4 levels 算法，输入层级划分为 $16\times 16$ tiles，local workgroup 大小使用 64，划分为 4 组，每组 16 个线程，分别应用 3 levels 算法，然后 0 号线程使用 shuffle 得到 16、32、48 号线程的样本，最终生成 $L+4$ 的一个样本。但实际上，subgroup 大小有限，例如 NVIDIA 显卡的 subgroup 大小为 32，无法使用 32 及之后的 gl_SubgroupInvocationID，因此不能通过 subgroup 得到 32、48 号线程的样本。对于此，改用 shared memory。</p>
+<h3 id="4-levels"><a href="#4-levels" class="headerlink" title="4-levels"></a>4-levels</h3><p>对于 4 levels 算法，输入层级划分为 $16\times 16$ tiles，local workgroup 大小使用 64，划分为 4 组，每组 16 个线程。local workgroup 中的线程使用 <code>gl_LocalInvocationIndex</code> 分组，0<del>15 为组 0，16</del>31 为组 1，32<del>47 为组 2，48</del>63 为组 3，如下所示：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs c++">workgroup 内的分组，<span class="hljs-string">&quot;|| =&quot;</span> 为分组边界<br>        每组中间数字为分组编号<br>        +---+---++---+---+<br>        | <span class="hljs-number">0</span> | <span class="hljs-number">4</span> ||<span class="hljs-number">16</span> |<span class="hljs-number">20</span> |<br>        +--<span class="hljs-number">-0</span>---++--<span class="hljs-number">-1</span>---+<br>        | <span class="hljs-number">8</span> |<span class="hljs-number">12</span> ||<span class="hljs-number">24</span> |<span class="hljs-number">28</span> |<br>        +===+===++===+===+<br>        |<span class="hljs-number">32</span> |<span class="hljs-number">36</span> ||<span class="hljs-number">48</span> |<span class="hljs-number">52</span> |<br>        +--<span class="hljs-number">-2</span>---++--<span class="hljs-number">-3</span>---+<br>        |<span class="hljs-number">40</span> |<span class="hljs-number">44</span> ||<span class="hljs-number">56</span> |<span class="hljs-number">60</span> |<br>        +---+---++---+---+<br></code></pre></td></tr></table></figure>
+
+<p>每组分别执行 3 levels 算法。但每组的第一个线程不仅生成 $L+3$ 的一个样本，还要将该样本写入 shared memory中。然后发出一个 barrier，barrier 之后在 shared memory 中存在 4 组线程分别写入的一个 $L+3$ 层级样本，即 $L+3$ 层级的一个 $2\times 2$ tile。最后 0 号线程使用 shared memory 中的 4 个 $L+3$ 层级样本生成一个 $L+4$ 层级样本。过程如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs c++">     <span class="hljs-built_in">L</span>(<span class="hljs-number">16</span>x16)               L<span class="hljs-number">+2</span>(<span class="hljs-number">8</span>x8)                       L<span class="hljs-number">+3</span>(<span class="hljs-number">2</span>x2)                   L<span class="hljs-number">+4</span><br>+-------++-------+     +---+---++---+---+             +-------++-------+        +---------------+<br>|       ||       |     | <span class="hljs-number">0</span> | <span class="hljs-number">4</span> ||<span class="hljs-number">16</span> |<span class="hljs-number">20</span> |             |       ||       |        |               |<br>|  <span class="hljs-number">8</span>x8  ||  <span class="hljs-number">8</span>x8  |     +---+---++---+---+             |   <span class="hljs-number">0</span>   ||  <span class="hljs-number">16</span>   |        |               |<br>|       ||       |(L<span class="hljs-number">+1</span>)| <span class="hljs-number">8</span> |<span class="hljs-number">12</span> ||<span class="hljs-number">24</span> |<span class="hljs-number">28</span> |             |       ||       |        |               |<br>+=======++=======+ ==&gt; +===+===++===+===+ =&gt;omitted=&gt; +=======++=======+ ==|==&gt; |      <span class="hljs-number">0</span>        |<br>|       ||       |     |<span class="hljs-number">32</span> |<span class="hljs-number">36</span> ||<span class="hljs-number">48</span> |<span class="hljs-number">52</span> |      |      |       ||       |   |    |               |<br>|  <span class="hljs-number">8</span>x8  ||  <span class="hljs-number">8</span>x8  |     +---+---++---+---+      |      |  <span class="hljs-number">32</span>   ||  <span class="hljs-number">48</span>   |   |    |               |<br>|       ||       |     |<span class="hljs-number">40</span> |<span class="hljs-number">44</span> ||<span class="hljs-number">56</span> |<span class="hljs-number">60</span> |      |      |       ||       |   |    |               |<br>+-------++-------+     +---+---++---+---+      |      +-------++-------+   |    +---------------+<br>                                               |                           |<br>                        <span class="hljs-number">16</span>-thread team handles each <span class="hljs-number">8</span>x8 sub-<span class="hljs-built_in">tile</span>        (barrier)<br></code></pre></td></tr></table></figure>
+
+<p>首先确定 $L+1$ 层每个样本在 $L$ 层对应的 $2\times 2$ block 的起始位置，</p>
+<ul>
+<li><p>输入 tile 在 $L$ 层级的起始位置：$M&#x3D;4$ 代入 (xOffset, yOffset) 的计算</p>
+</li>
+<li><p>local workgroup 内线程的分组编号：local workgroup size 为 64，分为 4 个组，0<del>15 为组 0，16</del>31 为组 1，32<del>47 为组 2，48</del>63 为组 3。如下所示，</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs c++">    L<span class="hljs-number">+1</span> 层编号十六进制        L<span class="hljs-number">+1</span>层编号对应的输入 tile 的偏移量           L<span class="hljs-number">+1</span> 层分组编号<br>+----+----++----+----+     +------+------++------+------+    +-----------++-----------+<br>|<span class="hljs-number">0000</span>|<span class="hljs-number">0004</span>||<span class="hljs-number">0010</span>|<span class="hljs-number">0014</span>|     |(<span class="hljs-number">0</span>,<span class="hljs-number">0</span>) |(<span class="hljs-number">0</span>,<span class="hljs-number">4</span>) ||(<span class="hljs-number">0</span>,<span class="hljs-number">8</span>) |(<span class="hljs-number">0</span>,<span class="hljs-number">12</span>)|    |           ||           |<br>+----+----++----+----+     +------+------++------+------+    |     <span class="hljs-number">0</span>     ||     <span class="hljs-number">1</span>     |<br>|<span class="hljs-number">000</span>8|<span class="hljs-number">000</span>C||<span class="hljs-number">001</span>8|<span class="hljs-number">001</span>C|     |(<span class="hljs-number">4</span>,<span class="hljs-number">0</span>) |(<span class="hljs-number">4</span>,<span class="hljs-number">4</span>) ||(<span class="hljs-number">4</span>,<span class="hljs-number">8</span>) |(<span class="hljs-number">4</span>,<span class="hljs-number">12</span>)|    |           ||           |<br>+====+====++====+====+     +======+======++======+======+    +===========++===========+<br>|<span class="hljs-number">0020</span>|<span class="hljs-number">0024</span>||<span class="hljs-number">0030</span>|<span class="hljs-number">0034</span>|     |(<span class="hljs-number">8</span>,<span class="hljs-number">0</span>) |(<span class="hljs-number">8</span>,<span class="hljs-number">4</span>) ||(<span class="hljs-number">8</span>,<span class="hljs-number">8</span>) |(<span class="hljs-number">8</span>,<span class="hljs-number">12</span>)|    |           ||           |<br>+----+----++----+----+     +------+------++------+------+    |     <span class="hljs-number">2</span>     ||     <span class="hljs-number">3</span>     |<br>|<span class="hljs-number">002</span>8|<span class="hljs-number">002</span>C||<span class="hljs-number">003</span>8|<span class="hljs-number">003</span>C|     |(<span class="hljs-number">12</span>,<span class="hljs-number">0</span>)|(<span class="hljs-number">12</span>,<span class="hljs-number">4</span>)||(<span class="hljs-number">12</span>,<span class="hljs-number">8</span>)|(<span class="hljs-number">12</span>,<span class="hljs-number">12</span>|    |           ||           |<br>+----+----++----+----+     +------+------++------+------+    +-----------++-----------+<br></code></pre></td></tr></table></figure>
+
+<p>invocation 索引为 id，所属分组编号计算方式如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++">teamID = (id &amp; <span class="hljs-number">0x00F0</span>) &gt;&gt; <span class="hljs-number">4</span>;<br></code></pre></td></tr></table></figure>
+
+<p>当前分组在输入 tile 中的偏移量为</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">tx = (teamID &amp; <span class="hljs-number">2</span>) &lt;&lt; <span class="hljs-number">2</span>;<br>ty = (teamID &amp; <span class="hljs-number">1</span>) &lt;&lt; <span class="hljs-number">3</span>;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>当前 invocation 在其所属分组的偏移量：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">x = (id &amp; <span class="hljs-number">2</span>) | (id &amp; <span class="hljs-number">8</span>) &gt;&gt; <span class="hljs-number">1</span>;<br>y = (id &amp; <span class="hljs-number">1</span>) &lt;&lt; <span class="hljs-number">1</span> | (id &amp; <span class="hljs-number">4</span>);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>最终得到 $L+1$ 层样本在 $L$ 层对应的 $2\times 2$ block 的起始偏移量：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">xBlockOffset = xOffset + tx + x;<br>yBlockOffset = yOffset + ty + y;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p>得到 (xBlockOffset, yBlockOffset) 后即可在每个分组内分别执行 3-levels 算法。每个分组都会生成一个 $L+3$ 层级样本，即 workgroup 生成了 4 个 $L+3$ 层级样本。在生成最终的 $L+4$ 层样本时，不能再使用 <code>subgroupShuffleXor</code> 来得到其他分组生成的 $L+3$ 层级样本，因为 subgroup size 为 32，其他分组不一定位于同一个 subgroup 内，因此这时需要使用 shared memory。</p>
+<p>每个分组的第一个线程不仅需要生成一个 $L+3$ 层级样本，还需要将该样本写入 shared memory，组内的第一个线程为 <code>(id &amp; 0x00F0)==id</code>，写入位置为 teamID。加一个 barrier 等待 shared memory 的写操作完成。最后，workgroup 的第一个线程负责生成 $L+4$ 层样本。</p>
+<h3 id="5-levels"><a href="#5-levels" class="headerlink" title="5-levels"></a>5-levels</h3><p>对于 5 levels 算法，输入层级划分为 $32\times 32$ tiles，local workgroup 大小使用 256，划分为 16 组，每组 16 个线程。分组如下所示，</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs c++"> workgroup的每个分组编号      workgroup内每组的invocation起始编号    <br>+----+----++----+----+       +----+----++----+----+<br>|  <span class="hljs-number">0</span> |  <span class="hljs-number">1</span> ||  <span class="hljs-number">4</span> |  <span class="hljs-number">5</span> |       | <span class="hljs-number">0</span>  | <span class="hljs-number">16</span> || <span class="hljs-number">64</span> | <span class="hljs-number">80</span> |<br>+----+----++----+----+       +----+----++----+----+<br>|  <span class="hljs-number">2</span> |  <span class="hljs-number">3</span> ||  <span class="hljs-number">6</span> |  <span class="hljs-number">7</span> |       | <span class="hljs-number">32</span> | <span class="hljs-number">48</span> || <span class="hljs-number">96</span> | <span class="hljs-number">112</span>|<br>+====+====++====+====+       +====+====++====+====+<br>|  <span class="hljs-number">8</span> |  <span class="hljs-number">9</span> || <span class="hljs-number">12</span> | <span class="hljs-number">13</span> |       |<span class="hljs-number">128</span> | <span class="hljs-number">144</span>||<span class="hljs-number">192</span> | <span class="hljs-number">208</span>| <br>+----+----++----+----+       +----+----++----+----+<br>| <span class="hljs-number">10</span> | <span class="hljs-number">11</span> || <span class="hljs-number">14</span> | <span class="hljs-number">15</span> |       |<span class="hljs-number">160</span> | <span class="hljs-number">176</span>||<span class="hljs-number">224</span> | <span class="hljs-number">240</span>|<br>+----+----++----+----+       +----+----++----+----+ <br></code></pre></td></tr></table></figure>
+
+<p>与 4 levels 算法相似，每组分别执行 3 levels 算法，并且每组的第一个线程不仅生成 $L+3$ 层级的一个样本，还要写入 shared memory 中。在 barrier 之后，shared memory 中存在 16 组线程分别写入的一个 $L+3$ 层级样本，即 $L+3$ 层级的一个 $4\times 4$ tile。最后使用 4 个线程执行一次 2 levels 算法，最终得到 4 个 $L+4$ 层级样本与 1 个 $L+5$ 层级样本。过程如下所示，</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs c++">  <span class="hljs-built_in">L</span>(<span class="hljs-number">32</span>x32)                 L<span class="hljs-number">+3</span> (+ copy in smem)            L<span class="hljs-number">+4</span>(<span class="hljs-number">2</span>x2)                  L<span class="hljs-number">+5</span><br>+---+---++---+---+             +---+---++---+---+        +-------++-------+      +---------------+<br>|<span class="hljs-number">8</span>x8|<span class="hljs-number">8</span>x8||<span class="hljs-number">8</span>x8|<span class="hljs-number">8</span>x8|             |  <span class="hljs-number">0</span>| <span class="hljs-number">16</span>|| <span class="hljs-number">64</span>| <span class="hljs-number">80</span>|        |       ||       |      |               |<br>+---+---++---+---+             +---+---++---+---+        |   <span class="hljs-number">0</span>   ||   <span class="hljs-number">1</span>   |      |               |<br>|<span class="hljs-number">8</span>x8|<span class="hljs-number">8</span>x8||<span class="hljs-number">8</span>x8|<span class="hljs-number">8</span>x8|             | <span class="hljs-number">32</span>| <span class="hljs-number">48</span>|| <span class="hljs-number">96</span>|<span class="hljs-number">112</span>|        |       ||       |      |               |<br>+===+===++===+===+ =&gt;omitted=&gt; +===+===++===+===+ ==|==&gt; +=======++=======+ ===&gt; |       <span class="hljs-number">0</span>       |<br>|<span class="hljs-number">8</span>x8|<span class="hljs-number">8</span>x8||<span class="hljs-number">8</span>x8|<span class="hljs-number">8</span>x8|       |     |<span class="hljs-number">128</span>|<span class="hljs-number">144</span>||<span class="hljs-number">192</span>|<span class="hljs-number">208</span>|   |    |       ||       |      |               |<br>+---+---++---+---+       |     +---+---++---+---+   |    |   <span class="hljs-number">2</span>   ||   <span class="hljs-number">3</span>   |      |               |<br>|<span class="hljs-number">8</span>x8|<span class="hljs-number">8</span>x8||<span class="hljs-number">8</span>x8|<span class="hljs-number">8</span>x8|       |     |<span class="hljs-number">160</span>|<span class="hljs-number">176</span>||<span class="hljs-number">224</span>|<span class="hljs-number">240</span>|   |    |       ||       |      |               | <br>+---+---++---+---+       |     +---+---++---+---+   |    +-------++-------+      +---------------+<br>                         |                          |<br>   <span class="hljs-number">16</span>-thread team handles each <span class="hljs-number">8</span>x8 sub-<span class="hljs-built_in">tile</span>      (barrier)<br></code></pre></td></tr></table></figure>
+
+<p>首先确定 $L+1$ 层每个样本在 $L$ 层对应的 $2\times 2$ block 的起始位置，</p>
+<ul>
+<li><p>输入 tile 在 $L$ 层级的起始位置：$M&#x3D;5$ 代入 (xOffset, yOffset) 的计算</p>
+</li>
+<li><p>local workgroup 内线程的分组编号：local workgroup size 为 256，分为 16 个组，分组如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs c++">        分组编号                每组的起始编号十六进制            起始编号在输入 tile 中对应的偏移量<br>+----+----++----+----+       +----+----++----+----+        +-------+-------++-------+-------+<br>|  <span class="hljs-number">0</span> |  <span class="hljs-number">1</span> ||  <span class="hljs-number">4</span> |  <span class="hljs-number">5</span> |       |<span class="hljs-number">0000</span>|<span class="hljs-number">0010</span>||<span class="hljs-number">0040</span>|<span class="hljs-number">0050</span>|        | (<span class="hljs-number">0</span>,<span class="hljs-number">0</span>) | (<span class="hljs-number">0</span>,<span class="hljs-number">8</span>) ||(<span class="hljs-number">0</span>,<span class="hljs-number">16</span>) | (<span class="hljs-number">0</span>,<span class="hljs-number">24</span>)|<br>+----+----++----+----+       +----+----++----+----+        +-------+-------++-------+-------+<br>|  <span class="hljs-number">2</span> |  <span class="hljs-number">3</span> ||  <span class="hljs-number">6</span> |  <span class="hljs-number">7</span> |       |<span class="hljs-number">0020</span>|<span class="hljs-number">0030</span>||<span class="hljs-number">0060</span>|<span class="hljs-number">0070</span>|        | (<span class="hljs-number">8</span>,<span class="hljs-number">0</span>) | (<span class="hljs-number">8</span>,<span class="hljs-number">8</span>) ||(<span class="hljs-number">8</span>,<span class="hljs-number">16</span>) | (<span class="hljs-number">8</span>,<span class="hljs-number">24</span>)|<br>+====+====++====+====+       +====+====++====+====+        +=======+=======++=======+=======+<br>|  <span class="hljs-number">8</span> |  <span class="hljs-number">9</span> || <span class="hljs-number">12</span> | <span class="hljs-number">13</span> |       |<span class="hljs-number">00</span>80|<span class="hljs-number">00</span>90||<span class="hljs-number">00</span>C0|<span class="hljs-number">00</span>D0|        |(<span class="hljs-number">16</span>,<span class="hljs-number">0</span>) | (<span class="hljs-number">16</span>,<span class="hljs-number">8</span>)||(<span class="hljs-number">16</span>,<span class="hljs-number">16</span>)|(<span class="hljs-number">16</span>,<span class="hljs-number">24</span>)|<br>+----+----++----+----+       +----+----++----+----+        +-------+-------++-------+-------+<br>| <span class="hljs-number">10</span> | <span class="hljs-number">11</span> || <span class="hljs-number">14</span> | <span class="hljs-number">15</span> |       |<span class="hljs-number">00</span>A0|<span class="hljs-number">00</span>B0||<span class="hljs-number">00E0</span>|<span class="hljs-number">00</span>F0|        |(<span class="hljs-number">24</span>,<span class="hljs-number">0</span>) | (<span class="hljs-number">24</span>,<span class="hljs-number">8</span>)||(<span class="hljs-number">24</span>,<span class="hljs-number">16</span>)|(<span class="hljs-number">24</span>,<span class="hljs-number">24</span>)|<br>+----+----++----+----+       +----+----++----+----+        +-------+-------++-------+-------+<br></code></pre></td></tr></table></figure>
+
+<p>invocation 索引为 id，所属分组编号计算方式如下：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++">teamID = (id &amp; <span class="hljs-number">0x00F0</span>) &gt;&gt; <span class="hljs-number">4</span>;<br></code></pre></td></tr></table></figure>
+
+<p>当前分组在输入 tile 中的偏移量为</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">tx = (teamID &amp; <span class="hljs-number">2</span>) &lt;&lt; <span class="hljs-number">2</span> | (teamID &amp; <span class="hljs-number">8</span>) &lt;&lt; <span class="hljs-number">1</span>;<br>ty = (teamID &amp; <span class="hljs-number">1</span>) &lt;&lt; <span class="hljs-number">3</span> | (teamID &amp; <span class="hljs-number">4</span>) &lt;&lt; <span class="hljs-number">2</span>;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>当前 invocation 在其所属分组的偏移量：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">x = (id &amp; <span class="hljs-number">2</span>) | (id &amp; <span class="hljs-number">8</span>) &gt;&gt; <span class="hljs-number">1</span>;<br>y = (id &amp; <span class="hljs-number">1</span>) &lt;&lt; <span class="hljs-number">1</span> | (id &amp; <span class="hljs-number">4</span>);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>最终得到 $L+1$ 层样本在 $L$ 层对应的 $2\times 2$ block 的起始偏移量：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">xBlockOffset = xOffset + tx + x;<br>yBlockOffset = yOffset + ty + y;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p>得到 (xBlockOffset, yBlockOffset) 后，与 4-levels 算法类似，在每个分组内分别执行 3-levels 算法。每组生成一个 $L+3$ 层级样本，且组内第一个线程 <code>(id &amp; 0x00F0)==id</code> 负责写入 shared memory 中索引 teamID 的位置。workgroup 共生成 16 个 $L+3$ 层级样本，得到一个 4x4 大小的 shared memory。</p>
+<p>为了能够继续使用 subgroup 特性，使用一个 subgroup 来生成最后两层。假设使用 ID 为 0<del>15 的 invocation，ID 用来索引 shared memory 中的样本。shared memory 中的数组分为四部分，0</del>3、4<del>7、8</del>11、12~15，每个部分包含 4 个 $L+3$ 层级样本。 <code>id == id &amp; 0x000C</code> 的 invocation 负责收集 4 个 $L+3$ 层级样本，生成 1 个 $L+4$ 层级样本。最后 0 号 invocation 通过 <code>subgroupShuffleXor</code> 收集其他 3 个 $L+4$ 层级样本，生成最终的 1 个 L+5 层级样本。</p>
+<h1 id="宽高为非-2-的次幂"><a href="#宽高为非-2-的次幂" class="headerlink" title="宽高为非 2 的次幂"></a>宽高为非 2 的次幂</h1><p>对于图像宽高不是 2 的次幂的情况，$L+1$ 层级的样本在 $L$ 层级对应的 block 可能是 $1\times 1$、$1\times 2$、$2\times 1$、$2\times $2、$2\times 3$、$3\times 2$、$3\times 3$ 等。在划分为 tile 计算之后层级样本时，某些样本会用到多次，如下述 $5 \times 5$ 大小的 mip level 生成 $2\times 2$ 大小的 mip level，其中数字表示对应样本被使用到的次数。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><code class="hljs c++">+---+---+---+---+---+        +---------+---------+<br>|   |   | <span class="hljs-number">2</span> |   |   |        |         |         |<br>+---+---+---+---+---+        |         |         |<br>|   |   | <span class="hljs-number">2</span> |   |   |        |         |         |<br>+---+---+---+---+---+        |         |         |<br>| <span class="hljs-number">2</span> | <span class="hljs-number">2</span> | <span class="hljs-number">4</span> | <span class="hljs-number">2</span> | <span class="hljs-number">2</span> | =====&gt; +---------+---------+ (each sample generated with <span class="hljs-number">3</span>x3 kernel)<br>+---+---+---+---+---+        |         |         |<br>|   |   | <span class="hljs-number">2</span> |   |   |        |         |         |<br>+---+---+---+---+---+        |         |         |<br>|   |   | <span class="hljs-number">2</span> |   |   |        |         |         |<br>+---+---+---+---+---+        +---------+---------+<br></code></pre></td></tr></table></figure>
+
+<p>这意味着，无法像前述 2 的次幂的算法那样，每个 workgroup 负责的输入 tile，不会和其他 workgroup 有任何交集。这种由非 2 的次幂引入的多次引用，会导致一些 workgroup 生成下一层级样本时， 也可能使用到其他 workgroup 生成的样本。为了提高并行性，去除不同 workgroup 之间的同步，可以推算出生成 $M$ 层级所需的输入层级的大小范围。在划分 workgroup 时，不同 workgroup 之间的输入 tile 允许有重叠部分。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Vulkan-Basics/" class="category-chain-item">Vulkan Basics</a>
+  
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Compute Shader 实现 Pyramid Algorithm</div>
+      <div>http://example.com/2023/09/20/Vulkan Basics/Compute Shader 实现 Pyramid Algorithm/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>September 20, 2023</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/10/15/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs/" title="DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/" title="Compute Shader 基础">
+                        <span class="hidden-mobile">Compute Shader 基础</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

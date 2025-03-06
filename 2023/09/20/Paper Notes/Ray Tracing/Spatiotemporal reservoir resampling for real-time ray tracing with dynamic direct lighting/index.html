@@ -1,0 +1,781 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="ray-tracing, sampling, manly-light">
+  
+    <meta name="description" content="1 SummarySpatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting [1] 解决 many-lights 下的直接光照的重要性采样问题。 2 Background本论文将光源视为场景中的发光几何体，因此 many-lights 下的渲染方程为：着色点 $y$ 在方向">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting">
+<meta property="og:url" content="http://example.com/2023/09/20/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 SummarySpatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting [1] 解决 many-lights 下的直接光照的重要性采样问题。 2 Background本论文将光源视为场景中的发光几何体，因此 many-lights 下的渲染方程为：着色点 $y$ 在方向">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting.assets/image-20220717215808514.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting.assets/image-20220717215902454.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting.assets/image-20220717215920480.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting.assets/image-20220717215937128.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting.assets/image-20220717215954040.png">
+<meta property="article:published_time" content="2023-09-20T15:21:10.852Z">
+<meta property="article:modified_time" content="2024-11-19T15:32:02.362Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting.assets/image-20220717215808514.png">
+  
+  
+  
+  <title>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-09-20 23:21" pubdate>
+          September 20, 2023 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          7k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          59 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-Summary"><a href="#1-Summary" class="headerlink" title="1 Summary"></a>1 Summary</h1><p><code>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting</code> <a href="#%5B1%5D">[1]</a></p>
+<p>解决 many-lights 下的直接光照的重要性采样问题。</p>
+<h1 id="2-Background"><a href="#2-Background" class="headerlink" title="2 Background"></a>2 Background</h1><p>本论文将光源视为场景中的发光几何体，因此 many-lights 下的渲染方程为：着色点 $y$ 在方向 $\vec{\omega}$ 所反射的 radiance $L$ 是对所有发光表面 $A$ 的积分：<br>$$<br>L(y,\vec{\omega}) &#x3D; \int_A \rho(y,\vec{yx}\leftrightarrow\vec{\omega})L_e(x\rightarrow y)G(x\leftrightarrow y)V(x\leftrightarrow y) \space dA_x \tag{1} \label{render equation}<br>$$<br>其中，$\vec{\omega}$ 是观察方向，与相机相关；$\rho$ 与着色点 $y$ 的材质有关，论文中指 BSDF；$L_e$ 是光源表面一点 $x$ 到着色点 $y$ 方向上发出的 radiance；$G$ 几何项，包含了 inverse squared distance 和反射方向与入射方向的余弦项。</p>
+<p>对渲染方程的表示进行一些符号简化，被积函数简化为 $f(x)$，积分微元 $dx$，有渲染方程的简化形式：<br>$$<br>L&#x3D;\int_A f(x)\space dx,\quad where \space f(x)\equiv\rho(x)\cdot L_e(x)\cdot G(x)\cdot V(x) \tag{2} \label{simple render equation}<br>$$</p>
+<ul>
+<li><strong>Importance Sampling(IS)</strong></li>
+</ul>
+<p>使用蒙特卡洛重要性采样方法估计 $\eqref{simple render equation}$ 式积分，从 source PDF $p(x_i)$ 中进行 $N$ 次采样，得到 $N$ 个样本，$\eqref{simple render equation}$ 积分的估计量为：<br>$$<br>L \approx \langle L \rangle_{IS}^N &#x3D;\frac{1}{N}\sum\limits_{i&#x3D;1}^N \frac{f(x_i)}{p(x_i)} \tag{3} \label{IS MC}<br>$$<br>其中如果在 $f(x)$ 非零时，$p(x)$ 都为正，IS 则为无偏估计；并且可以通过选取与 $f(x)$ 相关的 $p(x)$ 形式，来降低方差。</p>
+<ul>
+<li><a name="MIS"><strong>Multiple Importance Sampling(MIS)</strong></a></li>
+</ul>
+<p>由于 $f(x)$ 的复杂性（包含多项），直接采样与 $f(x)$ 成比例（相关）的分布是不可实行的，而通常采样与 $f(x)$ 中单项成比例的分布，例如 $\rho$ BSDF、$L_e$ 等。因此，定义 $M$ 个采样策略 $p_s$ (概率分布)，MIS 从每个采样策略 $s$ 中采样出 $N_s$ 个样本，再将这些样本组合到一个 weighted-estimator 中，如下：<br>$$<br>L\approx \langle L\rangle_{MIS}^{M,N}&#x3D;\sum\limits_{s&#x3D;1}^M\frac{1}{N_s}\sum\limits_{i&#x3D;1}^{N_s}w_s(x_i)\frac{f(x_i)}{p(x_i)} \tag{4}\label{MIS MC}<br>$$<br>其中，只要权重 $w_s$ 可以组成一个归一化整体，MIS 就是无偏估计，即 $\sum^M_{s&#x3D;1}w_s(x)&#x3D;1$。一种流行且较好的启发式选择为 $\Large w_s(x)&#x3D;\frac{N_s p_s(x)}{\sum_j N_jp_j(x)}$，等价于采样 $M$ 个独立采样策略的混合分布。</p>
+<h2 id="2-1-Resample-Importance-Sampling-RIS"><a href="#2-1-Resample-Importance-Sampling-RIS" class="headerlink" title="2.1 Resample Importance Sampling(RIS)"></a>2.1 Resample Importance Sampling(RIS)</h2><p>由 $\eqref{MIS MC}$ 可以看出，MIS 是对着色项的线性组合的采样，而另一种可选的采样策略是对其中一些项的乘积进行近似成比例地采样。RIS 通过以下过程实现该采样策略：RIS 从 source PDF $p$ 中生成 $M\geq 1$ 个候选样本 $\boldsymbol{x}&#x3D;{x_1,\cdots,x_M}$，其中 $p$ 选择次佳但易于采样的分布，如 $p \propto L_e $。然后从这个候选池中使用以下离散概率分布进行随机选取 $z\in{1,\cdots,M}$，<br>$$<br>p(z\mid \boldsymbol{x})&#x3D;\frac{\mathrm{w}(x_z)}{\sum^M_{i&#x3D;1}\mathrm{w}(x_i)} \quad with \quad \mathrm{w}(x)&#x3D;\frac{\hat{p}(x)}{p(x)} \tag{5}\label{discrete PDF}<br>$$<br>其中，$p(x)$ 为易于采样的 source PDF；$\hat{p}(x)$ 为期望得到的 target PDF，例如无法直接采样的分布 $\hat{p}\propto \rho\cdot L_e \cdot G$。对于 <strong>1-sample RIS</strong> 估计量，因此有 $y\equiv x_z$，有<br>$$<br>L\approx \langle L \rangle^{1,M}<em>{RIS} &#x3D; \frac{f(y)}{\hat{p}(y)}\cdot\left(\frac{1}{M}\sum\limits^M</em>{j&#x3D;1}\mathrm{w}(x_j)\right) \tag{6} \label{1-sample RIS}<br>$$</p>
+<blockquote>
+<p>对 $\eqref{1-sample RIS}$ 的理解：RIS 一次采样相当于得到一个 target PDF $\hat{p}$ 的样本 $y$，这个分布是可以采用多项乘积的形式。回顾重要性采样 IS，要使得被积函数对应的估计量 $\langle L\rangle$ 无偏，需要估计量的形式为 $f(y)&#x2F;p_y(y)$，注意这里的 $p_y(y)$ 是 $y$ 的真实 PDF，而不是 target PDF。因此需要乘上括号部分，来近似 $y$ 的真实 PDF，但这种近似并不总是无偏的，会在某些情况下引入偏差，之后部分会有具体分析。</p>
+</blockquote>
+<p>多次执行 RIS，然后取平均，可以得到一个 N-sample RIS 估计量：<br>$$<br>L \approx\langle L\rangle^{M,N}<em>{RIS}&#x3D;\frac{1}{N}\sum\limits^N</em>{i&#x3D;1}\left(\frac{f(y_i)}{\hat{p}(y_i)}\cdot \left(\frac{1}{M}\sum^M_{j&#x3D;1}\mathrm{w}(x_{ij})\right)\right) \tag{7} \label{N-sample RIS}<br>$$<br>在 $M,N\geq 1$ 并且 $f$ 非零时，$p,\hat{p}$ 都为正，RIS 则为无偏估计。理论上 $M$ 和 $N$ 存在与方差有关的最优比，但实际中，这个比值难以事先预知。本文中采用简单形式 $N&#x3D;1$，即 1-sample RIS。有算法流程：</p>
+<ol>
+<li><p>预设 source PDF $p$，文中实验将其设为在面光源上的面积采样分布；target PDF $\hat{p}$，文中实验设置为 unshadowed path contribution 部分，即 $\rho \cdot L_e\cdot G$，不包含 visibility 项</p>
+</li>
+<li><p>设置初始为空的权重列表 $\textup{W}$，初始为 $0$ 的权重累积和 $\textup{w}_{sum}$，初始为空的候选样本列表 $\boldsymbol{x}$</p>
+</li>
+<li><p>对 source PDF $p$ 进行 $M$ 次采样：</p>
+<ul>
+<li><p>第 $i$ 次采样的随机样本为 $x_i$，放入候选样本列表 $\boldsymbol{x}$</p>
+</li>
+<li><p>计算样本 $x_i$ 的权重 $\mathrm{w}_i&#x3D;\Large \frac{\hat{p}(x_i)}{p(x_i)}$，并放入权重列表 $\mathrm{W}$</p>
+</li>
+<li><p>累积权重和 $\mathrm{w}<em>{sum}&#x3D;\mathrm{w}</em>{sum}+\mathrm{w}_i$</p>
+</li>
+</ul>
+</li>
+<li><p>对候选样本权重进行归一化：$\mathrm{w}_i&#x3D; \Large \frac{\mathrm{w}<em>i}{\mathrm{w}</em>{sum}}$</p>
+</li>
+<li><p>将归一化权重作为候选样本的概率分布，采样候选样本列表得到最终选出的样本 $y&#x3D;x_z$</p>
+</li>
+<li><p>返回选出的样本 $y&#x3D;x_z$ 以及本次 RIS 的候选样本的权重累积和 $\textup{w}_{sum}$</p>
+</li>
+</ol>
+<p>假设像素 $q$ 对应 target PDF $\hat{p}(q)$，以及其渲染方程积分 $f_q$，1-sample RIS 算法伪代码如下：</p>
+<p><a name="Algo 1"></a></p>
+<img src="/images/Paper Notes/Ray Tracing/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting.assets/image-20220717215808514.png" srcset="/img/loading.gif" lazyload alt="image-20220717215808514" style="zoom: 50%;">
+
+<center>算法 1</center>
+
+<p>$\eqref{1-sample RIS}$ 式的计算需要候选样本数量 $M$，这是算法输入，是已知的；$\mathrm{w}_{sum}$，算法输出；$\hat{p}(y)$，$y$ 是算法选出的样本，$\hat{p}$ 是预设 target PDF，本文使用的是代入样本到被积函数后的颜色转为亮度。</p>
+<h2 id="2-2-Weighted-Reservoir-Sampling-WRS"><a href="#2-2-Weighted-Reservoir-Sampling-WRS" class="headerlink" title="2.2 Weighted Reservoir Sampling(WRS)"></a>2.2 Weighted Reservoir Sampling(WRS)</h2><p>WRS 是一类从一个 stream ${x_1,x_2,\cdots,x_M}$ 中通过一遍操作来随机采样 $N$ 个元素的算法，该 stream 数据中每个元素 $x_i$ 都关联一个权重 $\textup{w}(x_i)$，$x_i$ 被选中的概率为<br>$$<br>P_i &#x3D; \frac{\mathrm{w}(x_i)}{\sum^M_{j&#x3D;1}\mathrm{w}(x_j)} \tag{8} \label{reservoir CDF}<br>$$<br>Reservoir sampling 对每个元素只进行一次操作，仅需要 $N$ 个元素保留在内存中，并且 stream 的长度 $M$ 不必事先预知。Reservoir sampling 算法，分为有放回采样与无放回采样，由于蒙特卡洛积分积分的采样通常是相互独立的，因此本论文只考虑较为简单的有放回采样算法。</p>
+<p>Reservoir sampling 按照 input stream 的次序来处理其中的元素，保存一个具有 $N$ 个样本的 reservoir。<strong>在任何时刻，reservoir sampling 保持采样自 desired PDF 的 reservoir 中的样本的概率分布仍然是 desired PDF</strong>。即当处理一个来自 stream 的新元素时，更新 reservoir 来<strong>保持其中的样本分布的不变性</strong>，更新操作为：</p>
+<p>在处理了 m 个样本之后，样本 $x_i$ 在 reservoir 出现的概率为 $\textup{w}(x_i)&#x2F;\sum^m_{j&#x3D;1}\textup{w}(x_j)$。处理下一个新元素 $x_{m+1}$ 的更新规则为，使用下一个样本 $x_{m+1}$ 以以下概率随机替换 reservoir 中样本 $x_i$ ：<br>$$<br>\frac{\mathrm{w}(x_{m+1})}{\sum^{m+1}<em>{j&#x3D;1}\mathrm{w}(x_j)}<br>$$<br>因此任意之前的样本 $x_i$ 在 reservoir 内的概率(即已在 reservoir 中，且不会被下一个样本替换掉的概率)为：<br>$$<br>\frac{\mathrm{w}(x_i)}{\sum^m</em>{j&#x3D;1}\mathrm{w}(x_j)}\left(1-\frac{\mathrm{w}(x_{m+1})}{\sum^{m+1}<em>{j&#x3D;1}\mathrm{w}(x_j)}\right)&#x3D;\frac{\mathrm{w}(x_i)}{\sum^{m+1}</em>{j&#x3D;1}\mathrm{w}(x_j)}<br>$$</p>
+<blockquote>
+<p>可以看出 N 个样本的 reservoir 接收到一个新元素的更新规则是，逐个样本执行更新规则</p>
+</blockquote>
+<p>观察 $\eqref{reservoir CDF}$ 中给出的 reservoir CDF 可知，在处理过一个新的元素后 reservoir 中元素的概率分布依然不变。N&#x3D;1 时的 WRS 算法如下：</p>
+<img src="/images/Paper Notes/Ray Tracing/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting.assets/image-20220717215902454.png" srcset="/img/loading.gif" lazyload alt="image-20220717215902454" style="zoom:50%;">
+
+<h1 id="3-Streaming-RIS-With-Spatiotemporal-Reuse"><a href="#3-Streaming-RIS-With-Spatiotemporal-Reuse" class="headerlink" title="3 Streaming RIS With Spatiotemporal Reuse"></a>3 Streaming RIS With Spatiotemporal Reuse</h1><p>RIS 算法对多个 source PDF 的样本进行重采样，重采样的概率分布结合了被积函数的(unshadowed) target PDF 以及源分布，而 target PDF 可以近似为渲染方程 $\eqref{simple render equation}$ 的被积函数每一项对应分布的乘积形式，这种乘积形式要比 <a href="#MIS">MIS</a> 的线性组合形式更接近被积函数的真实分布。因此，<strong>RIS 最终选出的样本可近似看作一次 MIS 采样(包含多种采样策略)的样本，且理论上更优。</strong></p>
+<p>WRS 算法能够高效地维护一个 reservoir，在保持 reservoir 中原有样本所服从分布不变的情况下，不断纳入新的随机样本，使得 reservoir 样本不断逼近目标估计量的期望值。</p>
+<p>理论上，对 RIS 应用 WRS 可以得到一个使 RIS 样本不断逼近期望值的高效算法，当然由于本文的 target PDF 选取 unshadowed path contribution，最终会由于 visibility 无法继续提高 RIS 样本。下面介绍如何应用 WRS 算法，从而得到 Streaming RIS 算法。</p>
+<h2 id="3-1-Streaming-RIS-Using-Reservoir-Sampling"><a href="#3-1-Streaming-RIS-Using-Reservoir-Sampling" class="headerlink" title="3.1 Streaming RIS Using Reservoir Sampling"></a>3.1 Streaming RIS Using Reservoir Sampling</h2><p>RIS 算法为每个像素 $q$ 独立地生成候选样本，再在候选样本中以 target PDF $\hat{p}_q$ 重新采样，选出最终的样本。对 RIS 可以直接应用 WRS 算法，RIS 选出的样本及其对应的权重，可以直接用于 WRS 算法更新其 reservoir。论文中，通过均匀采样 emitter 的面积，并且使用无阴影的路径的贡献 $\hat{p}(x)&#x3D;\rho(x)\cdot L_e(x)\cdot G(x)$ 作为 target distribution，仅对 reservoir 中的 $N$ 个样本进行 trace shadow ray。Streaming RIS 算法如下，</p>
+<p><a name="Algo 3"></a></p>
+<img src="/images/Paper Notes/Ray Tracing/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting.assets/image-20220717215920480.png" srcset="/img/loading.gif" lazyload alt="image-20220717215920480" style="zoom:50%;">
+
+<center>算法 3</center>
+
+<p>这里每次更新 reservoir ：候选样本 $x_i$ 及其权重 $\eqref{discrete PDF}$ 中的 $\Large \textup{w}_{i}&#x3D;\frac{\hat{p}(x_i)}{p(x_i)}$。</p>
+<h2 id="3-2-Spatiotemporal-Reuse"><a href="#3-2-Spatiotemporal-Reuse" class="headerlink" title="3.2 Spatiotemporal Reuse"></a>3.2 Spatiotemporal Reuse</h2><h3 id="3-2-1-复用-reservoir"><a href="#3-2-1-复用-reservoir" class="headerlink" title="3.2.1 复用 reservoir"></a>3.2.1 复用 reservoir</h3><p>Reservoir 样本累积了目前见过的所有样本信息，如果可以基于某些策略(如接下来的Spatiotemporal)，选择与当前像素<strong>样本分布相似</strong>的某些像素的 reservoir，再与当前像素的 reservoir 进行结合复用，就能大幅提高当前像素的采样率。</p>
+<p>一种易想到的简单复用方式使用 2-pass 算法：第一个 pass 先为每一个像素生成其候选样本；第二个 pass 再结合自身与其周围像素的候选样本，进行重采样。但这种方式带来的内存开销非常大，需要存储每个像素的候选样本，即 input stream (如前述算法中 $M$ 个)。</p>
+<p>为了规避内存开销问题，论文使用了 Reservoir sampling 的一个重要性质，该性质可以在不访问其他 reservoir 的 input stream 的条件下，结合多个 reservoir。如果多个 reservoir 中样本分布相似，同样可以将多个 reservoir 输入到一个新的 reservoir 中，这个新的 reservoir 汇集了所有输入 reservoir 的样本信息，并且由于相似的样本分布，而得到采样率&#x2F;质量更高的样本。</p>
+<p>以两个 reservoir 为例：每个 reservoir 当前的状态包含当前选择的样本 $y$ 以及其 sum weight $\textup{w}_{sum}$，作为一个新的 reservoir 的输入，重采样出一个结合两个输入 reservoir 的新样本和新权重。这种方式只需要访问 reservoir 的当前状态，避免了存储 input stream 的开销，但结果在数学形式上等同于在两个 reservoir 的 input streams 重采样。</p>
+<p>复用 reservoir 只是与当前 reservoir 的样本分布相似，但不完全相同，因此需要根据样本分布调整权重。假设 $q$ 为当前像素，$q’$ 为复用像素，论文中将新的 reservoir 中的样本权重使用 $\hat{p}<em>q(r.y)&#x2F;\hat{p}</em>{q’}(r.y)$ 进行调整，采用 [算法 3](#Algo 3) 中的符号得到最终新的权重为 $\hat{p}_q(r.y)\cdot r.W \cdot r.M$。对于任意数量的 reservoir 都可以以这种方式结合，下面是 $k$ 个 reservoir 结合的算法，只有 O(k) 的复杂度：</p>
+<p><a name="Algo 4"></a></p>
+<img src="/images/Paper Notes/Ray Tracing/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting.assets/image-20220717215937128.png" srcset="/img/loading.gif" lazyload alt="image-20220717215937128" style="zoom:50%;">
+
+<center>算法 4</center>
+
+<p>这里新的 reservoir 更新：输入 reservoir 样本，其对应权重根据 $\eqref{discrete PDF}$ 理论上应为 $\Large \frac{\hat{p}_q(r.y)}{p_q(r.y)}$，但 $y$ 的真实分布是未知的，这里使用 $\hat{p}_q(r.y)\cdot r.\textup{W}$ 来近似，$r.M$ 则是为了对不同候选样本数量的 reservoir 的加权。<strong>在复用 reservoir 样本时，新的 reservoir 的 source PDF 就是输入 reservoir 样本的分布，即 $p_y(y)$。</strong></p>
+<p>下面介绍，选用那些像素的 reservoir 来增强当前像素。</p>
+<h3 id="3-2-2-Spatial-Reuse"><a href="#3-2-2-Spatial-Reuse" class="headerlink" title="3.2.2 Spatial Reuse"></a>3.2.2 Spatial Reuse</h3><p>空间复用基于一种观察：相邻像素的 target PDFs 通常存在显著联系，通常具有相似的 Geometry 和 BSDF。因此可以结合相邻像素的 RIS 候选样本来增加自身的 RIS 候选样本数量。</p>
+<p>空间复用相邻像素的 reservoir 的步骤如下：</p>
+<ol>
+<li>使用 [算法 3](#Algo 3) RIS(q) 为每个像素生成 $M$ 个候选样本，并将 reservoir 的结果存储在 image-sized buffer 中。</li>
+<li>每个像素选取 $k$ 个邻居像素，并使用 [算法 4](#Algo 4) 结合 $k$ 个邻居像素的 reservoirs 以及自身的 reservoir。</li>
+</ol>
+<p>每像素的复杂度为 $O(k+M)$，但产生了 $k\cdot M$ 个候选样本。Spatial Reuse 可以重复多次执行，其中每次都是上个 reuse pass 的输出。对于执行了 $n$ 次空间复用迭代，假设每次迭代都复用不同的相邻像素，那么时间复杂度为 $O(kn+M)$，但产生了 $k^n\cdot M$ 个候选样本。</p>
+<p>注意，虽然空间复用可以大幅增多候选样本，即采样率，进而提高图像质量，但这种提升不会随着迭代次数增加而一直增加下去。直至迭代次数多到相邻像素的像素信息被全部利用到，图像质量不再提升。</p>
+<h3 id="3-2-3-Temporal-Reuse"><a href="#3-2-3-Temporal-Reuse" class="headerlink" title="3.2.3 Temporal Reuse"></a>3.2.3 Temporal Reuse</h3><p>上一帧的像素同样可以提供可复用的候选样本。当完成绘制一帧时，将当前帧的像素的 reservoir 结果存入历史帧信息中。在下一帧时利用 motion vector 找到像素的对应关系，复用对应像素的历史 reservoir。</p>
+<h3 id="3-2-4-Visibility-Reuse"><a href="#3-2-4-Visibility-Reuse" class="headerlink" title="3.2.4 Visibility Reuse"></a>3.2.4 Visibility Reuse</h3><p>不幸的是，即使有无限数量的候选样本，RIS 也无法达到无噪声的图像质量。尽管理论上，$M\rightarrow \infty$ 时，reservoir 样本的分布趋向于 target PDF $\hat{p}$，但 $\hat{p}$ 并没有完美采样渲染方程的被积函数。因为，在实际中，$\hat{p}$ 通常设置为了无阴影的 path contribution，当 $M$ 不断增大时，由于 visibility 项噪声会越来越明显，并且 visibility 噪声会表现的非常严重。论文为了解决这一问题，同样对 visibility 进行复用。</p>
+<p>在进行 spatial reuse 或者 temporal reuse 之前，先**对每个像素的 reservoir 选择的样本 $y$ 进行 visibility 评估。如果 $y$ 被遮挡，则丢弃该 reservoir，即被遮挡的样本不会传递给其相邻像素。**visibility 评估需要对当前像素向复用的 reservoir 样本发射 shadow ray。</p>
+<h3 id="3-2-5-完整算法描述"><a href="#3-2-5-完整算法描述" class="headerlink" title="3.2.5 完整算法描述"></a>3.2.5 完整算法描述</h3><p>将上述过程全部考虑进来，得到完整的算法流程：</p>
+<ol>
+<li>首先为每个像素生成 $M$ 个 light candidates，进行重采样，选出最终的样本</li>
+<li>对选出的样本进行 visibility 测试，从中丢弃掉被遮挡的样本</li>
+<li>结合每个像素的 reservoir 和上一帧的对应像素的 reservoir</li>
+<li>执行 $n$ 次空间复用迭代，利用附近 $k$ 个像素的 reservoirs</li>
+</ol>
+<p>算法伪代码如下所示：</p>
+<p><a name="Algo 5"></a></p>
+<img src="/images/Paper Notes/Ray Tracing/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting.assets/image-20220717215954040.png" srcset="/img/loading.gif" lazyload alt="image-20220717215954040" style="zoom:50%;">
+
+
+
+<h1 id="4-Eliminating-Bias-in-Multi-Distribution-RIS"><a href="#4-Eliminating-Bias-in-Multi-Distribution-RIS" class="headerlink" title="4 Eliminating Bias in Multi-Distribution RIS"></a>4 Eliminating Bias in Multi-Distribution RIS</h1><p>虽然上一部分引入复用样本，提升了图片质量，但由于每个像素都具有不同的积分区域和 target PDF，复用会引入潜在的偏差，导致蒙特卡洛积分成为有偏估计。下面通过分析 RIS 权重，推导出偏差的源头。这里假设所有的候选样本都来自于同一源分布 $p$ 。</p>
+<h2 id="4-1-分析-RIS-权重"><a href="#4-1-分析-RIS-权重" class="headerlink" title="4.1 分析 RIS 权重"></a>4.1 分析 RIS 权重</h2><p>$\eqref{1-sample RIS}$ 式的 1-sample RIS 可以重写为：<br>$$<br>\langle L\rangle^{1,M}<em>{RIS}&#x3D;f(y)\cdot\left(\frac{1}{\hat{p}(y)}\frac{1}{M}\sum\limits^M</em>{j&#x3D;1}\mathrm{w}(x_j)\right)&#x3D;f(y)\mathrm{W}(\boldsymbol{x},z) \tag{9}\label{regroup 1-sample RIS}<br>$$<br>其中 $\boldsymbol{x}&#x3D;{x_1,x_2,\cdots,x_M}$，source PDF 的 $M$ 次独立采样；$\textup{W}$ 是 RIS 选出的样本 $y\equiv x_z$ 对应的权重，挑选过程是随机，可知是个随机变量。</p>
+<blockquote>
+<p>理解 $y$ 与 $(\boldsymbol{x},z)$ 以及 $\textup{W}(\boldsymbol{x},z)$：首先 $(\boldsymbol{x},z)$ 表示从 $M$ 次独立采样得到的 $M$ 个样本中，随机挑选出第 $z$ 个。因此 $\boldsymbol{x}$ 是 $M$ 个独立同分布于 source PDF 的 $M$ 维随机变量，有 $p(\boldsymbol{x})&#x3D;\prod\limits^M_{i&#x3D;1}p_i(x_i)$；$z$ 服从一个离散分布，有 $\eqref{discrete PDF}$ 描述的条件形式。其次 $y$ 是 RIS 算法得到的样本，虽然采样过程已知，但 $y$ 的真实概率密度没有解析形式。但根据 RIS 算法，$y$ 与 $(\boldsymbol{x},z)$ 有关，但对于一个样本 $y$，会有很多种 $(\boldsymbol{x},z)$ 的组合，例如 $x_1&#x3D;y$，$(x_2,\cdots,x_M)$ 随机选择，同理也可以有 $x_2&#x3D;y$，因为 $\boldsymbol{x}$ 是 $M$ 次独立采样，每次采样都有可能得到样本 $y$。</p>
+<p>对于 $\textup{W}$，虽然文中公式形式为 $\textup{W}(\boldsymbol{x},z)$，但实际意义应该是，RIS 采样得到样本 $y$ 时对应的权重，即 $x_z&#x3D;y$ 的权重。换句话说，给定样本 $y$ 时的权重，<strong>权重更精确的形式</strong>是：<br>$$<br>\mathop{\textup{W}}\limits_{x_z&#x3D;y}(\boldsymbol{x},z)&#x3D;\frac{1}{\hat{p}(y)}\frac{1}{M}\sum\limits^M_{j&#x3D;1}\textup{w}(x_j) \tag{10} \label{RIS weight}<br>$$<br>即在 $x_z&#x3D;y$ 的条件下的权重。</p>
+</blockquote>
+<p>首先猜想如何使得 RIS 估计量是个无偏估计？虽然 $y$ 的真实分布是未知的，但根据 $\eqref{IS MC}$ 式的重要性采样理论，这里的 $\textup{W}(\boldsymbol{x},z)$ 需要充当 $1&#x2F;p(y)$ 的作用才能得到无偏估计，注意这里的 $p(y)$ 指的是 $y$ 的真实 PDF，而不是 source PDF，为了区分，我们重写为 $p_y(y)$。 如 $\eqref{RIS weight}$ 式描述，对于给定的 RIS 样本 $y$，可能有很多种 $(\boldsymbol{x},z)$，因此 $\textup{W}(\boldsymbol{x},z)$ 是一个随机变量，要想使得 RIS 无偏，则需要 $\textup{W}(\boldsymbol{x},z)$ 的期望值等于 $1&#x2F;p_y(y)$。</p>
+<p>[算法 4](#Algo 4) 中将多个 reservoir 整合为一个新的 reservoir 时，每个 reservoir 的权重根据 $\eqref{discrete PDF}$ 理论上应为 $\Large \frac{\hat{p}(y)}{p_y(y)}$，而算法 4 使用的近似为 $\hat{p}(y)\cdot \textup{W}$，这里则是用了 $\textup{W}$ 作为 $1&#x2F;p_y(y)$ 的估计量。额外的 $M$ 则是为了对不同候选样本数量的 reservoir 进行的加权。</p>
+<h2 id="4-2-Biased-RIS"><a href="#4-2-Biased-RIS" class="headerlink" title="4.2 Biased RIS"></a>4.2 Biased RIS</h2><p>我们将第 $i$ 次采样所服从分布的概率密度写为 $p_i(x_i)$，候选样本的联合概率密度有<br>$$<br>p(\boldsymbol{x})&#x3D;\prod\limits^M_{i&#x3D;1}p_i(x_i)<br>$$<br>$\eqref{discrete PDF}$ 式中候选样本的概率密度重写为<br>$$<br>p(z|\boldsymbol{x})&#x3D;\frac{\textup{w}<em>z(x_z)}{\sum^M</em>{i&#x3D;1}\textup{w}<em>i(x_i)} \quad where \space \space \textup{w}<em>i(x_i)&#x3D;\frac{\hat{p}(x_i)}{p_i(x_i)}<br>$$<br>候选样本与选取的样本索引 $z$ 的联合概率密度为<br>$$<br>p(\boldsymbol{x},z)&#x3D;p(\boldsymbol{x})\cdot p(z\mid \boldsymbol{x})&#x3D;\left(\prod\limits^M</em>{i&#x3D;1}p_i(x_i)\right)\cdot \frac{\mathrm{w}<em>z(x_z)}{\sum^M</em>{i&#x3D;1}\mathrm{w}<em>i(x_i)} \tag{11} \label{joint PDF}<br>$$<br>对于给定样本值 $y$，可能有非常多的 $(\boldsymbol{x},z)$ 组合，对于采样出值为 $y$ 的样本 $x_i$ 要满足 $p_i(y)&#x3D;p(\boldsymbol{x},i)&gt;0$，因此所有可能情况有：<br>$$<br>Z(y)&#x3D;{i\mid 1\leq i\leq M \wedge p_i(y)&gt;0 } \tag{12} \label{all z}<br>$$<br>因此最终输出 $y$ 的 PDF 可以由 $\eqref{joint PDF}$ 的联合概率密度和 $\eqref{all z}$ 的所有可能取值得到<br>$$<br>p_y(y)&#x3D;\sum\limits</em>{i\in Z(y)}\underbrace{\int\cdots\int}</em>{M-1} p(\boldsymbol{x}^{i\rightarrow y},i) \space \underbrace{dx_1\cdots dx_M}<em>{M-1} \tag{13} \label{y PDF}<br>$$<br>$p(\boldsymbol{x}^{i\rightarrow y},i) $ 是参照 $\eqref{joint PDF}$ 代入 $z&#x3D;i,x_i&#x3D;y$ 得到的 $(x_1,\cdots,x</em>{i-1},y,x_{i+1},\cdots,x_M)$ 的联合概率密度，对每种可能取值下的联合概率密度求 $y$ 的边缘概率密度 $p_i(y)$，并求和得到 $p_y(y)$。</p>
+<p>验证 RIS 是否无偏，需要知道 $\eqref{RIS weight}$ 中描述的权重的期望是否为 $1&#x2F;p_y(y)$，求解其期望如下：<br>$$<br>\mathop{\mathbb{E}}\limits_{x_z&#x3D;y}\left[\textup{W}(\boldsymbol{x},z)\right]&#x3D;\frac{1}{p_y(y)}\frac{|Z(y)|}{M} \tag{14} \label{weight expectation}<br>$$<br>由 $\eqref{all z}$ 可知，<strong>只有在所有候选样本分布都不为 0 时，上式的权重期望才为 $1&#x2F;p_y(y)$，RIS 才是无偏的</strong>。</p>
+<p>如果部分积分区域上的 source PDF 为 0，则有 $\large\frac{|Z(y)|}{M} &lt; 1$， 此时，重要性采样的 inverse PDF 会偏小，积分结果会偏小，带来能量损失。</p>
+<h2 id="4-3-Unbiased-RIS"><a href="#4-3-Unbiased-RIS" class="headerlink" title="4.3 Unbiased RIS"></a>4.3 Unbiased RIS</h2><p>上一节给出了 RIS 有偏的情况，即会有部分样本的 source PDF 为 0。这是由于 visibility 项导致的，我们在复用其他像素的 reservoir 时，并没有考虑这些 reservoir 样本是否对当前像素可见。同样，在执行 [算法 3](#Algo 3) streaming RIS 时，会根据 shadow ray 丢弃掉部分不可见候选样本，但在复用阶段，这些被丢弃的样本可能对当前像素是可见的，这就损失了部分能量。</p>
+<p>因此若想得到无偏 RIS 则需要对 $\eqref{RIS weight}$ 和 $\eqref{weight expectation}$ 的候选样本的总数 $M$ 进行调整，调整为当前像素可见的候选样本总数，设置 $m(x_z)&#x3D;\frac{1}{M}$，新的权重及其期望形式为<br>$$<br>\begin{align}<br>\mathop{\textup{W}}\limits_{x_z&#x3D;y}(\boldsymbol{x},z)&amp;&#x3D;\frac{1}{\hat{p}(x_z)}\left[m(x_z)\sum\limits^M_{j&#x3D;1}\textup{w}(x_j)\right] \<br>\mathop{\mathbb{E}}\limits_{x_z&#x3D;y}\left[\textup{W}(\boldsymbol{x},z)\right]&amp;&#x3D;\frac{1}{p_y(y)}\sum\limits_{i\in Z(y)}m(x_z)<br>\end{align}<br>$$<br>因此当 $\sum\limits_{i\in Z(y)}m(x_z)&#x3D;1$ 时，RIS 为无偏估计。如何保证这一条件？</p>
+<h2 id="4-4-A-Practical-Algorithm-for-Unbiased-Reuse"><a href="#4-4-A-Practical-Algorithm-for-Unbiased-Reuse" class="headerlink" title="4.4 A Practical Algorithm for Unbiased Reuse"></a>4.4 A Practical Algorithm for Unbiased Reuse</h2><p>本文使用光源分布作为 source PDF，候选样本以及选出的 reservoir 样本都是光源面上一点。并且对于直接光照采样，只会采样着色点可见光源，即 $\eqref{weight expectation}$ 中使用的候选样本分布都不为 0，因此对于初始候选样本重采样的过程是无偏的。但对于reservoir 重用过程，新的 reservoir 的 source PDF 变成了，每个 reservoir 样本的分布，这个是未知的，因此重用过程的 source PDF 可能互不相同。重用过程引入 bias 的原因是：尽管复用 reservoir 对其像素可见，但对于当前像素可能不可见，这就导致了新 reservoir 的部分 source PDF 为 0，为 $\eqref{weight expectation}$ 引入了 bias。</p>
+<p>论文中提出一种无偏 RIS 算法，该算法基于一种观察：尽管复用 reservoir 样本 PDF (即新 reservoir 的 source PDF)不可知，但当样本对当前像素不可见时，其 PDF 为 0。因此可以在复用 reservoir 样本之前，先进行 visibility 测试，如果不可见，设置其 PDF 为 0，即丢弃掉该样本，也就是 visibility reuse。相比有偏算法，无偏算法开销很大，因为需要对每个复用 reservoir 样本发射一条 shadow ray。</p>
+<h1 id="5-Design-and-Implementation"><a href="#5-Design-and-Implementation" class="headerlink" title="5 Design and Implementation"></a>5 Design and Implementation</h1><p>作者为有偏与无偏算法选用不同的参数配置，以达到两种算法的开销近似。</p>
+<p><strong>$M&#x3D;32$ 个初始候选样本的生成</strong>：根据三角面片发光的 power 重要性采样选择一个三角形，然后在三角形上均匀采样一个点 $x$，即 source PDF $p(X)\propto L_e(x)$。如果有环境光贴图，那么 25% 的候选样本由重要性采样环境光贴图生成。重要性采样发光三角形与环境光贴图都是离散采样，采用 alias table <a href="#%5B2%5D">[2]</a>。同时，作者也测试了通过预计算为场景的发光三角形生成 VPL 集合，虽然能够提高性能，但有 visual artifact。</p>
+<p><strong>Target PDF</strong>：在重采样步骤中，需要 target PDF 对选出的样本进行加权，作者使用 unshadowed path contribution 作为 target PDF，即 $\hat{p}\propto \rho\cdot L_e\cdot G$。作者为场景所有几何使用统一的材质，Lambertian diffuse 和 dielectric  GGX microfacet 。而对于复杂的材质模型，为每个候选样本计算会更耗时。</p>
+<p><strong>Neighbor Selection</strong>：对于 Spatial Reuse，在 30-pixel 半径范围内采样 $k$ 个像素进行复用，无偏选用 $k&#x3D;3$，有偏选用 $k&#x3D;5$。对于 Temporal Reuse，则使用 motion vector 找到历史帧对应的像素。</p>
+<p><strong>Biased RIS 降低偏差</strong>：对于有偏算法，重用来自不同几何&#x2F;材质的像素会增加偏差，因此作者使用一种简单的启发式策略拒绝这部分像素。比较重用像素与当前像素的到相机距离、normal 夹角，拒绝超过预设阈值的像素(10% 当前像素的深度和 25°)。</p>
+<p><strong>Evaluated Sample Count</strong>：对于 [算法 5](#Algo 5) ，每个像素存储 $N$ 个 reservoir，无偏算法采用 $N&#x3D;1$，有偏算法采用 $N&#x3D;4$。</p>
+<p><strong>Reservoir storage and temporal weighting</strong>：每个像素只存储选出的样本 $y$ 及其权重 $W$，候选样本的数量 $M$。对于 temporal reuse，对当前像素产生贡献的候选样本数量会无限制增加，因为每一帧都结合了历史帧的 reservoir。在重采样过程中，这样会导致 temporal sample 加权高度不成比例，作者将历史帧的候选样本数量限制在当前帧 $20\times M$ 内，这样就限制了时序信息的影响。</p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a name="[1]">[1]</a> Benedikt Bitterli, Chris Wyman, Matt Pharr, Peter Shirley, Aaron Lefohn, and Wojciech Jarosz. 2020. Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting. <i>ACM Trans. Graph.</i> 39, 4, Article 148 (August 2020), 17 pages. DOI:<a target="_blank" rel="noopener" href="https://doi.org/10.1145/3386569.3392481">https://doi.org/10.1145/3386569.3392481</a></p>
+<p><a name="[2]">[2]</a> Alastair J Walker. 1974. New fast method for generating discrete random numbers with arbitrary frequency distributions. Electronics Letters 10, 8 (1974), 127–128.  </p>
+<h1 id="Appendix"><a href="#Appendix" class="headerlink" title="Appendix"></a>Appendix</h1><h2 id="1-重要性采样为何要到-Resample-Importance-Sampling"><a href="#1-重要性采样为何要到-Resample-Importance-Sampling" class="headerlink" title="1. 重要性采样为何要到 Resample Importance Sampling"></a>1. <a name="App 1">重要性采样为何要到 Resample Importance Sampling</a></h2><p>蒙特卡洛积分估计理论上是进行越多的采样次数，越接近 groud-truth，但实际中要限制开销，只能以有限的采样次数来进行积分估计。因此，采样分布如果能够更倾向于采样被积函数较重要的区域，则会更快达到收敛，这就是重要性采样 (IS) 的思想。$\eqref{IS MC}$ 式描述的重要性采样(IS)是蒙特卡洛积分的最简单的无偏估计，因为 IS 只采样了一种分布，例如 cosine-weighted sample hemisphere 就是根据渲染方程 cosine 项的特征得到的采样方法。</p>
+<p>但通常渲染方程被积函数包含多项，如 $\eqref{simple render equation}$ 中的 $\rho,L_e,G$ 等。于是又有了，$\eqref{MIS MC}$ 式描述的多重重要性采样，MIS 使用了多种采样策略，每种采样策略都进行了一次重要性采样，最后将多次重要性采样结合在一起。虽说，MIS 考虑了多种分布，但其估计量形式相当于是<strong>对多种分布的线性组合</strong>，而对于渲染方程而言，其被积函数是多项的乘积形式，因此不能更好地采样被积函数的重要性区域。</p>
+<p>对于多种分布的乘积形式，是无法直接采样的。但可以使用 Resample Importance Sampling(RIS) $\eqref{1-sample RIS}$ 来近似成比例地采样多种分布乘积形式。</p>
+<h2 id="2-RIS-权重期望"><a href="#2-RIS-权重期望" class="headerlink" title="2. RIS 权重期望"></a>2. RIS 权重期望</h2><p>$$<br>\begin{align}<br>\mathop{\mathbb{E}}\limits_{x_z&#x3D;y}\left[\textup{W}(\boldsymbol{x},z)\right]&amp;&#x3D;\underbrace{\int \cdots \int}<em>M\frac{ \textup{W}(\boldsymbol{x},z,x_z&#x3D;y)\cdot p(\boldsymbol{x},z,x_z&#x3D;y)}{p_z(x_z&#x3D;y) \space } \space dx_1\cdots dx_Mdz \<br>&amp;\overset{\eqref{y PDF}}{&#x3D;}\sum\limits</em>{i\in Z(y)}\underbrace{\int\cdots\int}<em>{M-1} \frac{ \textup{W}(\boldsymbol{x}^{i\rightarrow y},i)\cdot p(\boldsymbol{x}^{i\rightarrow y},i)}{p_y(y) } \space dx_1\cdots dx_M \<br>&amp;&#x3D; \sum\limits</em>{i\in Z(y)} \frac{\underbrace{\int\cdots\int}<em>{M-1} \textup{W}(\boldsymbol{x}^{i\rightarrow y},i)\cdot p(\boldsymbol{x}^{i\rightarrow y},i)\space dx_1\cdots dx_M}{p_y(y)} \<br>&amp;&#x3D; \frac{1}{p_y(y)}\cdot \sum\limits</em>{i\in Z(y)} \underbrace{\int\cdots\int}<em>{M-1} \textup{W}(\boldsymbol{x}^{i\rightarrow y},i)\cdot p(\boldsymbol{x}^{i\rightarrow y},i)\space dx_1\cdots dx_M \<br>&amp;\overset{代入 \eqref{RIS weight},\eqref{joint PDF}}{&#x3D;}  \frac{1}{p_y(y)}\sum\limits</em>{i\in Z(y)}\int\cdots\int \left(\frac{1}{\hat{p}(x_i)}\frac{1}{M}\sum\limits^M_{j&#x3D;1}\textup{w}(x_j)\right) \left(\prod\limits^M_{j&#x3D;1}p_j(x_j)\right) \frac{\textup{w}<em>i(x_i)}{\sum^M</em>{j&#x3D;1}\textup{w}<em>j(x_j)} \space dx_1\cdots dx_M \<br>&amp;&#x3D; \frac{1}{p_y(y)}\sum\limits</em>{i\in Z(y)}\int\cdots\int \left(\frac{1}{\hat{p}(x_i)}\frac{1}{M}\right) \left(\prod\limits^M_{j&#x3D;1}p_j(x_j)\right) \textup{w}<em>i(x_i) \space dx_1\cdots dx_M \<br>&amp;&#x3D; \frac{1}{p_y(y)}\sum\limits</em>{i\in Z(y)}\left(\frac{p_i(x_i)}{\hat{p}(x_i)}\frac{\textup{w}<em>i(x_i)}{M}\underbrace{\int\cdots\int \prod\limits^M</em>{j\neq i}p_j(x_j) \space dx_1\cdots dx_M}<em>1\right) \<br>&amp;&#x3D;\frac{1}{p_y(y)}\sum\limits</em>{i\in Z(y)}\left(\frac{p_i(x_i)}{\hat{p}(x_i)}\frac{\textup{w}<em>i(x_i)}{M}\right) \<br>&amp;&#x3D; \frac{1}{p_y(y)}\sum\limits</em>{i\in Z(y)}\frac{1}{M} \<br>&amp;&#x3D; \frac{1}{p_y(y)}\frac{|Z(y)|}{M}<br>\end{align}<br>$$</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/Ray-Tracing/" class="category-chain-item">Ray Tracing</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting</div>
+      <div>http://example.com/2023/09/20/Paper Notes/Ray Tracing/Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>September 20, 2023</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/09/20/Paper%20Notes/GI/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes/" title="Real-Time Global Illumination using Precomputed Light Field Probes">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Real-Time Global Illumination using Precomputed Light Field Probes</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texel%20Shading/" title="Texel Shading">
+                        <span class="hidden-mobile">Texel Shading</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

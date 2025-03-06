@@ -1,0 +1,686 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="render pipeline, texture space shading">
+  
+    <meta name="description" content="1 Summary传统的光栅化管线着色（forward&#x2F;deferred）是基于屏幕空间像素的着色过程，由于光栅化流水线作业的限制，shading rate完全由分辨率、几何复杂度、帧率控制。而本文提出的texel shading管线将着色转化为texture space的任务，并将着色结果cache在texture space，最终的着色通过采样cache完成。 基于texture s">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Texel Shading">
+<meta property="og:url" content="http://example.com/2023/09/20/Paper%20Notes/Render%20Pipeline/Texel%20Shading/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 Summary传统的光栅化管线着色（forward&#x2F;deferred）是基于屏幕空间像素的着色过程，由于光栅化流水线作业的限制，shading rate完全由分辨率、几何复杂度、帧率控制。而本文提出的texel shading管线将着色转化为texture space的任务，并将着色结果cache在texture space，最终的着色通过采样cache完成。 基于texture s">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Render%20Pipeline/Texel%20Shading.assets/image-20230703182339279.png">
+<meta property="article:published_time" content="2023-09-20T15:21:10.852Z">
+<meta property="article:modified_time" content="2023-09-17T05:15:54.258Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Paper%20Notes/Render%20Pipeline/Texel%20Shading.assets/image-20230703182339279.png">
+  
+  
+  
+  <title>Texel Shading - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Texel Shading"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-09-20 23:21" pubdate>
+          September 20, 2023 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          1k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          9 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Texel Shading</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-Summary"><a href="#1-Summary" class="headerlink" title="1 Summary"></a>1 Summary</h1><p>传统的光栅化管线着色（forward&#x2F;deferred）是基于屏幕空间像素的着色过程，由于光栅化流水线作业的限制，shading rate完全由分辨率、几何复杂度、帧率控制。而本文提出的texel shading管线将着色转化为texture space的任务，并将着色结果cache在texture space，最终的着色通过采样cache完成。</p>
+<p>基于texture space的着色将shading rate与分辨率、几何复杂度、帧率解耦，可以每像素调整shading rate，变得更加可控。同时texture space下对于时空复用类算法更加友好。概况地讲，texture space shading(TSS)的提出主要有如下动机：</p>
+<ol>
+<li>可控的表面像素采样率。对于远处高光的小物体，相机的运动会导致非常不稳定的效果。例如，从正对着表面运动到grazing视角，表面变得更加高频，而采样率不足。TSS的着色受相机视角影响较小。</li>
+<li>更加准确的帧间复用。不同的观察位置、角度下，相邻帧之间的表面像素的不匹配程度较高，例如可能处于不同的mip level。传统光栅化管线在时序上的复用难以考虑这一点，而TSS着色结果cache在texture space，时序连续性较高。</li>
+<li>更加准确的空间复用。屏幕空间的像素之间暴露出incoherent性质，这对于空间复用很不友好。而texture space下，相邻像素往往满足世界空间的coherent。</li>
+</ol>
+<h1 id="2-Pipeline设计"><a href="#2-Pipeline设计" class="headerlink" title="2 Pipeline设计"></a>2 Pipeline设计</h1><p>texel shading的前提是使用某种参数化方式将场景的mesh统一到唯一的texture space下，即每一个surface point都具有唯一的texture坐标。这种参数化方式在TSS技术中也是一大问题，本文未做这方面的详细调研。texel shading管线共包含三个阶段：</p>
+<ol>
+<li><strong>Shade Queuing</strong>：使用一个geometry pass来标记需要着色的texel tiles(8x8)，每个texel tile作为着色任务。再新增着色任务前会先查询cache中是否已存在。</li>
+<li><strong>Shade Evaluation</strong>：compute shader中提取着色任务需要的顶点属性，并生成着色结果到cache texture中。</li>
+<li><strong>Shade Gathering</strong>：再执行一次geometry pass，从cache texture中收集着色结果，得到最终屏幕着色。</li>
+</ol>
+<h2 id="2-1-预处理"><a href="#2-1-预处理" class="headerlink" title="2.1 预处理"></a>2.1 预处理</h2><p>为了能够在compute shader中得到几何信息，还需要在预处理阶段生成triangle index texture，即texture space下纹理坐标到triangle ID的映射。</p>
+<p><strong>实现设计</strong>：对整个texture space分辨率进行一次光栅化即可得到triangle index texture。</p>
+<h2 id="2-2-Shade-Queuing"><a href="#2-2-Shade-Queuing" class="headerlink" title="2.2 Shade Queuing"></a>2.2 Shade Queuing</h2><p>本阶段通过geometry pass为每个像素生成texel单位的shade任务，并选择合适的mip level。通过一张cache texture来缓存每个8x8 tile的状态，例如最近更新的帧数，可以控制tile的更新频率。8x8 tile的shade任务生成算法如下：</p>
+<img src="/images/Paper Notes/Render Pipeline/Texel Shading.assets/image-20230703182339279.png" srcset="/img/loading.gif" lazyload alt="image-20230703182339279" style="zoom: 50%;">
+
+<blockquote>
+<p>算法：geometry pass生成的texel任务(i, j, L)转为 8x8 tile任务(i&#x2F;8. j&#x2F;8, L-3)。一个L-3级别上的8x8 tile可以计算得到一个L的texel。</p>
+</blockquote>
+<p>这里可以看出控制shading rate的方式有：</p>
+<ul>
+<li>tile的更新频率阈值（多少帧更新一次）</li>
+<li>texel的mip level越大，意味着越少数量的texel，一个texel可以覆盖多个像素，这适用于低频区域。</li>
+</ul>
+<p><strong>实现设计</strong>：</p>
+<ul>
+<li>geometry pass需要对带纹理坐标的几何进行光栅化，得到每个像素的纹理坐标、以及重心坐标。</li>
+<li>cache texture：从算法实现上看，cache texture应该是N-3层级的贴图，给定shade texel(i, j, L)，其在cache中的坐标为(i&#x2F;8, j&#x2F;8, L-3)。cache texture的texel是对应tile的状态信息：<ul>
+<li>上一次更新的帧数</li>
+<li>bias配置：提高mip level来减少shade texel</li>
+</ul>
+</li>
+<li>如果在本阶段的geometry pass中计算的mip level向上取整，一个8x8 tile的着色可以在Shade Gathering阶段做到三线性插值。</li>
+</ul>
+<h2 id="2-3-Shade-Evaluation"><a href="#2-3-Shade-Evaluation" class="headerlink" title="2.3 Shade Evaluation"></a>2.3 Shade Evaluation</h2><p>本阶段执行于compute shader，每个thread group执行一个8x8 tile。通过texel的纹理坐标从triangle index texture得到当前triangle ID，并根据此ID得到triangle数据。使用texel的重心坐标进行插值得到texel的顶点数据。之后便可以按照传统渲染的方式对texel着色。</p>
+<h2 id="2-4-Shade-Gathering"><a href="#2-4-Shade-Gathering" class="headerlink" title="2.4 Shade Gathering"></a>2.4 Shade Gathering</h2><p>此时，cache中已经有了屏幕着色需要的所有数据。再执行一次geometry pass得到对应level的texel着色。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/Render-Pipeline/" class="category-chain-item">Render Pipeline</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Texel Shading</div>
+      <div>http://example.com/2023/09/20/Paper Notes/Render Pipeline/Texel Shading/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>September 20, 2023</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/09/20/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/" title="Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texture%20Space%20Shading/" title="Texture Space Shading">
+                        <span class="hidden-mobile">Texture Space Shading</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

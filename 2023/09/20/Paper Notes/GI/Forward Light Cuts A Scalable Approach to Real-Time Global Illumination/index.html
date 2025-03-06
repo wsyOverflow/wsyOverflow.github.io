@@ -1,0 +1,795 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta name="description" content="1 SummaryForward Light Cuts: A Scalable Approach to Real-Time Global Illumination    [1] 这篇论文假设了次级光源为 diffuse 材质的场景，并且不考虑次级光照的阴影，提出了一种能够很好结合 tessellation 和 geometry 阶段的并行特性的高效实时全局光照近似计算算法。该算法基于 many-l">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Forward Light Cuts A Scalable Approach to Real-Time Global Illumination">
+<meta property="og:url" content="http://example.com/2023/09/20/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 SummaryForward Light Cuts: A Scalable Approach to Real-Time Global Illumination    [1] 这篇论文假设了次级光源为 diffuse 材质的场景，并且不考虑次级光照的阴影，提出了一种能够很好结合 tessellation 和 geometry 阶段的并行特性的高效实时全局光照近似计算算法。该算法基于 many-l">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013637705.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013806858.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013853277.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013914497.png">
+<meta property="article:published_time" content="2023-09-20T15:21:10.835Z">
+<meta property="article:modified_time" content="2023-09-17T05:31:35.057Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination.assets/image-20220717013637705.png">
+  
+  
+  
+  <title>Forward Light Cuts A Scalable Approach to Real-Time Global Illumination - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Forward Light Cuts A Scalable Approach to Real-Time Global Illumination"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-09-20 23:21" pubdate>
+          September 20, 2023 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.7k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          39 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Forward Light Cuts A Scalable Approach to Real-Time Global Illumination</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-Summary"><a href="#1-Summary" class="headerlink" title="1 Summary"></a>1 Summary</h1><p><code>Forward Light Cuts: A Scalable Approach to Real-Time Global Illumination  </code>  <a href="#%5B1%5D">[1]</a></p>
+<p>这篇论文假设了次级光源为 diffuse 材质的场景，并且不考虑次级光照的阴影，提出了一种能够很好结合 tessellation 和 geometry 阶段的并行特性的高效实时全局光照近似计算算法。该算法基于 many-light 框架，将场景中的三角形类比为虚拟点光源，首先通过将场景中三角形以一种概率分布划分为 multi-scale radiance 子集，在每个子集中的每个三角形上随机采样生成一个扰动的 VPL，这样就组成了多尺度的 VPL 集合。之后求解该 VPL 集合形成的 many-light 问题来近似全局光照。该算法既模拟了传统层级的光源数量的随尺度增加的几何级下降，又具有可高度并行的线性设计，在场景完全动态并且涉及大量物体时，相比于之前算法，画面质量无明显损失并且具有较大的性能提升。</p>
+<h1 id="2-Motivation"><a href="#2-Motivation" class="headerlink" title="2 Motivation"></a>2 Motivation</h1><p>实时全局光照有很多基于 radiance caching 的方法，之前这些方法构建出场景中几何的层级结构（多为树形结构），使用这种层级结构来构建 multi-scale radiance function，之后通过查询该层级结构对像素进行照亮。</p>
+<p>对于这种策略的方法，在场景完全动态并且涉及大量物体情况下，至少有两种局限，</p>
+<ul>
+<li>层级缓存结构每一帧都要重复计算，这个缺点带来的开销在现代图形学的并行结构下更为明显</li>
+<li>对于实时渲染，初始 VPL 集合过大，带来的开销难以分摊</li>
+</ul>
+<h1 id="3-Approach"><a href="#3-Approach" class="headerlink" title="3 Approach"></a>3 Approach</h1><h2 id="3-1-VPLs-Generation"><a href="#3-1-VPLs-Generation" class="headerlink" title="3.1 VPLs Generation"></a>3.1 VPLs Generation</h2><h3 id="3-1-1-区分-Divergent-和-Regular-三角形"><a href="#3-1-1-区分-Divergent-和-Regular-三角形" class="headerlink" title="3.1.1 区分 Divergent 和 Regular 三角形"></a>3.1.1 区分 Divergent 和 Regular 三角形</h3><p>设置阈值 $S_0$ ，面积大于 $S_0$ 的三角形为 Divergent 三角形，这类三角形需要经过一次 tessellation 特殊处理，之后描述。</p>
+<p>$$<br>S_0&#x3D;4\pi \frac{D^2_{near}}{N_{avg}}<br>$$<br>这个公式表达的是启发式地照亮一个像素，该像素周围有 $N_{avg}$ 个距离为至少 $D_{near}$ 的 VPLs 。参数配置：假设 $R_{scene}$ 为场景的半径长度，设置 $D_{near}&#x3D;0.2\times R_{scene}$，$N_{avg}$ 在区间 $[64,1024]$ 内进行 quality-speed tradeoff。</p>
+<blockquote>
+<p><code>个人理解见</code>：<a href="#%E9%99%84%E5%BD%951">附录 1. 阈值 $S_0$ 的启发式的理解</a></p>
+</blockquote>
+<h3 id="3-1-2-三角形抽取过程"><a href="#3-1-2-三角形抽取过程" class="headerlink" title="3.1.2 三角形抽取过程"></a>3.1.2 三角形抽取过程</h3><p>抽取操作目的是丢弃小三角形，因为这类三角形引入的 diffuse indirect lighting 对最终的渲染贡献很小，丢弃会加快速度，但如果全部无差别丢弃，则会丢失那些多个小三角形一起作用而带来的明显间接光照效果，因此提取操作中引入一种随机过程，即<strong>随机抽取过程</strong>：</p>
+<p>对于每一个三角形计算一个 $[0,1]$ 区间均匀分布的随机数 $u_{t_i}$，如果三角形面积 $\mathcal{A}(t_i)&gt;u_{t_i}S_0$，则保留该三角形，否则丢弃。三角形保留的概率分布为</p>
+<p>$$<br>\forall\space t_i\in \mathcal{L}, \quad P(t_i\in \mathcal{L^<em>})&#x3D;\frac{\mathcal{A}(t_i)}{S_0}<br>$$<br>其中 $\mathcal{L}$ 是全体 regular 三角形的集合，$\mathcal{L^</em>}$ 是保留的三角形集合。由此可以看出，**三角形面积越小，被丢弃的概率越大。**对于整个场景的面能够保留下来的数量的期望为 $\mathbb{E}(N_{sample})&#x3D;\frac{\mathcal{A}_{scene}}{S_0}$。</p>
+<h4 id="基于随机提取过程的三角形多尺度划分"><a href="#基于随机提取过程的三角形多尺度划分" class="headerlink" title="基于随机提取过程的三角形多尺度划分"></a>基于随机提取过程的三角形多尺度划分</h4><p>将场景中三角形划分为 $(\mathcal{L}^0,…,\mathcal{L}^N)$ 共 $N+1$ 个子集，子集索引由 $0$ 到 $N$ 递增，影响距离递减（即尺度递减），子集包含的三角形数量递增。为了实现这样的划分，引入 $N+1$ 长度的递增序列 ${S_0&lt;…&lt;S_N}$。扩展随机提取过程到多尺度划分过程，三角形 $\large t_i$ 划分为子集 $\large \mathcal{L}^k$ 的概率为</p>
+<p>$$<br>\forall k\in [0…N],\quad P(t_i\in \mathcal{L}^k)&#x3D;\frac{\mathcal{A}(t_i)}{S_k} \tag{1}\label{partition probability}<br>$$<br>在多尺度划分过程中，divergent 三角形的定义更改为<strong>面积大于 $S_N$ 的三角形</strong>。</p>
+<p>实际划分算法又有进一步的改动，引入 $\large\forall k\in [0…N],\quad \tilde{S}<em>k&#x3D;\frac{1}{\sum^k</em>{j&#x3D;0}\frac{1}{S_j}}$ ， 算法伪代码如下</p>
+<img src="/images/Paper Notes/GI/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013637705.png" srcset="/img/loading.gif" lazyload alt="尺度等级划分算法" style="zoom: 67%;">
+
+<blockquote>
+<p>可知 $\tilde{S}_k$ 单调递减，与原 $S_k$ 单调递增相反，但算法中是只有三角形没有被分在 $k-1$ 子集中，才有可能判断是否可分到 $k$ 子集，这是条件概率。粗略地看，子集索引越大，三角形分到该子集的概率越低，因为需要在前面没有分到所有子集的条件，才进行后续子集的划分。</p>
+</blockquote>
+<p>至此，我们已经对场景三角形进行随机划分为多个不同尺度的子集，之后其中的每个三角形都会随机生成一个 VPL，形成 VPL 集。接下来基于生成的 VPL 求解 many-light 问题，即如何使用这些 VPL 照亮像素。</p>
+<h2 id="3-2-VPLs-光照下的着色"><a href="#3-2-VPLs-光照下的着色" class="headerlink" title="3.2 VPLs 光照下的着色"></a>3.2 VPLs 光照下的着色</h2><h4 id="3-2-1-many-light-下的-VPLs-lighting-问题描述"><a href="#3-2-1-many-light-下的-VPLs-lighting-问题描述" class="headerlink" title="3.2.1 many-light 下的 VPLs lighting 问题描述"></a>3.2.1 many-light 下的 VPLs lighting 问题描述</h4><p>在 many-lights 框架中，对于 normal 为 $\vec{n_x}$ 的着色点 $x$ 的 indirect outgoing radiance，计算方法由连续积分近似为来自一个 VPLs 集合的 radiance 离散求和。</p>
+<p>$$<br>L^{ML}(x,\vec{n_x})&#x3D;\sum_{t_i\in \mathcal{L}}H(t_i,x,\vec{n_x})\mathcal{A}(t_i) \tag{2}<br>$$<br>$\mathcal{L}$ 表示场景中所有三角形集合，$H(t_i,x,\vec{n_x})$ 表示 normal 为 $\vec{n_x}$ 的点 $\large x$ 接收到由 $t_i$(VPL) 出发的 radiance。对于 albedo 为 $\rho_x$ 的 diffuse receiver， $H$ 的形式如下：</p>
+<p>$$<br>H(t_i,x,\vec{n_x})&#x3D;L(t_i,\bar{y_ix})\frac{\rho_x}{\pi}\frac{&lt;\vec{n_x},\bar{xy_i}&gt;^+&lt;\vec{n_i},\bar{y_ix}&gt;^+}{d_i^2}<br>$$<br>其中 $\large \bar{u}$ 表示 normalized 向量，$&lt;\vec{u},\vec{v}&gt;^+&#x3D;max(0,&lt;\vec{u},\vec{v}&gt;)$，$L(t_i,\bar{y_ix})$ 是离开 VPL 中心 $\large y_i\in t_i$ 朝向 $\large \bar{y_ix}$ 的 radiance， $d_i&#x3D;max(\epsilon,||\vec{xy_i}||)$ 是进行过 clamp 的 $y_i$ 与 $\large x$ 之间的距离，避免奇异点。</p>
+<blockquote>
+<p><code>对近似的个人理解见</code>：<a href="#%E9%99%84%E5%BD%952">附录 2. 着色方程积分近似为求和的理解</a></p>
+</blockquote>
+<p>VPL 对直接光照的 diffuse 反射表示为下面的 VPL 出射 radiance：</p>
+<p>$$<br>L(t_i,\bar{y_ix})&#x3D;\rho_iE(t_i)\frac{3}{2\pi}&lt;\vec{n_i},\bar{y_ix}&gt;^+<br>$$<br>其中 $\large E_i$ 是直接到达三角形 $\large t_i$ 的直接 irradiance，由于 $&lt;\vec{n_i},\bar{y_ix}&gt;^+$ 可知上式并非 perfectly Lambertian (一种简单的漫反射：光线被均匀的反射到表面上方的半球)，而只会在几何法线方向发生完美反射。$\large \frac{3}{2\pi}$ <em>用来保证能量守恒</em>。</p>
+<blockquote>
+<p> 将 $\large L(t_i,\bar{y_ix})$ 代入 $\large H(t_i,x,\vec{n_x})$ 中有</p>
+<p> $$<br> \begin{align}H(t_i,x,\vec{n_x})&amp;&#x3D;\rho_iE(t_i)\frac{3}{2\pi}&lt;\vec{n_i},\bar{y_ix}&gt;^+\frac{\rho_x}{\pi}\frac{&lt;\vec{n_x},\bar{xy_i}&gt;^+&lt;\vec{n_i},\bar{y_ix}&gt;^+}{d_i^2}\ &amp;&#x3D; \frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{&lt;\vec{n_x},\bar{xy_i}&gt;(&lt;\vec{n_i},\bar{y_ix}&gt;)^2}{d_i^2} \end{align}\tag{2} \label{received radiance}<br> $$
+ </p>
+</blockquote>
+<h4 id="3-2-2-多尺度划分下的-VPLs-lighting-的近似"><a href="#3-2-2-多尺度划分下的-VPLs-lighting-的近似" class="headerlink" title="3.2.2 多尺度划分下的 VPLs lighting 的近似"></a>3.2.2 多尺度划分下的 VPLs lighting 的近似</h4><p>上述进行的对三角形的多尺度随机划分引入了随机过程，因此 $L^{ML}(x,\vec{n_x})$  也变成了<strong>随机量</strong>，接下来就需要对该随机量进行估计。我们定义 $K(x,\vec{n_x})$ 为 $L^{ML}(x,\vec{n_x})$  <strong>估计量(Estimator)</strong>：</p>
+<p>$$<br>K(x,\vec{n_x})&#x3D;\sum\limits^N_{k&#x3D;0}\sum\limits_{t_i\in\mathcal{L}^k}H(t_i,x,\vec{n_x})F^k(t_i,k)<br>$$<br>其中 $F^k(t_i,k)$ 是一个未知函数，参数 $x$ 为着色点，$t_i$ 为 VPL 所在三角形，$k$ 为子集索引。</p>
+<p>下面就要确定 $F^k(t_i,k)$ 的形式：</p>
+<p>$$<br>\begin{align} \mathbb{E}\left[K(x,\vec{n_x})\right]&amp;&#x3D; \mathbb{E}\left[\sum\limits^N_{k&#x3D;0}\sum\limits_{t_i^k\in \mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\right] \ &amp;&#x3D; \sum\limits_{t_i\in \mathcal{L}}H(t_i,x,\vec{n_x}) \mathbb{E}\left[\sum\limits^N_{k&#x3D;0}F^k(t_i,x)\mathbb{I}<em>{t_i\in \mathcal{L}^k}\right] \ &amp;&#x3D; \sum\limits</em>{t_i\in \mathcal{L}}H(t_i,x,\vec{n_x})\sum\limits^N_{k&#x3D;0}F^k(t_i,x)P(t_i\in \mathcal{L}^k)\end{align}\tag{3}\label{many light estimator}<br>$$<br>其中 $\mathbb{I}_{t_i\in \mathcal{L}^k}$ 为指示函数，当 $t_i\in \mathcal{L}^k$ 时值为 $1$，否则为 0。</p>
+<blockquote>
+<p><code>推导见</code>：<a href="#%E9%99%84%E5%BD%953">附录 3. VPL lighting 推导</a></p>
+</blockquote>
+<p>我们要选取 $F^k(t_i,x)$ 使得 $K(x,\vec{n_x})$ 为 $L^{ML}(x,\vec{n_x})$ 的无偏估计，即 $\mathbb{E}\left[K(x,\vec{n_x})\right]&#x3D;L^{ML}(x,\vec{n_x})$，比较式 (2) 和 (4) 可有</p>
+<p>$$<br>\forall x,\quad \sum\limits_k F^k(t_i,x)P(t_i\in \mathcal{L}^k)&#x3D;\mathcal{A}(t_i)\label{partition derivate}<br>$$<br>根据划分策略，将 $F^k$ 定义为 	$F^k(t_i,x)&#x3D;S_kf^k(t_i,x)$</p>
+<blockquote>
+<p><code>推导见</code>：<a href="#%E9%99%84%E5%BD%954">附录 4. 转为整体划分问题推导</a></p>
+</blockquote>
+<p>这样就将一个无偏估计问题转为了寻找对一个整体的划分问题。</p>
+<p><strong>整体的划分选取</strong></p>
+<p>$f^k(t_i,x)$ 划分函数的参数 $t_i,x$ 都为三维，论文采用一种方法将划分函数进行降维近似处理，此方法参考了论文  <em>Point-based approximate color bleeding</em> 中的 nested balls: $\mathcal{B}_h(t_i)$，其定义如下：</p>
+<p>$$<br>\forall h\in \mathbb{R}^*, \quad \mathcal{B}_h(t_i)&#x3D;{x\in\mathbb{R}^3\space s.t. \space \underset{\vec{n_x}}{max}\space H(t_i,x,\vec{n})\geq h} \tag{4} \label{partition nested ball}<br>$$</p>
+<blockquote>
+<p>$H$ 是 $\large x$ 接收到 $t_i$ VPL 的 radiance，这个 nested ball 的含义就是定义了一个对着色点 $x$ 的 radiance 贡献较为显著的区域，这个显著程度由 $h$ 决定。</p>
+</blockquote>
+<p>此外，考虑 receiver 正对着 emitter 的情况，即 $\vec{n_x}&#x3D;\bar{xy_i}$，此时 $H$ 达到最大值，有：</p>
+<p>$$<br>\mathcal{B}_h(t_i)&#x3D;{x\in\mathbb{R}^3\space s.t. \space \frac{||x-y_i||}{&lt;\vec{n_i},\bar{xy_I}&gt;^+}\leq D(h)} \tag{5} \label{nested ball}<br>$$<br>其中  $D(h)&#x3D;\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}$</p>
+<blockquote>
+<p><code>推导见</code>：<a href="#%E9%99%84%E5%BD%955">附录 5. 整体划分选取推导</a></p>
+</blockquote>
+<p> $D(h)&#x3D;\frac{1}{\pi}\sqrt{\frac{3\rho_x\rho_iE(t_i)}{2h}}$ 与 $\large x$ 着色点无关，因此 $\mathcal{B}_h(t_i)$ 是一个 nest ball，其边界上有点 $y_i$，其中心位于直线 $(y_i,\vec{n_i})$ 上。如下图所示</p>
+<img src="/images/Paper Notes/GI/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013806858.png" srcset="/img/loading.gif" lazyload alt="image-20220717013806858" style="zoom:67%;">
+
+<blockquote>
+<p>上图是 $f^k(t_i,x)$ 函数的二维可视化，其值从 0(黑) 到 1(白)。</p>
+</blockquote>
+<p>作者做了一个假设：nest ball 边界上的三维划分 $^k(t_i,x)$ 是不变的，通过如下 $\large \mathbb{R}^3$ 到 $\large \mathbb{R}$ 的映射：</p>
+<p>$$<br>\forall x\in \mathbb{R}^3, \quad d(t_i,x)&#x3D;\frac{||x-y_i||}{&lt;\vec{n_i},\bar{xy_I}&gt;^+}<br>$$<br>可以将三维划分将为一维划分：</p>
+<p>$$<br>\forall x\in \mathbb{R}^3, \quad f^k(t_i,x)&#x3D;\tilde{f}^k(d(t_i,x))<br>$$<br> $\large f^k$ 将会在 rendering 中用作 splat function，因此尽可能使得 $f^k$ 易于计算且 smooth，论文定义为下面一组分段线性函数</p>
+<p>$$<br>\forall d\in\mathbb{R},\quad \tilde{f}^k(d)&#x3D;\begin{cases}\begin{align}&amp;1 &amp;k&#x3D;0\space and \space d\in[0,D_1] \ &amp;\frac{d-D_{k-1}}{D_k-D_{k-1}} &amp;k&gt;0\space and \space d\in[D_{k-1},D_k] \ &amp;\frac{D_{k+1}-d}{D_{k+1}-D_k} &amp;k&gt;0 \space and \space d\in [D_k,D_{k+1}]\&amp;0 &amp;otherwise\end{align}\end{cases}<br>$$<br>${D_k}$ 定义了每一级 VPL 的影响距离。</p>
+<p> <strong>参数配置</strong></p>
+<p>作者为了模仿传统的层级表示，采用了子集大小几何级下降的参数配置。从前述划分策略来看，$S_k$ 影响到划分子集的结果，此外，可以将 $S_k$ 理解为子集 $\mathcal{L}^k$ 的平均面积，应几何级增加，因此定义如下参数配置：</p>
+<p>$$<br>S_k&#x3D;S_0\mu^k<br>$$<br>其中 $\mu &gt;1$ 是用户定义的参数，论文建议 $[1.4,5]$。作者还建议定义影响距离参数，这样每个点都只会有一个可控数量的 VPL 到达，控制计算量，如：</p>
+<p>$$<br>\begin{cases}D_k&#x3D;\sqrt{S_0\mu^k}\ D_{N+1}&#x3D;D_{N}\end{cases}<br>$$</p>
+<blockquote>
+<p>个人理解见：<a href="#%E9%99%84%E5%BD%956">附录 6. 模拟传统层级的几何级下降的理解</a></p>
+</blockquote>
+<h1 id="4-实现细节"><a href="#4-实现细节" class="headerlink" title="4 实现细节"></a>4 实现细节</h1><h4 id="4-1-Pipeline-描述"><a href="#4-1-Pipeline-描述" class="headerlink" title="4.1 Pipeline 描述"></a>4.1 Pipeline 描述</h4><p>本论文提出的技术共用到三个 geometry pass，其中两个主要 pass 用于生成 GBuffer 和生成 Splat VPLs。第三个 pass 用于处理 Divergent triangle。如下图所示</p>
+<img src="/images/Paper Notes/GI/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013853277.png" srcset="/img/loading.gif" lazyload alt="image-20220717013853277" style="zoom:50%;">
+
+<h4 id="4-2-Divergent-三角形处理"><a href="#4-2-Divergent-三角形处理" class="headerlink" title="4.2 Divergent 三角形处理"></a>4.2 Divergent 三角形处理</h4><p>在本论文提出的 indirect lighting pipeline 中包含了两个 geometry pass：第一个 pass 关闭 tessellation stage 处理整个场景的三角形，这个阶段检测出哪些是 Divergent 三角形，并存入单独的 buffer 中。剩下的 regular 三角形送入 regular pipeline。</p>
+<p>存储 Divergent 三角形的 buffer 直接作为后续第二个 geometry pass 的输入。tessellation stage 只在这个 pass 开启，用于细分 divergent 三角形，使得它们的面积小到能够被 regular pipeline 处理。</p>
+<blockquote>
+<p>Tessellation stage 相比于 geometry 是开销是非常大的，因此使用一个 geometry 阶段过滤 regular 三角形，提高了效率。</p>
+</blockquote>
+<p>regular pipeline 即对 regular 三角形采样分级，再进行 VPL lighting 计算。</p>
+<h4 id="4-3-Per-triangle-random-number-generation"><a href="#4-3-Per-triangle-random-number-generation" class="headerlink" title="4.3 Per-triangle random number generation"></a>4.3 Per-triangle random number generation</h4><p>本论文涉及的随机过程都需要随机数来完成，对于算法 1 用到的随机数 $\large u_{t_i}$，作者使用伪随机数。mesh 中每个顶点添加一个额外的 uint32 属性，v_rand。该属性在加载 mesh 时为每个顶点生成一个 uniform 随机数。在 regular pipeline 中，每个三角形的随机数 $\large u_{t_i}$ 是使用其三个顶点间的 $\large xor$ 操作得到的。</p>
+<p>对于 tessellation stage 细分生成的新三角形，作者通过采样一张预计算的噪声贴图得到新顶点的随机值，采样坐标为新顶点的重心坐标，最后对新三角形顶点的随机数使用同样的 $\large xor$ 操作。</p>
+<p>想要以上随机数每帧更新，以上随机数最终再与一个 uniform 的全局变量 u_rand 进行 $\large xor$ 操作，这个 uniform 全局变量大概要一帧更新一次。算法如下</p>
+<img src="/images/Paper Notes/GI/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination.assets/image-20220717013914497.png" srcset="/img/loading.gif" lazyload alt="image-20220717013914497" style="zoom: 67%;">
+
+<h4 id="4-4-Progressive-rendering"><a href="#4-4-Progressive-rendering" class="headerlink" title="4.4 Progressive rendering"></a>4.4 Progressive rendering</h4><p>可以按照上述使用 u_rand 的方法生成多个 independent rendering，之后累积作平均用以产生更好的渲染结果。如，从 u_rand 中为每个三角形生成两个独立的随机数，用以扰动 VPL 中心点 $\large y_i$。平均由多个 jittered VPLs 生成的多个 independent rendering，可以提供接近公式 (4) 真实解的结果。</p>
+<h1 id="5-Remain-Question"><a href="#5-Remain-Question" class="headerlink" title="5 Remain Question"></a>5 Remain Question</h1><ul>
+<li><input disabled type="checkbox"> 划分整体过程中的整体应该怎么理解？</li>
+<li><input disabled type="checkbox"> Splatting indirect illumination   技术不了解</li>
+</ul>
+<h1 id="6-Reference"><a href="#6-Reference" class="headerlink" title="6 Reference"></a>6 Reference</h1><p><a name="[1]">[1]</a> Gilles LAURENT, Cyril DELALANDRE, Grégoire de LA RIVIÈRE, and Tamy BOUBEKEUR. 2016. Forward Light Cuts: A Scalable Approach to Real-Time Global Illumination. <i>Comput. Graph. Forum</i> 35, 4 (July 2016), 79–88.</p>
+<h1 id="附录"><a href="#附录" class="headerlink" title="附录"></a>附录</h1><h2 id="1-阈值-S-0-的启发式的理解"><a href="#1-阈值-S-0-的启发式的理解" class="headerlink" title="1. 阈值 $S_0$ 的启发式的理解"></a>1. <a name="附录1">阈值 $S_0$ 的启发式的理解</a></h2><p>以像素为球心、半径为 $D_{near}$ 的球面面积为 $4\pi D^2_{near}$，假设在距离 $D_{near}$ 内的 VPL 光源才能到达该像素，并且 $N_{avg}$ 个 VPL 共同作用下才能照亮该像素。由于本文中次级光源都假设为 diffuse，因此可粗略地认为 VPL 发出的 radiance 与面积成正比。这样下来，VPL 的平均面积 $4\pi \frac{D^2_{near}}{N_{avg}}$，高于此平均面积的三角形成为 divergent，剩下的三角形为  regular，regular 三角形生成的 VPL 具有可控的影响距离，divergent 三角形后续会进一步细分为小三角形。</p>
+<h2 id="2-着色方程积分近似为求和的理解"><a href="#2-着色方程积分近似为求和的理解" class="headerlink" title="2. 着色方程积分近似为求和的理解"></a>2. <a name="附录2">着色方程积分近似为求和的理解</a></h2><p>首先来看精确的 rendering equation，</p>
+<p>$$<br>L(x,\omega_o)&#x3D;\int_{\Omega^+}\space f_r(x,\omega_i\rightarrow\omega_o)L_i(x’,\omega_i)cos\theta \space d\omega_i<br>$$<br>上式为对立体角的积分，转为对光源面积的积分为</p>
+<p>$$<br>L(x,\omega_o)&#x3D;\int_{A}\space f_r(x,\omega_i\rightarrow\omega_o)L_i(x’,\omega_i)\frac{cos\theta cos\theta’}{||x’-x||^2} \space dA<br>$$</p>
+<p>$L^{ML}$ 的形式即从对光源面积的积分近似而来，diffuse 下 BRDF 是常量，即 $H$ 中的 $\large\frac{\rho_x}{\pi}$，$L_i$ 对应 $H$ 中的 $L$。因此，$L^{ML}(x,\vec{n_x})$ 与 $L(x,\omega_o)$ 唯一不同的是一个是对总体面积的连续积分，一个是将每个 VPL 的面积视为微元的离散求和。可知，在 VPL 面积较小时，这种近似较为接近正确。</p>
+<h2 id="3-VPL-lighting-推导"><a href="#3-VPL-lighting-推导" class="headerlink" title="3. VPL lighting 推导"></a>3. <a name="附录3">VPL lighting 推导</a></h2><p>将划分的三角形所有子集看作一个整体求和符号有：$\sum\limits^N_{k&#x3D;0}\sum\limits_{t_i^k\in \mathcal{L}^k}&#x3D;\sum\limits_{t_i\in \mathcal{L}}$</p>
+<blockquote>
+<p> 因为 $t_i^k$ 本就代表是子集 $\mathcal{L}^k$ 中的三角形，可知 $\large \mathbb{I}_{t_i^k\in \mathcal{L}^k}$ 恒为 $1$，因此有</p>
+</blockquote>
+<p>$\mathbb{E}\left[\sum\limits^N_{k&#x3D;0}\sum\limits_{t_i^k\in \mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\right]&#x3D;\mathbb{E}\left[\sum\limits^N_{k&#x3D;0}\sum\limits_{t_i^k\in \mathcal{L}^k}H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\mathbb{I}_{t_i^k\in \mathcal{L}^k}\right]$，</p>
+<blockquote>
+<p> 将和的期望转为期望的和</p>
+</blockquote>
+<p>$&#x3D;\sum\limits^N_{k&#x3D;0}\sum\limits_{t_i^k\in \mathcal{L}^k}\mathbb{E}\left[H(t_i^k,x,\vec{n_x})F^k(t_i^k,x)\mathbb{I}_{t_i^k\in \mathcal{L}^k}\right]$，</p>
+<blockquote>
+<p>此时由于指示函数的存在可将三角形子集看作一个整体求和，</p>
+</blockquote>
+<p>$&#x3D;\sum\limits_{t_i\in \mathcal{L}}\mathbb{E}\left[H(t_i,x,\vec{n_x})F^k(t_i,x)\mathbb{I}_{t_i\in \mathcal{L}^k}\right]$，</p>
+<blockquote>
+<p>$H(t_i,x,\vec{n_x})$ 与随机划分无关，对于期望而言是常量，可以提出期望计算外，即</p>
+</blockquote>
+<p>$&#x3D;\sum\limits_{t_i\in \mathcal{L}}H(t_i,x,\vec{n_x})\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in \mathcal{L}^k}\right]$，</p>
+<blockquote>
+<p>接下来进行一个恒等变换，$F^k(t_i,x)\mathbb{I}<em>{t_i\in \mathcal{L}^k}&#x3D;\sum\limits^N</em>{k&#x3D;0}F^k(t_i,x)\mathbb{I}<em>{t_i\in \mathcal{L}^k}$，因为对于每一个 $t_i$，只会有一个 $k$ 值使得 $\large \mathbb{I}</em>{t_i\in \mathcal{L}^k}&#x3D;1$，其余都为 $0$。</p>
+</blockquote>
+<p>$&#x3D;\sum\limits_{t_i\in \mathcal{L}}H(t_i,x,\vec{n_x})\sum\limits^N_{k&#x3D;0}\mathbb{E}\left[F^k(t_i,x)\mathbb{I}_{t_i\in \mathcal{L}^k}\right]$，</p>
+<blockquote>
+<p>目前期望计算中只有指示函数与随机划分相关，且易知  $\mathbb{E}\left[\mathbb{I}_{t_i\in \mathcal{L}^k}\right]&#x3D;P(t_i\in \mathcal{L^k})$ ，有</p>
+</blockquote>
+<p>$\mathbb{E}\left[F^k(t_i,x)\mathbb{I}<em>{t_i\in \mathcal{L}^k}\right]&#x3D;F^k(t_i,x)\mathbb{E}\left[\mathbb{I}</em>{t_i\in \mathcal{L}^k}\right]&#x3D;F^k(t_i,x)P(t_i\in \mathcal{L^k})$</p>
+<blockquote>
+<p>最终有</p>
+</blockquote>
+<p>$ \sum\limits_{t_i\in \mathcal{L}}H(t_i,x,\vec{n_x})\sum\limits^N_{k&#x3D;0}F^k(t_i,x)P(t_i\in \mathcal{L}^k)$</p>
+<h2 id="4-转为整体划分问题推导"><a href="#4-转为整体划分问题推导" class="headerlink" title="4. 转为整体划分问题推导"></a>4. <a name="附录4">转为整体划分问题推导</a></h2><p>由 $\eqref{partition probability}$ 式代入 $\eqref{many light estimator}$ 中有</p>
+<p>$$\forall x,\quad \sum\limits_k F^k(t_i,x)\frac{\mathcal{A}(t_i)}{S_k}&#x3D;\mathcal{A}(t_i)$$</p>
+<p>$$\forall x,\quad \sum\limits_k \frac{F^k(t_i,x)}{S_k}&#x3D;1$$</p>
+<p>假设未知函数 $f^k(t_i,x)$ 使得 $F^k(t_i,x)&#x3D;S_kf^k(t_i,x)$，那么有</p>
+<p>​				$\sum\limits_kf^k(t_i,x)&#x3D;1$</p>
+<h2 id="5-整体划分选取推导"><a href="#5-整体划分选取推导" class="headerlink" title="5. 整体划分选取推导"></a>5. <a name="附录5">整体划分选取推导</a></h2><blockquote>
+<p>当 receiver 正对着 emitter 时，将 $\vec{n_x}&#x3D;\bar{xy_i}$ 代入 $\eqref{received radiance}$，有</p>
+</blockquote>
+<p>$\begin{align}\underset{\vec{n_x}}{max}\space H(t_i,x,\vec{n_x})&amp;&#x3D;\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\frac{(&lt;\vec{n_i},\bar{y_ix}&gt;)^2}{d_i^2}\&amp;&#x3D;\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2\end{align}$​</p>
+<blockquote>
+<p>将 $\large H$ 代入公式 $\eqref{partition nested ball}$ 有</p>
+</blockquote>
+<p>$$\frac{3}{2\pi^2}\rho_i\rho_xE(t_i)\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2 \geq h$$</p>
+<p>$$\left(\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||}\right)^2 \geq \frac{2h\pi^2}{3\rho_i\rho_xE(t_i)}$$</p>
+<p>$$\frac{&lt;\vec{n_i},\bar{y_ix}&gt;}{||x-y_i||} \geq \pi \sqrt{\frac{2h}{3\rho_i\rho_xE(t_i)}}$$</p>
+<p>$$\frac{||x-y_i||}{&lt;\vec{n_i},\bar{y_ix}&gt;} \leq \frac{1}{\pi} \sqrt{\frac{3\rho_i\rho_xE(t_i)}{2h}}$$</p>
+<h2 id="6-模拟传统层级的几何级下降的理解"><a href="#6-模拟传统层级的几何级下降的理解" class="headerlink" title="6. 模拟传统层级的几何级下降的理解"></a>6. <a name="附录6">模拟传统层级的几何级下降的理解</a></h2><p>这里的模拟层级表示而引入几何级下降的参数配置：例如满二叉树的层级表示，根节点层(0层)节点数量为 $S_0&#x3D;1$ 个，往下每层数量是前一层的 2 倍，即有 $S_k&#x3D;S_0 2^k$ 个，为几何级增长。</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/GI/" class="category-chain-item">GI</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Forward Light Cuts A Scalable Approach to Real-Time Global Illumination</div>
+      <div>http://example.com/2023/09/20/Paper Notes/GI/Forward Light Cuts A Scalable Approach to Real-Time Global Illumination/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>September 20, 2023</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/09/20/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields/" title="Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

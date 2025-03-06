@@ -1,0 +1,810 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="Graphics, Radiometry">
+  
+    <meta name="description" content="辐射度量学基础Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。 相关术语   物理量 公式 单位    Radiant Energy(辐射能) $Q&#x3D;\frac{hc}{\lambda}$ $J$(焦耳)   Radiant Flux(辐射通量)或Power(功率) $\Phi&amp;">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SlabHash">
+<meta property="og:url" content="http://example.com/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="辐射度量学基础Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。 相关术语   物理量 公式 单位    Radiant Energy(辐射能) $Q&#x3D;\frac{hc}{\lambda}$ $J$(焦耳)   Radiant Flux(辐射通量)或Power(功率) $\Phi&amp;">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20231114163033588.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418105514511.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418105703119.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418105937707.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/2.PNG">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418111221992.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418111805822.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418113052481.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418113447525.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418113916011.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418140012081.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418141032723.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418143001958.png">
+<meta property="article:published_time" content="2023-11-08T12:16:21.093Z">
+<meta property="article:modified_time" content="2023-12-15T06:32:01.805Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20231114163033588.png">
+  
+  
+  
+  <title>SlabHash - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="SlabHash"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-11-08 20:16" pubdate>
+          November 8, 2023 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          1.7k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          15 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">SlabHash</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="辐射度量学基础"><a href="#辐射度量学基础" class="headerlink" title="辐射度量学基础"></a>辐射度量学基础</h1><p>Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。</p>
+<h2 id="相关术语"><a href="#相关术语" class="headerlink" title="相关术语"></a>相关术语</h2><table>
+<thead>
+<tr>
+<th>物理量</th>
+<th>公式</th>
+<th>单位</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Radiant Energy(辐射能)</td>
+<td>$Q&#x3D;\frac{hc}{\lambda}$</td>
+<td>$J$(焦耳)</td>
+</tr>
+<tr>
+<td>Radiant Flux(辐射通量)或Power(功率)</td>
+<td>$\Phi&#x3D;\frac{dQ}{dt}$</td>
+<td>$W$(瓦特) 或 lm</td>
+</tr>
+<tr>
+<td>Angle(角度)</td>
+<td>$\theta&#x3D;\frac{l}{r}$</td>
+<td>rad(弧度)</td>
+</tr>
+<tr>
+<td>Solid Angle(立体角)</td>
+<td>$\Omega&#x3D;\frac{A}{r^2}$</td>
+<td>sr(球面角度)</td>
+</tr>
+<tr>
+<td>Radiant Intensity(辐射强度)</td>
+<td>$I&#x3D;\frac{\Phi}{4\pi}$</td>
+<td>$W&#x2F;sr$ 或 cd(烛光)</td>
+</tr>
+<tr>
+<td>Irradiance(辐照度)</td>
+<td>$E(x)&#x3D;\frac{d\Phi (x)}{dA}$</td>
+<td>$W&#x2F;m^2$ 或 lux(照度)</td>
+</tr>
+<tr>
+<td>Radiance(辐射率)或luminance(亮度)</td>
+<td>$L(p,\omega)&#x3D;\frac{d^2\Phi (p,\omega)}{d\omega dA cos\theta}$</td>
+<td>$W&#x2F;(m^2\cdot sr)$ 或 nit(尼特)</td>
+</tr>
+</tbody></table>
+<h4 id="1-Radiant-Energy-辐射能量"><a href="#1-Radiant-Energy-辐射能量" class="headerlink" title="1. Radiant Energy(辐射能量)"></a>1. Radiant Energy(辐射能量)</h4><p>电磁辐射的能量，单位焦耳 $J$</p>
+<p>光源发射光子，每个光子具有特定的波长以及特定数量的能量。波长为 $\lambda$ 的光子携带的能量<br>$$<br>Q &#x3D; \frac{hc}{\lambda}<br>$$<br>其中，$c$ 为光速，$h$ 为普朗克常量</p>
+<h4 id="2-Radiant-Flux-Power-辐射通量-功率"><a href="#2-Radiant-Flux-Power-辐射通量-功率" class="headerlink" title="2. Radiant Flux&#x2F;Power(辐射通量&#x2F;功率)"></a>2. Radiant Flux&#x2F;Power(辐射通量&#x2F;功率)</h4><p>单位时间内通过表面或空间区域的能量，即功率</p>
+<p>$$<br>\Phi &#x3D; \frac{dQ}{dt}<br>$$</p>
+<p>光源发出(emitted)的总量通常使用通量描述。下图描述了来自点光源的通量通过球面的能量，在两个球上测量得到的通量应该是相同的。</p>
+ <img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20231114163033588.png" srcset="/img/loading.gif" lazyload alt="image-20231114163033588" style="zoom: 50%;">
+
+<p>经常会遇到throughput说法，但throughput并不是物理量，只是对光线传播时所保持能量的描述。例如由光源发出的光线，经过一级反射会累积交点处的BSDF，在下一级光路传播时，该光线的throughput指的是其携带能量乘上BSDF。可以理解为 scaled radiance。而辐射通量则是某点对到达该点的光线的throughput * 该点的BSDF的积分。</p>
+<h4 id="3-Angle"><a href="#3-Angle" class="headerlink" title="3. Angle"></a>3. Angle</h4><p>圆上的弧长与半径的比值: $\theta&#x3D;\frac{l}{r}$ ，圆有 $2\pi$ 弧度</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418105514511.png" srcset="/img/loading.gif" lazyload alt="image-20210418105514511" style="zoom:33%;">
+
+<h4 id="4-Solid-Angle-立体角"><a href="#4-Solid-Angle-立体角" class="headerlink" title="4. Solid Angle(立体角)"></a>4. Solid Angle(立体角)</h4><p>球面上的投影面积与半径的平方之比: $\Omega &#x3D; \frac{A}{r^2}$，球的立体角为 $4\pi$ 球面角度(steradians)</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418105703119.png" srcset="/img/loading.gif" lazyload alt="image-20210418105703119" style="zoom:33%;">
+
+<h4 id="5-Differential-Solid-Angle-微分立体角"><a href="#5-Differential-Solid-Angle-微分立体角" class="headerlink" title="5. Differential Solid Angle(微分立体角)"></a>5. Differential Solid Angle(微分立体角)</h4><img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418105937707.png" srcset="/img/loading.gif" lazyload alt="image-20210418105937707" style="zoom: 25%;">
+
+<ul>
+<li><p>球面坐标：$\theta\in[0,\pi],\phi\in[0,2\pi]$</p>
+</li>
+<li><p>单位面积：$dA&#x3D;(rd\theta)(rsin\theta d\phi)&#x3D;r^2sin\theta d\theta d\phi$，单位立体角对应的球面上单位区域的面积</p>
+</li>
+<li><p>单位立体角：$d\omega &#x3D; \frac{dA}{r^2}&#x3D;sin\theta d\theta d\phi$</p>
+</li>
+<li><p>球面的微分立体角：$\Omega&#x3D;\int_{S^2}d\omega&#x3D;\int_0^{2\pi}\int_0^{\pi}sin\theta d\theta d\phi&#x3D;4\pi$，其中 $S^2$ 是球面积</p>
+<blockquote>
+<p>$dA$ 的证明，$dA$ 可看作 $d\theta$ 和 $d\phi$ 对应的微分弧组成的小矩形，如下图中红色弧线与蓝色弧线</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/2.PNG" srcset="/img/loading.gif" lazyload alt="2" style="zoom: 50%;">
+
+<p>其中蓝色弧线位于半径为 $r_\phi$ 的小圆上，而红色弧线位于半径为 $r_\theta$ 的大圆上，又知道 $sin\theta &#x3D; \frac{r_\phi}{r_\theta}$，由弧长公式有</p>
+<p>红色弧：$r_\theta d\theta$，蓝色弧：$r_\phi d\phi&#x3D;r_\theta sin\theta d\phi$。</p>
+<p>因此 $dA&#x3D;(r_\theta d\theta)(r_\theta sin\theta d\phi)&#x3D;r_\theta^2sin\theta d\theta d\phi$。</p>
+<blockquote>
+<p>$sin\theta$ 的直观理解是，越靠近极点位置，$r_\phi$ 越小，因此微分面积也越小；越靠近赤道位置，$r_\phi$ 越大，因此微分面积也越大</p>
+</blockquote>
+</blockquote>
+</li>
+</ul>
+<p>$\omega$ 作为单位立体角的方向向量</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418111221992.png" srcset="/img/loading.gif" lazyload alt="image-20210418111221992" style="zoom:25%;">
+
+<ul>
+<li>Isotropic Point Source(各向同性光源)：球面上各单位立体角辐射强度 (Radiant Intensity) 相同。整个球面的辐射通量&#x2F;功率：$\Phi&#x3D;\int_{S^2}Id\omega&#x3D;4\pi I$，辐射强度 $I&#x3D;\frac{\phi}{4\pi}$。</li>
+</ul>
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418111805822.png" srcset="/img/loading.gif" lazyload alt="image-20210418111805822" style="zoom:25%;">
+
+<h4 id="6-Radiant-Intensity-辐射强度"><a href="#6-Radiant-Intensity-辐射强度" class="headerlink" title="6. Radiant Intensity(辐射强度)"></a>6. Radiant Intensity(辐射强度)</h4><p>点光源<strong>每立体角</strong>发出的功率<br>$$<br>I(\omega)&#x3D;\frac{d\Phi}{d\omega}<br>$$</p>
+<h4 id="7-Irradiance-辐照度"><a href="#7-Irradiance-辐照度" class="headerlink" title="7. Irradiance(辐照度)"></a>7. Irradiance(辐照度)<a name="7. Irradiance(辐照度)"></a></h4><p>前述flux(辐射通量或功率)是单位时间内通过表面的能量，irradiance则为辐射通量在表面上的平均强度，即单位面积的强度。</p>
+<p>辐照度是每(垂直&#x2F;投影)<strong>单位面积</strong>入射到一个表面上一点的<strong>辐射通量</strong>(功率)，<br>$$<br>E(x)&#x3D;\frac{d\Phi(x)}{dA}<br>$$</p>
+<p>单位时间内光子离开或进入单位面积的通量</p>
+<p>Lambert 余弦定律：表面辐照度与光方向和表面法线夹角的余弦值成正比</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418113052481.png" srcset="/img/loading.gif" lazyload alt="image-20210418113052481" style="zoom:25%;">
+
+<blockquote>
+<p>这里 irradiance 是单位面积入射到一点的辐射通量，$cos\theta$ 调整的是方向 $l$ 上入射功率的贡献，将方向 $l$ 上的辐射通量投影到接收点的法线方向 $n$ 上。</p>
+</blockquote>
+<p>Irradiance 衰减：$E&#x3D;\frac{\Phi}{4\pi r^2}$ ，$\Phi$ 记录的是单位半径球面在单位时间内所接收的能量的功率。二维示意图如下</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418113447525.png" srcset="/img/loading.gif" lazyload alt="image-20210418113447525" style="zoom:25%;">
+
+
+
+<h4 id="8-Radiance-辐射率"><a href="#8-Radiance-辐射率" class="headerlink" title="8. Radiance(辐射率)"></a>8. Radiance(辐射率)</h4><p>Radiance 用于描述光在环境中的分布的基本场量。辐射率(Radiance)或亮度(luminance) ：是指一个表面在<strong>每单位立体角、每单位投影面积</strong>上所发射(emitted)、反射(reflected)、透射(transmitted)或接收(received)的辐射通量(功率)。</p>
+<p>$$<br>L(p,\omega)&#x3D;\frac{d^2\Phi (p,\omega)}{d\omega dA \cos\theta}<br>$$</p>
+<blockquote>
+<p>$p$ 点所在表面、立体角方向$w$接收到的辐射通量 $\Phi(p,w)$，对立体角、面积的二阶求偏导的辐射率 $L(p,w)$。反过来求辐射通量，这里得到的是表面的整个积分域与立体角的积分域收到的辐射通量。<br>$$<br>\Phi(p,w)&#x3D;\int\int L(p,w)\cdot \cos\theta\space dwdA<br>$$</p>
+</blockquote>
+<p>Light traveling along a Ray                  <img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418113916011.png" srcset="/img/loading.gif" lazyload alt="image-20210418113916011" style="zoom: 33%;"></p>
+<blockquote>
+<p>这里是从表面点 $p$ 沿着其某一单位立体角方向 $\omega$ 发出的功率，$cos\theta$ 是将辐射面投影到以 $\omega$ 为法线的平面。</p>
+</blockquote>
+<ul>
+<li>Incident Radiance(入射辐射)：到达表面的<strong>单位立体角</strong>的 irradiance(辐照度)，即 radiance。</li>
+</ul>
+<p>$$<br>L(p,\omega)&#x3D;\frac{dE(p)}{d\omega \cos\theta}<br>$$</p>
+<blockquote>
+<p>$p$ 点处单位面积收到的辐照度 $E(p)$ 是辐射率<strong>对立体角的积分</strong>，即单位面积收到的辐射强度（是不是很像渲染方程，除了没有BRDF）<br>$$<br>E(p) &#x3D; \int L(p,w)\cdot \cos\theta \space dw<br>$$</p>
+</blockquote>
+<p>​                                                                   <img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418140012081.png" srcset="/img/loading.gif" lazyload alt="image-20210418140012081" style="zoom: 33%;"></p>
+<blockquote>
+<p>沿着 $\omega$ 方向到达表面 $p$ 点的辐射，$cos\theta$ 将入射方向投影到表面点 $p$ 法线方向</p>
+</blockquote>
+<ul>
+<li>Exiting Radiance(出射辐射)：离开表面的<strong>单位投影面积</strong>的 Radiance Intensity(辐射强度)。如面光源</li>
+</ul>
+<p>$$<br>L(p,\omega)&#x3D;\frac{dI(p,\omega)}{dA\cos\theta}<br>$$</p>
+<blockquote>
+<p> 上式是对面光源的出射辐射率的描述，而辐射强度 $I(p,w)$ 为单位立体角的辐照度，即朝 $w$ 方向发出的辐射强度，为辐射率<strong>对面积的积分</strong><br>$$<br>I(p,w) &#x3D; \int L(p,w)\cos\theta \space dA<br>$$<br>​                                                              </p>
+</blockquote>
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418141032723.png" srcset="/img/loading.gif" lazyload alt="image-20210418141032723" style="zoom: 33%;">
+
+<p><strong>注意</strong>：Incident Radiance 与 Exiting Radiance 虽然表达式形式有所不同，但代入后最终都可转化为<br>$$<br>\frac{d^2\Phi (p,\omega)}{d\omega dA cos\theta}<br>$$</p>
+<blockquote>
+<p>具有单位立体角限制的 irradiance 等同于 radiance，具有单位投影面积的 Radiance Intensity 等同于 radiance</p>
+</blockquote>
+<h2 id="辐照度-Irradiance-VS-辐射率-Radiance"><a href="#辐照度-Irradiance-VS-辐射率-Radiance" class="headerlink" title="辐照度(Irradiance) VS. 辐射率(Radiance)"></a>辐照度(Irradiance) VS. 辐射率(Radiance)</h2><ul>
+<li>Irradiance：在面积 $dA$ 的总辐射通量</li>
+<li>Radiance：在面积 $dA$ 、方向 $d\omega$ 上的辐射通量</li>
+</ul>
+<p>​			$$dE(p,\omega)&#x3D;L_i(p,\omega)cos\theta \space d\omega \ E(p,\omega)&#x3D;\int_{H^2}L_i(p,\omega)cos\theta \space d\omega$$                     <img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418143001958.png" srcset="/img/loading.gif" lazyload alt="image-20210418143001958" style="zoom: 33%;"></p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/Radiometry/" class="category-chain-item">Radiometry</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>SlabHash</div>
+      <div>http://example.com/2023/11/08/Rendering Blogs/Graphics Basis/Basic Radiometry/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>November 8, 2023</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/12/03/Paper%20Notes/Ray%20Tracing/Massively%20Parallel%20Path%20Space%20Filtering/" title="Massively Parallel Path Space Filtering">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Massively Parallel Path Space Filtering</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/10/24/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization/" title="SlabHash">
+                        <span class="hidden-mobile">SlabHash</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

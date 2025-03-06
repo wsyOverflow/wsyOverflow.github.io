@@ -1,0 +1,758 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="Graphics, Projection">
+  
+    <meta name="description" content="1 Summary本文介绍投影变换的计算，包括正交投影、透视投影。最后介绍一些实际应用中的技巧、以及如何运用到 Vulkan 坐标系。  Settings：本文的向量采用列向量，与 glm 库的默认为列主序一致，只需将本文描述的公式整体转置即可转为行向量形式；clip 空间的深度值范围采用与 OpenGL 的 $[-1,1]$ ；相机 forward 方向为 $-z$，up 方向为 $+y$ 。相">
+<meta property="og:type" content="article">
+<meta property="og:title" content="SlabHash">
+<meta property="og:url" content="http://example.com/2024/01/07/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 Summary本文介绍投影变换的计算，包括正交投影、透视投影。最后介绍一些实际应用中的技巧、以及如何运用到 Vulkan 坐标系。  Settings：本文的向量采用列向量，与 glm 库的默认为列主序一致，只需将本文描述的公式整体转置即可转为行向量形式；clip 空间的深度值范围采用与 OpenGL 的 $[-1,1]$ ；相机 forward 方向为 $-z$，up 方向为 $+y$ 。相">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20211125103026931.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20230917103045854.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20211125194917924.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20220705093400595.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20211125204304543.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20230917145603222.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20230917153537979.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20230917153610395.png">
+<meta property="article:published_time" content="2024-01-07T09:53:52.626Z">
+<meta property="article:modified_time" content="2024-05-30T05:18:44.220Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20211125103026931.png">
+  
+  
+  
+  <title>SlabHash - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="SlabHash"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2024-01-07 17:53" pubdate>
+          January 7, 2024 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          4.4k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          38 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">SlabHash</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-Summary"><a href="#1-Summary" class="headerlink" title="1 Summary"></a>1 Summary</h1><p>本文介绍投影变换的计算，包括正交投影、透视投影。最后介绍一些实际应用中的技巧、以及如何运用到 Vulkan 坐标系。</p>
+<ul>
+<li><p>Settings：本文的向量采用列向量，与 glm 库的默认为列主序一致，只需将本文描述的公式整体转置即可转为行向量形式；clip 空间的深度值范围采用与 OpenGL 的 $[-1,1]$ ；相机 forward 方向为 $-z$，up 方向为 $+y$ 。相机坐标系与正交投影的长方体视锥体 如下图所示：</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Projection Transformations.assets/image-20211125103026931.png" srcset="/img/loading.gif" lazyload alt="image-20211125103026931" style="zoom: 33%;"></li>
+</ul>
+<p>其中 $l,r$ 为 $x$ 轴方向的左右表面到视锥体中心的距离，$b,t$ 为 $y$ 轴方向的上下表面到视锥体中心的距离，$n,f$ 为 $z$ 轴方向的前后表面到原点的距离(即近平面与远平面)。相机坐标系采用 Vulkan 的右手坐标系。注意：近平面 $n$ 并不是成像屏幕，只是裁剪平面，这个裁剪平面的大小由fov与近平面z值决定。</p>
+<h1 id="2-Orthographic-Projection"><a href="#2-Orthographic-Projection" class="headerlink" title="2 Orthographic Projection"></a>2 Orthographic Projection</h1><p>正交投影将 $(-l,r)\times(-b,t)\times(-n,-f)$ 的视锥体变换为 $(-1,1)\times(-1,1)\times(-1,1)$。注意：<strong>通常情况下正交投影的视锥体定义为关于 $z$ 轴对称</strong>，即 $l&#x3D;r,b&#x3D;t$，在本文最后结果对应替换即可。正交投影的过程可分为两步：先将视锥体近平面的中心平移至相机坐标系的原点；再将大小进行缩放。</p>
+<h2 id="2-1-视锥体的中心平移至原点"><a href="#2-1-视锥体的中心平移至原点" class="headerlink" title="2.1 视锥体的中心平移至原点"></a>2.1 视锥体的中心平移至原点</h2><p>视锥体中心坐标为 $\large \left(\frac{r-l}{2},\frac{t-b}{2},-\frac{n+f}{2}\right)$，因此构建平移矩阵<br>$$<br>M_{orthoT}&#x3D;<br>\begin{pmatrix}<br>1 &amp; 0 &amp; 0 &amp; \frac{l-r}{2} \<br>0 &amp; 1 &amp; 0 &amp; \frac{b-t}{2} \<br>0 &amp; 0 &amp; 1 &amp; \frac{n+f}{2} \<br>0 &amp; 0 &amp; 0 &amp; 1<br>\end{pmatrix}<br>$$</p>
+<blockquote>
+<p>验证一下：对于左右表面的 $x$ 坐标，左表面 $x$ 坐标变换前 $-l$，有 $-l+\frac{l-r}{2}&#x3D;\frac{-l-r}{2}$ ；右表面 $x$ 坐标变换前 $r$，有 $r+\frac{l-r}{2}&#x3D;\frac{l+r}{2}$ 。变换后的 $x$ 坐标对称。</p>
+<p>对于近平面，变换前 $-n$，有 $-n+\frac{n+f}{2}&#x3D;\frac{f-n}{2}$；对于远平面，变换前 $-f$，有 $-f+\frac{n+f}{2}&#x3D;\frac{n-f}{2}$</p>
+</blockquote>
+<h2 id="2-2-frustum-进行缩放"><a href="#2-2-frustum-进行缩放" class="headerlink" title="2.2 frustum 进行缩放"></a>2.2 frustum 进行缩放</h2><p>经过平移后的视锥体为 $(\frac{-l-r}{2},\frac{l+r}{2})\times(\frac{-b-t}{2},\frac{b+t}{2})\times(\frac{n-f}{2},\frac{f-n}{2})$，将平移后的视锥体缩放为<br> $(-1,1)\times(-1,1)\times(-1,1)$，构建缩放矩阵<br>$$<br>M_{orthoS}&#x3D;<br>\begin{pmatrix}<br>\frac{2}{l+r} &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; \frac{2}{b+t} &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; \frac{2}{f-n} &amp; 0 \<br>0 &amp; 0 &amp; 0 &amp; 1<br>\end{pmatrix}<br>$$<br>至此就完成了构建正交投影矩阵<br>$$<br>M_{ortho} &#x3D; M_{orthoS} \cdot M_{orthoT}<br>$$</p>
+<h1 id="3-Perspective-Projection"><a href="#3-Perspective-Projection" class="headerlink" title="3 Perspective Projection"></a>3 Perspective Projection</h1><p>透视投影为了模拟现实中近大远小，采用截去头部的金字塔形状的 frustum，如下图所示</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Projection Transformations.assets/image-20230917103045854.png" srcset="/img/loading.gif" lazyload alt="image-20230917103045854" style="zoom: 50%;">
+
+<p>右图为左图的二维投影，透视投影的 frustum 是通过 fov 参数定义，所以是右图中过原点的情况，其中 $n,f$ 分别是近平面和远平面。</p>
+<p>求解透视投影的投影矩阵可以分为两步：将透视投影的视锥体变形为正交投影的视锥体；再进行正交投影变换。</p>
+<h2 id="3-1-frustum-视锥体挤压为长方体视锥体"><a href="#3-1-frustum-视锥体挤压为长方体视锥体" class="headerlink" title="3.1 frustum 视锥体挤压为长方体视锥体"></a>3.1 frustum 视锥体挤压为长方体视锥体</h2><h3 id="3-1-1-一般情况推导出变换矩阵的部分元素"><a href="#3-1-1-一般情况推导出变换矩阵的部分元素" class="headerlink" title="3.1.1 一般情况推导出变换矩阵的部分元素"></a>3.1.1 一般情况推导出变换矩阵的部分元素</h3><p>将 frustum 远平面四个角进行挤压，将远平面变形为与近平面一样大小。假设变形前 frustum 内任一点为 $(x,y,z)$，变形为 $(x’,y’,z’)$ 。变换前后的点有如下关系:</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Projection Transformations.assets/image-20211125194917924.png" srcset="/img/loading.gif" lazyload alt="image-20211125194917924" style="zoom:50%;">
+
+<p>朝 $-x$ 方向看去的平面图，可以根据相似三角形有(注意使用边长)：<br>$$<br>\frac{y’}{y}&#x3D;\frac{-z’}{-z}&#x3D;\frac{n}{-z}<br>\<br> y’&#x3D;\frac{n}{-z}\cdot y<br>$$<br>同理，从 $-y$ 方向看去的平面图，可得到：<br>$$<br>\frac{x’}{x}&#x3D;\frac{n}{-z} \<br>x’&#x3D;\frac{n}{-z}\cdot x<br>$$<br>注意：对于 $z$ 变换前后是没有直观关系的，经过挤压变形 $z$ 坐标可能前移后移。</p>
+<p>此时变换后的坐标为 $(\large \frac{n}{-z}\cdot x,\frac{n}{-z}\cdot y,z’,1)$ ，对于齐次坐标，同时乘上一个坐标，不改变其表示的点，同时乘 $-z$ 有：<br>$$<br>(nx,ny,-zz’,-z)<br>$$<br>假设 frustum 到长方体的变换矩阵为 $M_{persp-&gt;ortho}$，目前已知以下变换成立：<br>$$<br>M_{persp-&gt;ortho}\cdot (x,y,z,1)^T &#x3D;(nx,ny,-zz’,-z)^T<br>$$<br>有变换前后对应关系可知 $M_{persp-&gt;ortho}$ 的第一行可以确定为 $(n,0,0,0)$，第二行可以确定为 $(0,n,0,0)$，第三行未知，第四行可以确定为 $(0,0,-1,0)$。因此，此时<br>$$<br>M_{persp-&gt;ortho}&#x3D;<br>\begin{pmatrix}<br>n &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; n &amp; 0 &amp; 0 \<br>? &amp; ? &amp; ? &amp; ? \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix}<br>$$</p>
+<h3 id="3-1-2-代入特殊点得到未知的-z-坐标变换"><a href="#3-1-2-代入特殊点得到未知的-z-坐标变换" class="headerlink" title="3.1.2 代入特殊点得到未知的 $z$ 坐标变换"></a>3.1.2 代入特殊点得到未知的 $z$ 坐标变换</h3><p>虽然任意点的 $z$ 坐标变换前后的对应关系不能直观看出，但是对于在近平面和远平面上的点，其 $z$ 坐标变换前后不改变，因此有 $z’&#x3D;z&#x3D;-n$。代入近平面，将 $z’&#x3D;z&#x3D;-n$ 代入得到变换前的点有 $(x,y,-n,1)$，变换后的点有 $(nx,ny,-n^2,n)$。因此有<br>$$<br>M_{persp-&gt;ortho}\cdot (x,y,-n,1)^T&#x3D;(nx,ny,-n^2,n)^T<br>$$<br>由变换前后的 $z$ 坐标对应关系，有 $M_{persp-&gt;ortho}$ 的第三行前两个元素为 $0$，假设后两个元素为 $C,D$，可以列<br>$$<br>-Cn+D&#x3D;-n^2<br>$$<br>代入远平面，将 $z’&#x3D;z&#x3D;-f$ 代入得到变换前的点有 $(x,y,-f,1)$ ，变换后的点有 $(nx,ny,-f^2,f)$。因此有<br>$$<br>M_{persp-&gt;ortho}\cdot (x,y,-f,1)^T&#x3D;(nx,ny,-f^2,f)^T<br>$$<br>可以列<br>$$<br>-Cf+D&#x3D;-f^2<br>$$<br>于是有 $C&#x3D;n+f,D&#x3D;nf$，于是 frustum 变形为长方体的变换矩阵为：<br>$$<br>M_{persp-&gt;ortho}&#x3D;<br>\begin{pmatrix}<br>n &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; n &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; n+f &amp; nf \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix}<br>$$</p>
+<h2 id="3-2-完整的投影变换矩阵"><a href="#3-2-完整的投影变换矩阵" class="headerlink" title="3.2 完整的投影变换矩阵"></a>3.2 完整的投影变换矩阵</h2><p>$$<br>\begin{align} M_{persp} &amp;&#x3D; M_{ortho}\cdot M_{persp-&gt;ortho}&#x3D;M_{orthoS} \cdot M_{orthoT}\cdot M_{persp-&gt;ortho} \<br>&amp;&#x3D;\begin{pmatrix}<br>\frac{2}{l+r} &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; \frac{2}{b+t} &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; \frac{2}{f-n} &amp; 0 \<br>0 &amp; 0 &amp; 0 &amp; 1<br>\end{pmatrix} \cdot<br>\begin{pmatrix}<br>1 &amp; 0 &amp; 0 &amp; \frac{l-r}{2} \<br>0 &amp; 1 &amp; 0 &amp; \frac{b-t}{2} \<br>0 &amp; 0 &amp; 1 &amp; \frac{n+f}{2} \<br>0 &amp; 0 &amp; 0 &amp; 1<br>\end{pmatrix} \cdot<br>\begin{pmatrix}<br>n &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; n &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; n+f &amp; nf \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix} \<br>&amp;&#x3D; \begin{pmatrix}<br>\frac{2}{l+r} &amp; 0 &amp; 0 &amp; \frac{l-r}{l+r} \<br>0 &amp; \frac{2}{b+t} &amp; 0 &amp; \frac{b-t}{b+t} \<br>0 &amp; 0 &amp; \frac{2}{f-n} &amp; \frac{n+f}{f-n} \<br>0 &amp; 0 &amp; 0 &amp; 1<br>\end{pmatrix} \cdot<br>\begin{pmatrix}<br>n &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; n &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; n+f &amp; nf \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix} \<br>&amp;&#x3D; \begin{pmatrix}<br>\frac{2n}{l+r} &amp; 0 &amp; -\frac{l-r}{l+r} &amp; 0 \<br>0 &amp; \frac{2n}{b+t} &amp; -\frac{b-t}{b+t} &amp; 0 \<br>0 &amp; 0 &amp; \frac{n+f}{f-n} &amp; \frac{2nf}{f-n} \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix}<br>\end{align}<br>$$</p>
+<h3 id="3-2-1-使用-Fov-和-Aspect-简化投影矩阵"><a href="#3-2-1-使用-Fov-和-Aspect-简化投影矩阵" class="headerlink" title="3.2.1 使用 Fov 和 Aspect 简化投影矩阵"></a>3.2.1 使用 Fov 和 Aspect 简化投影矩阵</h3><p>fov 为相机在 $y$ 轴方向的视锥范围的角度，由于视锥通常取关于 $z$ 轴对称，$+y$ 轴部分视锥范围为 fov 的一半，如下图所示</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Projection Transformations.assets/image-20220705093400595.png" srcset="/img/loading.gif" lazyload alt="image-20220705093400595" style="zoom: 50%;">
+
+<p>有<br>$$<br>\tan \frac{fov}{2}&#x3D;\frac{t}{n}, \quad t&#x3D;n\cdot \tan\frac{fov}{2}<br>$$<br>由于视锥关于 $z$ 轴对称有 $l&#x3D;r,t&#x3D;b$，aspect 为宽高比，即 $aspect &#x3D; \frac{r}{t}$，因此有<br>$$<br>\begin{cases}<br>\begin{align}<br>t&amp;&#x3D;b&#x3D;n\cdot \tan\frac{fov}{2} \<br>l&amp;&#x3D;r&#x3D;aspect\cdot n \cdot tan\frac{fov}{2}<br>\end{align}<br>\end{cases}<br>$$<br>代入矩阵 $M_{persp}$ 中有<br>$$<br>M_{persp}&#x3D;\begin{pmatrix}<br>\frac{1}{aspect\cdot \tan\frac{fov}{2}} &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; \frac{1}{\tan\frac{fov}{2}} &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; \frac{n+f}{f-n} &amp; \frac{2nf}{f-n} \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix}<br>$$</p>
+<h2 id="3-3-对于深度范围为-0-1-的投影变换"><a href="#3-3-对于深度范围为-0-1-的投影变换" class="headerlink" title="3.3 对于深度范围为 [0,1] 的投影变换"></a>3.3 对于深度范围为 [0,1] 的投影变换</h2><p>Direct3D 与 Vulkan 的深度范围为 $[0,1]$，因此对应 clip space 的 view volume 为 $(-1,1)\times(-1,1)\times(0,1)$。因此需要修改正交投影变换：</p>
+<ol>
+<li><p>首先将视锥体的近平面中心点平移至原点，近平面中心点坐标为 $\large \left(\frac{r-l}{2},\frac{t-b}{2},-n\right)$<br>$$<br>M_{orthoT}&#x3D;<br>\begin{pmatrix}<br>1 &amp; 0 &amp; 0 &amp; \frac{l-r}{2} \<br>0 &amp; 1 &amp; 0 &amp; \frac{b-t}{2} \<br>0 &amp; 0 &amp; 1 &amp; n \<br>0 &amp; 0 &amp; 0 &amp; 1<br>\end{pmatrix}<br>$$</p>
+</li>
+<li><p>然后缩放平移后的视锥体 $(\frac{-l-r}{2},\frac{l+r}{2})\times(\frac{-b-t}{2},\frac{b+t}{2})\times(0,-(f-n))$ 为 $(-1,1)\times(-1,1)\times(0,1)$<br>$$<br>M_{orthoS}&#x3D;<br>\begin{pmatrix}<br>\frac{2}{l+r} &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; \frac{2}{b+t} &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; -\frac{1}{f-n} &amp; 0 \<br>0 &amp; 0 &amp; 0 &amp; 1<br>\end{pmatrix}<br>$$</p>
+</li>
+<li><p>最后的投影变换为<br>$$<br>\begin{align} M_{persp} &amp;&#x3D; M_{ortho}\cdot M_{persp-&gt;ortho}&#x3D;M_{orthoS} \cdot M_{orthoT}\cdot M_{persp-&gt;ortho} \<br>&amp;&#x3D;\begin{pmatrix}<br>\frac{2}{l+r} &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; \frac{2}{b+t} &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; -\frac{1}{f-n} &amp; 0 \<br>0 &amp; 0 &amp; 0 &amp; 1<br>\end{pmatrix} \cdot<br>\begin{pmatrix}<br>1 &amp; 0 &amp; 0 &amp; \frac{l-r}{2} \<br>0 &amp; 1 &amp; 0 &amp; \frac{b-t}{2} \<br>0 &amp; 0 &amp; 1 &amp; n \<br>0 &amp; 0 &amp; 0 &amp; 1<br>\end{pmatrix} \cdot<br>\begin{pmatrix}<br>n &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; n &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; n+f &amp; nf \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix} \<br>&amp;&#x3D; \begin{pmatrix}<br>\frac{2}{l+r} &amp; 0 &amp; 0 &amp; \frac{l-r}{l+r} \<br>0 &amp; \frac{2}{b+t} &amp; 0 &amp; \frac{b-t}{b+t} \<br>0 &amp; 0 &amp; -\frac{1}{f-n} &amp; -\frac{n}{f-n} \<br>0 &amp; 0 &amp; 0 &amp; 1<br>\end{pmatrix} \cdot<br>\begin{pmatrix}<br>n &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; n &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; n+f &amp; nf \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix} \<br>&amp;&#x3D; \begin{pmatrix}<br>\frac{2n}{l+r} &amp; 0 &amp; -\frac{l-r}{l+r} &amp; 0 \<br>0 &amp; \frac{2n}{b+t} &amp; -\frac{b-t}{b+t} &amp; 0 \<br>0 &amp; 0 &amp; \frac{f}{n-f} &amp; \frac{nf}{n-f} \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix}<br>\end{align}<br>$$</p>
+</li>
+<li><p>代入 fov 与 aspect 简化有<br>$$<br>M_{persp}&#x3D;\begin{pmatrix}<br>\frac{1}{aspect\cdot \tan\frac{fov}{2}} &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; \frac{1}{\tan\frac{fov}{2}} &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; \frac{f}{n-f} &amp; \frac{nf}{n-f} \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix}<br>$$</p>
+</li>
+</ol>
+<h2 id="3-4-透视投影非线性"><a href="#3-4-透视投影非线性" class="headerlink" title="3.4 透视投影非线性"></a>3.4 透视投影非线性</h2><p>透视投影具有非线性的性质，其非线性是由于最后的齐次坐标<strong>除以 $w$ 分量 (divide z)</strong> 引入的。这里我们只需关注 $w$ 分量的变换操作，因此只需关注透视投影矩阵变换的第四行。对于原坐标 $(x,y,z,1)$，经过透视变换后的 $w$ 分离由 $1$ 变为 $z$，即变换后的点为 $(x’,y’,z’,z)$。</p>
+<ul>
+<li><p>非线性带来的问题</p>
+<p>顶点面片光栅化为像素的插值操作，是以三角面片在像素点的重心坐标为参数进行插值的，这个过程是线性过程。但由于投影变换引入了非线性，在三维空间线性变化的顶点属性，经过投影变换，在屏幕空间并不是线性变化，因此不能直接使用重心坐标进行顶点属性的插值。如下图所示：</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Projection Transformations.assets/image-20211125204304543.png" srcset="/img/loading.gif" lazyload alt="image-20211125204304543" style="zoom:50%;">
+
+<p>三维空间的线 $AB$，投影到屏幕空间 $ab$。$ab$ 的中点对应的却不是 $AB$ 的中点。</p>
+</li>
+</ul>
+<p>为了解决透视投影带来的非线性问题，插值引入了 <a target="_blank" rel="noopener" href="https://www.comp.nus.edu.sg/~lowkl/publications/lowk_persp_interp_techrep.pdf">perspective-correct interpolation</a>，目前 vertex shader 到 pixel shader 的变量，默认都为 perspective-correct interpolation。</p>
+<h1 id="4-Practical-Tricks"><a href="#4-Practical-Tricks" class="headerlink" title="4 Practical Tricks"></a>4 Practical Tricks</h1><h2 id="4-1-w-分量归一化与-divide-z"><a href="#4-1-w-分量归一化与-divide-z" class="headerlink" title="4.1 $w$ 分量归一化与 divide z"></a>4.1 $w$ 分量归一化与 divide z</h2><p>在 shader 中，对坐标进行透视投影后进行齐次坐标 $w$ 分量归一化时，除以 $w$ 和除以 $z$ 分量都一样，因为透视投影得到的 $w$ 分量与 $z$ 恒有 $w&#x3D;z$ （或 $w&#x3D;-z$，依赖于推导过程）。</p>
+<h2 id="4-2-屏幕空间的像素坐标到相机空间的逆变换"><a href="#4-2-屏幕空间的像素坐标到相机空间的逆变换" class="headerlink" title="4.2 屏幕空间的像素坐标到相机空间的逆变换"></a>4.2 屏幕空间的像素坐标到相机空间的逆变换</h2><p>在某些算法中，经常需要从屏幕像素坐标恢复到相机空间的坐标。</p>
+<ul>
+<li><p>在 pixel shader 中进行逆投影变换（低效）</p>
+<p>使用透视投影的逆矩阵可以直接做到，如</p>
+</li>
+</ul>
+<p>$$<br>inverse(M_{persp})\cdot (clip.x,clip.y,clip.z)<br>$$</p>
+<ul>
+<li><p>vertex shader 中进行 $(x,y)$ 逆变换，pixel shader 中进行 depth 逆变换（高效）</p>
+<p>直接在 pixel shader 中进行逆投影变换，较为低效，可以在 vertex shader 中计算。对于具有顶点输入的 pass，vertex shader 中只进行 view transform，不进行透视变换，此时变换后的顶点还处于三维线性空间中，即变换后的 $w$ 分量还是 $1$，因此到 pixel shader 的插值还是线性插值。</p>
+<p>多数情况是 postprocess 的算法，vertex shader 只是 quad 绘制，没有顶点信息。可以在 vertex shader 中 quad 绘制得到的 texcoord 坐标进行逆透视投影，转到 view space 中，此时只需要传逆变换后的 $( x,y)$ 坐标到 pixel shader。在 pixel shader 中，只将 depth 信息变换回 view space。只是 depth 的逆变换，不需要对整个透视投影进行求逆。变换前点为 $(x,y,z,1)$，有投影变换（使用深度范围 [0,1] 的投影变换）：</p>
+</li>
+</ul>
+<p>$$<br>\begin{align}<br>M_{persp}\cdot (x,y,z,1)^T &amp;&#x3D;\begin{pmatrix}<br>\frac{1}{aspect\cdot \tan\frac{fov}{2}} &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; \frac{1}{\tan\frac{fov}{2}} &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; \frac{f}{n-f} &amp; \frac{nf}{n-f} \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix} \cdot (x,y,z,1)^T \<br>&amp;&#x3D;\left(\frac{x}{aspect\cdot \tan\frac{fov}{2}}, \frac{y}{\tan\frac{fov}{2}}, \frac{f\cdot z + nf}{n-f}, -z\right)^T<br>\end{align}<br>$$</p>
+<p>​			即变换后的像素深度$0&lt;n&lt;f,-f&lt;z&lt;-n&lt;0,0&lt;clip.z&lt;1$<br>$$<br>\begin{align}<br>clip.z &amp;&#x3D; \frac{f\cdot z + nf}{n-f}\cdot \frac{1}{-z} &#x3D; \frac{f\cdot (z+n)}{z\cdot(f-n)} &#x3D; (1+\frac{n}{z})\cdot \frac{1}{1-\frac{n}{f}} &#x3D; (1-\frac{n}{-z})\cdot \frac{1}{1-\frac{n}{f}} \<br>z &amp;&#x3D;\frac{-nf}{(n-f)clip.z+f}<br>\end{align}<br>$$<br>​			pixel shader 中只需要进行上式对 $z$ 的逆变换，即 <strong>Linearize Depth</strong>。</p>
+<ul>
+<li><p>pixel shader中进行逆投影变换<br>通过矩阵变换可以求都逆投影矩阵 $InvM_{persp}$，逆投影变换有<br>$$<br>\begin{align}<br>&amp; \quad InvM_{persp} \cdot (clip.x, \space clip.y, \space clip.z, \space 1)^T \<br>&amp;&#x3D; \begin{pmatrix}<br>aspect\cdot \tan\frac{fov}{2} &amp; 0 &amp; 0 &amp; 0 \<br>0 &amp; \tan\frac{f}{2} &amp; 0 &amp; 0 \<br>0 &amp; 0 &amp; 0 &amp; -1 \<br>0 &amp; 0 &amp; \frac{n-f}{nf} &amp; \frac{1}{n}<br>\end{pmatrix} \cdot  (clip.x, \space clip.y, \space clip.z, \space 1)^T \<br>&amp;&#x3D; (aspect\cdot \tan\frac{fov}{2}\cdot clip.x, \space \tan\frac{fov}{2}\cdot clip.y, \space -1, \space \frac{(n-f)clip.z+f}{nf}) \<br>&amp;&#x3D; (aspect\cdot \tan\frac{fov}{2}\cdot clip.x, \space \tan\frac{fov}{2}\cdot clip.y, \space -1, \space -\frac{1}{z}) \<br>&amp;&#x3D; (-z\cdot aspect\cdot \tan\frac{fov}{2}\cdot clip.x, \space -z \cdot \tan\frac{fov}{2}\cdot clip.y, \space z, \space 1)<br>\end{align}<br>$$<br>可以看出最后一步除w分量，除得是 $\Large -\frac{1}{z}$。由于是线性变换，因此可以先乘上 $-z$ 避免最后一步除w，即要进行逆变换的坐标为<br>$$<br>(-z\cdot clip.x, \space -z\cdot clip.y, \space -z\cdot clip.z, \space -z \cdot 1)<br>$$</p>
+<blockquote>
+<p>注意，如果只取结果xyz分量，最后一个分量乘不乘没有影响，因为 w 分量除了规范化三维坐标没有其他作用，不乘也只是最后得到的 w 分量不是 1 而已</p>
+</blockquote>
+</li>
+</ul>
+<h2 id="4-3-像素抖动偏移"><a href="#4-3-像素抖动偏移" class="headerlink" title="4.3 像素抖动偏移"></a>4.3 像素抖动偏移</h2><p>$$<br>\begin{align}<br>M_{persp}\cdot (x,y,z,1)^T &amp;&#x3D;\begin{pmatrix}<br>\frac{1}{aspect\cdot \tan\frac{fov}{2}} &amp; 0 &amp; jitter_x &amp; 0 \<br>0 &amp; \frac{1}{\tan\frac{fov}{2}} &amp; jitter_y &amp; 0 \<br>0 &amp; 0 &amp; \frac{f}{n-f} &amp; \frac{nf}{n-f} \<br>0 &amp; 0 &amp; -1 &amp; 0<br>\end{pmatrix} \cdot (x,y,z,1)^T \<br>&amp;&#x3D;\left(\frac{x}{aspect\cdot \tan\frac{fov}{2}} + z\cdot jitter_x, \frac{y}{\tan\frac{fov}{2}}+z\cdot jitter_y, \frac{f\cdot z + nf}{n-f}, -z\right)^T<br>\end{align}<br>$$</p>
+<p>最后除w得到clip pos，则得到 clip.x 与 clip.y 的偏移量为 $(-jitter_x, -jitter_y)$，因此像素内的抖动值取值范围是 [-1, 1] &#x2F; resolution</p>
+<h1 id="5-任意z处的投影"><a href="#5-任意z处的投影" class="headerlink" title="5 任意z处的投影"></a>5 任意z处的投影</h1><p>视锥体每个面的法向量如下图所示，而这些法向量也比较容易得到。首先考虑，投影变换后的  $(-1,1)\times(-1,1)\times(-1,1)$ ，可以得到六个平面方程为<br>$$<br>x &#x3D; \pm1, y &#x3D; \pm 1,z &#x3D; \pm 1<br>$$<br>将这六个平面法向量代入透视投影逆变换即可。</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Projection Transformations.assets/image-20230917145603222.png" srcset="/img/loading.gif" lazyload alt="image-20230917145603222" style="zoom: 50%;">
+
+<p>只考虑关于z轴对称的视锥体，因此有 $\vec{l},\vec{r}$ 与 xoz 面平行，$\vec{b},\vec{t}$ 与yoz面平行，$\vec{n}&#x3D;(0, 0, 1), \vec{f}&#x3D;(0, 0, -1)$。</p>
+<p>只看 xoz 面，如下俯视图</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Projection Transformations.assets/image-20230917153537979.png" srcset="/img/loading.gif" lazyload alt="image-20230917153537979" style="zoom:50%;">
+
+<p>可以得到<br>$$<br>\tan\alpha_0&#x3D;\frac{r.z}{r.x}<br>$$<br>对于yoz面，如下侧视图</p>
+<img src="/images/Rendering Blogs/Graphics Basis/Projection Transformations.assets/image-20230917153610395.png" srcset="/img/loading.gif" lazyload alt="image-20230917153610395" style="zoom:50%;">
+$$
+\tan\alpha_1=\frac{t.z}{t.y}
+$$
+那么，在 $z_i$ 处的截面宽、高为
+$$
+w_i = 2 \cdot z_i \cdot \frac{1}{\tan\alpha_0} \\
+h_i = 2 \cdot z_i \cdot \frac{1}{\tan\alpha_1}
+$$
+至此，我们可以得到视锥体任意截面的大小，这意味着，我们可以将屏幕空间的像素大小逆投影到任意远的截面上。相同的像素大小，在越远的截面上对应区域则越大。
+
+<p>截面位于世界空间，截面的尺度是实际的几何大小，因此假设几何半径 $R_g$，不同尺度间的变换可以通过标准化的中间量 $R_n$，屏幕空间的尺度单位为像素 $R_p$。</p>
+<p>因此，投影过程：将 $z_i$ 处的几何半径标准化，再将标准化的半径转为屏幕空间有<br>$$<br>\begin{align}<br>R_{n_x} &amp;&#x3D; R_g \cdot \frac{1}{w_i} &#x3D; 0.5 \cdot R_g \cdot \tan\alpha_0 \cdot \frac{1}{z_i} \<br>R_{n_y} &amp;&#x3D; R_g \cdot \frac{1}{h_i} &#x3D; 0.5 \cdot R_g \cdot \tan\alpha_1 \cdot \frac{1}{z_i} \<br>\<br>R_{p} &amp;&#x3D; screenWidth \cdot R_{n_x} \quad or \<br>R_{p} &amp;&#x3D; screenHeight \cdot R_{n_y}<br>\end{align}<br>$$<br>逆投影过程：将屏幕空间半径（以像素为单位）先标准化，再转为世界空间的几何半径有<br>$$<br>\begin{align}<br>R_{n_x} &amp;&#x3D; R_{p} * 1.0 &#x2F; screenWidth \<br>R_{n_y} &amp;&#x3D; R_{p} * 1.0 &#x2F; screenHeight \<br>\<br>R_g &amp;&#x3D; R_{n_x} * w_i &#x3D; R_{n_x} * 2.0 * z_i * \frac{1}{\tan\alpha_0} \quad or\<br>R_g &amp;&#x3D; R_{n_y} * w_i &#x3D; R_{n_y} * 2.0 * z_i * \frac{1}{\tan\alpha_1}<br>\end{align}<br>$$</p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/Projection/" class="category-chain-item">Projection</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>SlabHash</div>
+      <div>http://example.com/2024/01/07/Rendering Blogs/Graphics Basis/Projection Transformations/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>January 7, 2024</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2024/04/07/Paper%20Notes/Cloud%20Rendering/Surface%20Light%20Cones%20Sharing%20Direct%20Illumination%20for%20Efficient%20Multi-viewer%20Rendering/" title="Surface Light Cones - Sharing Direct Illumination for Efficient Multi-viewer Rendering">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Surface Light Cones - Sharing Direct Illumination for Efficient Multi-viewer Rendering</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/12/15/Paper%20Notes/Ray%20Tracing/Path%20Space%20Filtering/" title="Path Space Filtering">
+                        <span class="hidden-mobile">Path Space Filtering</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

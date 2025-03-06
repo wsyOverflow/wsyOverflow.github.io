@@ -1,0 +1,1303 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="filter, denoise">
+  
+    <meta name="description" content="1 概要2 调用逻辑文件 Reblur_DiffuseSpecular.hpp，在 nrd::InstanceImpl::Add_ReblurDiffuseSpecular 里创建好所有 render pass 每个 pass 的名字使用宏 PushPass(&quot;PostFix&quot;) 设置，最后得到 pass name &#x3D; DENOISER_NAME - PostFix">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Reblur解析">
+<meta property="og:url" content="http://example.com/2023/09/20/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 概要2 调用逻辑文件 Reblur_DiffuseSpecular.hpp，在 nrd::InstanceImpl::Add_ReblurDiffuseSpecular 里创建好所有 render pass 每个 pass 的名字使用宏 PushPass(&quot;PostFix&quot;) 设置，最后得到 pass name &#x3D; DENOISER_NAME - PostFix">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230821185416474.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230829165239433.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230820112644427.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230820112723742.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230820113124323.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230820113146073.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230820113322228.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230820113351881.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20241022155550629.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230917160953598.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230917161201304.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20231123161625155.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230822111025809.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230903135344354.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230820201305538.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230820113637853.png">
+<meta property="article:published_time" content="2023-09-20T15:21:10.868Z">
+<meta property="article:modified_time" content="2024-11-02T06:12:50.260Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90.assets/image-20230821185416474.png">
+  
+  
+  
+  <title>Reblur解析 - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Reblur解析"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2023-09-20 23:21" pubdate>
+          September 20, 2023 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          9.3k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          78 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">Reblur解析</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-概要"><a href="#1-概要" class="headerlink" title="1 概要"></a>1 概要</h1><h1 id="2-调用逻辑"><a href="#2-调用逻辑" class="headerlink" title="2 调用逻辑"></a>2 调用逻辑</h1><p>文件 Reblur_DiffuseSpecular.hpp，在 nrd::InstanceImpl::Add_ReblurDiffuseSpecular 里创建好所有 render pass</p>
+<p>每个 pass 的名字使用宏 <code>PushPass(&quot;PostFix&quot;)</code> 设置，最后得到 pass name &#x3D; <code>DENOISER_NAME - PostFix</code> </p>
+<p><code>AddDispatch</code> 的第一个参数指定shader文件名，而这个shader文件只是充当一个组织文件，预定义一些宏，控制降噪走的分支， 实际的代码在其 include 的 shader 文件中。对于 REBLUR_DiffuseSpecular 会走 <code>REBLUR_DIFFUSE</code> 与 <code>REBLUR_SPECULAR</code> 两个分支</p>
+<p>reblur 配置 <code>nrd::ReblurSettings m_ReblurSettings</code> ，更新在 <code>InstanceImpl::Update_Reblur</code></p>
+<p>shader参数：</p>
+<ul>
+<li><code>REBLUR_SHARED_CB_DATA</code>在 <code>InstanceImpl::AddSharedConstants_Reblur</code>中更新</li>
+<li>pass参数的更新在 <code>InstanceImpl::Update_Reblur</code></li>
+</ul>
+<h1 id="3-渲染逻辑"><a href="#3-渲染逻辑" class="headerlink" title="3 渲染逻辑"></a>3 渲染逻辑</h1><p>![image-20230820103719276-1694926428932-2](&#x2F;images&#x2F;Rendering Blogs&#x2F;Graphics Algorithm&#x2F;2. Reblur解析.assets&#x2F;image-20230820103719276-1694926428932-2.png)</p>
+<h2 id="3-1-Classify-tiles"><a href="#3-1-Classify-tiles" class="headerlink" title="3.1 Classify tiles"></a>3.1 Classify tiles</h2><p>识别需要降噪的tile</p>
+<h2 id="3-2-Pre-pass"><a href="#3-2-Pre-pass" class="headerlink" title="3.2 Pre-pass"></a>3.2 Pre-pass</h2><p>准备 pre-blur 参数</p>
+<h3 id="3-2-1-depth-based-bilateral-weight"><a href="#3-2-1-depth-based-bilateral-weight" class="headerlink" title="3.2.1 depth-based bilateral weight"></a>3.2.1 depth-based bilateral weight</h3><p><code>float2 wc</code> ：depth-based bilateral weight，使用左右两个像素<code>viewZ0</code>、<code>viewZ1</code>与当前像素的<code>viewZ</code>的相对差异。对相对差异施加一个cut off，限制在[0, cut_off]范围内。当相对差异超过阈值 0.03 时，权重为 0；当相对差异&lt;&#x3D;0时，权重取 1；其余在 0~1 之间。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs c">float2 viewZ01 = float2(viewZ0, viewZ1);<br>float2 x = <span class="hljs-built_in">abs</span>(viewZ01 - viewZ) * rcp(max(<span class="hljs-built_in">abs</span>(viewZ01), <span class="hljs-built_in">abs</span>(viewZ)));	<span class="hljs-comment">// 当前像素与左右相邻像素的 viewZ 的相对差异</span><br><span class="hljs-type">float</span> cut_off = <span class="hljs-number">0.03</span>;<br><span class="hljs-comment">// 相当于把 x 限制在 [0, cut_off] 内，&gt;= cut_off 为 0，&lt;= 0 为 1</span><br>wc = saturate((x - cut_off) / (-cut_off)) = saturate(<span class="hljs-number">1</span> - x / cut_off);  <br>wc *= <span class="hljs-number">1.0</span> / max((wc.x + wc.y), <span class="hljs-number">1e-15</span>);<br></code></pre></td></tr></table></figure>
+
+<h3 id="3-2-2-Checkboard模式处理"><a href="#3-2-2-Checkboard模式处理" class="headerlink" title="3.2.2 Checkboard模式处理"></a>3.2.2 Checkboard模式处理</h3><p>当为 <code>RESOLUTION_HALF</code> 时，checkerboard mode 为 <code>CheckerboardMode::WHITE(2)</code>、diffCheckerboard(1)、specCheckerboard(0)；否则为 OFF(0)，diffCheckerboard(2)、specCheckerboard(2)。当为半屏模式时，经过pre pass可以得到全屏结果。</p>
+<ol>
+<li><code>uint checkerboard</code> ：0&#x2F;1 值，使用像素坐标与帧数得到，相邻像素交错，相邻帧交错</li>
+</ol>
+   <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs c">uint <span class="hljs-title function_">CheckerBoard</span><span class="hljs-params">(uint2 samplePos, uint frameIndex)</span><br>&#123;<br>    uint a = samplePos.x ^ samplePos.y;<br>    <span class="hljs-keyword">return</span> (a ^ frameIndex) &amp; <span class="hljs-number">0x1</span>;<br>&#125;<br></code></pre></td></tr></table></figure>
+<ol start="2">
+<li><p><code>int3 checkerboardPos</code> ：1&#x2F;2 屏幕坐标(横坐标缩减一半)。x、z 取当前像素的左右相邻像素横坐标，y取当前像素坐标，最后横坐标右移一位</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c">int3 checkerboardPos = pixelPos.xyx + int3(<span class="hljs-number">-1</span>, <span class="hljs-number">0</span>, <span class="hljs-number">1</span>);<br>checkerboardPos.xz &gt;&gt;= <span class="hljs-number">1</span>;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>checkboard 模式处理，如文件 <em>NRDSettings.h</em> 描述，当为半屏的 checkboard 模式时，noisy input在左半部分。<code>hasData</code>表示当前像素是否有有效数据，使用交错处理。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-keyword">if</span>(gDiffCheckerboard<span class="hljs-comment">/*\gSpecCheckerboard*/</span> != <span class="hljs-number">2</span>)&#123;	<span class="hljs-comment">// 半屏的交错模式</span><br>    hasData = checkerboard == gDiffCheckerboard<span class="hljs-comment">/*\gSpecCheckerboard*/</span>;  <span class="hljs-comment">// checkerboard 交错得到有效/无效数据</span><br>    pos.x &gt;&gt;= <span class="hljs-number">1</span>;  <span class="hljs-comment">// 1/2 屏幕</span><br>&#125;<br>REBLUR_TYPE diff = gIn_Diff[pos]; <span class="hljs-comment">/*REBLUR_TYPE spec = gIn_Spec[pos];*/</span><br></code></pre></td></tr></table></figure></li>
+</ol>
+<h3 id="3-2-3-准备当前像素的数据"><a href="#3-2-3-准备当前像素的数据" class="headerlink" title="3.2.3 准备当前像素的数据"></a>3.2.3 准备当前像素的数据</h3><p><code>N</code>(世界空间法线)、<code>Nv</code>(view space下的法线)、roughness、<code>Vv</code> (View space 下的view vector)、<code>Xv</code> (像素在view space下的position)</p>
+<p><code>float4 rotator</code> ：每帧生成的向量，用于 Poisson 采样。<code>REBLUR_PRE_BLUR_ROTATOR_MODE</code> 取 <code>NRD_FRAME</code> ，这里 rotator 取的是 CPU 传来的。</p>
+<h3 id="3-2-4-执行-Pre-blur"><a href="#3-2-4-执行-Pre-blur" class="headerlink" title="3.2.4 执行 Pre-blur"></a>3.2.4 执行 Pre-blur</h3><p>diffuse 与 specular 有各自的 spatial filter，参考下一章节。</p>
+<h2 id="3-3-Temporal-accumulation"><a href="#3-3-Temporal-accumulation" class="headerlink" title="3.3 Temporal accumulation"></a>3.3 Temporal accumulation</h2><h3 id="3-3-1-Preload与数据准备"><a href="#3-3-1-Preload与数据准备" class="headerlink" title="3.3.1 Preload与数据准备"></a>3.3.1 Preload与数据准备</h3><ol>
+<li><p>预加载 tile <code>(GROUP_X+BORDER*2) x (GROUP_Y+BORDER*2)</code> 的数据，减少后续重复访问 texture</p>
+<ul>
+<li>normal roughness 数据加载到 <code>s_Normal_Roughness[GROUP_X+BORDER*2][GROUP_Y+BORDER*2]</code> 中</li>
+</ul>
+</li>
+<li><p>在当前像素的 (BORDER * 2) x (BORDER * 2) 区域计算<code>Navg</code> (averaged normal) 与<code>hitDistForTracking</code> (取最小)。</p>
+<blockquote>
+<p>注意：<code>threadPos+BORDER</code> 对应了当前像素在 s_Normal_MinHitDist 中的位置，因此循环中跳过了 (i&#x3D;&#x3D; BORDER &amp;&amp; j &#x3D;&#x3D; BORDER)  </p>
+<p>但是，Navg 的计算只包含了以当前像素为右下角的四个像素，而 hitDistForTracking 则遍历了以当前像素为中心的 3x3 区域。不懂这个设计</p>
+</blockquote>
+</li>
+<li><p>准备当前像素的数据<br><code>float3 N</code>(世界空间法线)，<code>float materialID</code>，<code>Xv</code>(view space坐标)， <code>X</code>(相机无平移变换时的世界空间坐标)，<code>roughness</code></p>
+</li>
+</ol>
+<h3 id="3-3-2-变换"><a href="#3-3-2-变换" class="headerlink" title="3.3.2 变换"></a>3.3.2 变换</h3><p>Temporal 处理时需要进行world、view、clip以及到上一帧的变换，比较特殊的一点，本阶段使用的变换将camera的平移都取消掉了。</p>
+<p>常规的变换对应了 <code>CommonSettings</code> 中的 <code>viewToClipMatrix</code>(\Prev)、<code>worldToViewMatrix</code>(\Prev)等一系列矩阵，而传给shader的变换实际是 <code>InstanceImpl</code> 里的 <code>m_ViewToClip</code>(\Prev\Inv)、<code>m_WorldToView</code>(\Prev)、<code>m_ViewToWorld</code>(\Prev)、<code>m_WorldToClip</code>(\Prev\Inv)。将view space的平移整体取消，即 world 与 view 之间的变换的平移。而 world 到上一帧view 以及 view 到上一帧world 之间的变换采用相机的运动矢量，即相对偏移。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c++">m_ViewToWorld.<span class="hljs-built_in">SetTranslation</span>(ml::float3::<span class="hljs-built_in">Zero</span>());<br>ml::float3 translationDelta = cameraPositionPrev - cameraPosition;	<span class="hljs-comment">// 指向上一帧的相机偏移</span><br>m_ViewToWorldPrev.<span class="hljs-built_in">SetTranslation</span>(translationDelta);<br></code></pre></td></tr></table></figure>
+
+<p>上面一系列做法相当于永远将当前帧相机至于世界原点位置，因此 view 到 world 的变换只需要执行旋转变换。为了便于理解，后续描述也直接忽略相机平移。例如 <code>Xv</code> 是像素在view space下的坐标，而下面应用从view 到 world旋转得到的 <code>X</code> 称为像素的世界空间坐标。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++">float3 X = STL::Geometry::<span class="hljs-built_in">RotateVector</span>(gViewToWorld, Xv);<br></code></pre></td></tr></table></figure>
+
+<p><strong>因此，通过变换到三位空间得到的点，既是三维空间坐标，又是点到相机的向量。</strong></p>
+<h3 id="3-3-3-计算视差"><a href="#3-3-3-计算视差" class="headerlink" title="3.3.3 计算视差"></a>3.3.3 计算视差</h3><p>视差（parallax）是指比较两个观察方向（世界空间）的差距大小。观察方向是相机到着色点的方向，因此视差是针对某一着色点而言的。只有当相机发生了位置变化，才会产生视差。在相同的相机运动下，不同着色点具有不同的视差。因此计算视差要固定着色点，如下图所示，相机运动向量 $\vec{c}$，运动前后的观察方向 $\vec{v},\vec{v}<em>{prev}$，可以得到视差度量定义<br>$$<br>parallax &#x3D; \tan\big(\arccos(\vec{v} \cdot \vec{v}</em>{prev})\big)<br>$$<br><img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230821185416474.png" srcset="/img/loading.gif" lazyload alt="image-20230821185416474" style="zoom: 50%;"></p>
+<ul>
+<li><p><code>Xprev</code>上一帧位置：处理animation带来的运动，计算着色点在上一帧的世界空间坐标<br>  <code>gIn_Mv</code>应该是物体animation带来的motion vector（mv可能是世界空间下、也可能是uv空间下），测试例子里都是 0；<br>  <code>gMvScale</code> 取值 C++ 的 motionVectorScale，gIsWorldSpaceMotionEnabled &#x3D; 0。</p>
+</li>
+<li><p>世界空间下 (gIsWorldSpaceMotionEnabled ! &#x3D; 0)：Xpre +&#x3D; mv 得到上一帧的位置</p>
+<p>motionVectorScale &#x3D; (1.0, 1.0, 0.0)</p>
+</li>
+<li><p>uv空间下：mv.xy 为 uv 的运动，uv.z 为深度的运动，(此时为 25D) motionVectorScale &#x3D; (1.0&#x2F;width, 1.0&#x2F;height, 1.0) </p>
+<p>因此在上一帧的像素uv： <code>smbPixelUv = pixelUv + mv.xy</code> 与深度 (viewZ + mv.z) </p>
+<p>变换得到上一帧的世界坐标：<code>Xprev = RotateVectorInverse(...) + gCameraDelta</code>。RotateVectorInverse 只处理了<strong>相机旋转</strong>（应该是旋转矩阵的逆等于转置，避免求逆）。gCameraDelta 是指向上一帧的运动向量，而这里的变换都是以当前帧相机为世界原点，因此加上 gCameraDelta  最终得到上一帧的世界空间坐标。</p>
+<blockquote>
+<p>注意：Xprev 是着色点在上一帧的世界坐标，因此如果着色点没有动画，那么 Xprev 与着色点在当前帧的世界坐标应该一样</p>
+</blockquote>
+</li>
+<li><p><code>smbParallaxInPixels</code>与上一帧之间的视差（像素为单位的距离）</p>
+<p>ComputeParallaxInPixels(Xprev - gCameraDelta, pixelUv, gWorldToClip, gRectSize )</p>
+<ul>
+<li><p><code>gCameraDelta</code> 即相机在世界空间指向上一帧的运动向量 prev - current。</p>
+<p>Xprev - gCameraDelta &#x3D; Xprev + (-gCameraDelta)：相当于保持相机位置不同，向着色点施加上一帧指向当前帧的相机平移运动</p>
+<p>再执行 <code>gWorldToClip</code> 变换得到当前相机下的 <code>uv</code>。</p>
+</li>
+<li><p>像素在上一帧的世界坐标 Xprev 施加了相机运动并变换到当前帧的uv，此时与 pixelUv 处于同一相机下，如上图右侧。因此可以计算二者之间的像素距离</p>
+</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-3-4-历史数据重投影"><a href="#3-3-4-历史数据重投影" class="headerlink" title="3.3.4 历史数据重投影"></a>3.3.4 历史数据重投影</h3><p>时序累积是将当前帧与历史帧结合得到更稳定的结果。需要将当前帧重投影到上一帧，从历史数据中得到可靠的对应，并以一定权重将当前帧更新到历史帧中。为此，需要考虑：</p>
+<ul>
+<li>disocclusion tracking：当前帧像素是否发生去遮挡，即新出现的像素。</li>
+<li>accumulate speed：当前帧像素与历史帧像素结合的权重。</li>
+</ul>
+<p>reblur的重投影结合了 surface motion based 与 virtual motion based(仅用于specular) 两种方法，下面先介绍surface motion</p>
+<h4 id="3-3-4-1-Surface-motion-based-reprojection"><a href="#3-3-4-1-Surface-motion-based-reprojection" class="headerlink" title="3.3.4.1 Surface motion based reprojection"></a>3.3.4.1 Surface motion based reprojection</h4><p>（1）Disocclusion Tracking</p>
+<p>前面已经通过重投影或者motion vector找到当前帧像素<code>pixelUv</code>对应上一帧像素<code>smbPixelUv </code>，通过比较当前帧与上一帧之间view z的差异是否超过阈值，如果超过则表示像素不匹配。此外，这个过程是基于Catmull-Rom filter与bilinear filter进行的，对于匹配的历史信息使用filter结果与当前帧进行混合。</p>
+<ol>
+<li><p>smbDisocclusionThreshold 计算</p>
+<ul>
+<li><p>输入 <code>gDisocclusionThreshold</code>，其在 C++ 上的数值计算如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> disocclusionThresholdBonus = (<span class="hljs-number">1.0f</span> + m_JitterDelta) / <span class="hljs-built_in">float</span>(rectH);<br><span class="hljs-type">float</span> disocclusionThreshold = m_CommonSettings.disocclusionThreshold + disocclusionThresholdBonus;	<span class="hljs-comment">// 0.01 + 抖动值</span><br></code></pre></td></tr></table></figure>
+
+<p>m_JitterDelta 是相邻两帧camera jitter的差值，camera jitter则是每帧的halton抖动值 [-0.5,0.5]</p>
+</li>
+<li><p>先乘上 frustumSize 得到 disocclusionThresholdMulFrustumSize，基于<code>NoV</code>与视差调整阈值，视差越大，阈值越低</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> smbDisocclusionThreshold = disocclusionThresholdMulFrustumSize / <span class="hljs-built_in">lerp</span>(<span class="hljs-number">0.05</span> + <span class="hljs-number">0.95</span> * NoV, <span class="hljs-number">1.0</span>, <span class="hljs-built_in">saturate</span>(smbParallaxInPixels/<span class="hljs-number">30.0</span>));<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>是否正面朝向。通过上一帧与当前帧的法线夹角判断。因为当前帧肯定是正面朝向，如果法线夹角不超过一定值则视上一帧也是正面朝向。</p>
+<ul>
+<li><p>夹角cos阈值 <code>frontFacing</code>：<code>lerp(cos(DegToRad(135.0)), cos(DegToRad(91.0)), saturate(2*smbParallaxInPixels-1))</code></p>
+</li>
+<li><p>法线夹角采用当前帧&#x2F;上一帧像素的bilinear区域法线均值：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++">smbDisocclusionThreshold *= <span class="hljs-built_in">float</span>(<span class="hljs-built_in">dot</span>(prevNavg, Navg) &gt; frontFacing);<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>上一帧uv的bilinear区域是否在屏幕内。若不在，则 smbDisocclusionThreshold 最终为负，那么之后的occlusion判断都不通过</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">smbDisocclusionThreshold *= <span class="hljs-built_in">IsInScreenBilinear</span>(smbBilinearFilter.origin, gRectSizePrev);<br>smbDisocclusionThreshold -= NRD_EPS;<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>在Catmull-Rom filter区域与bilinear filter区域进行occlusion判断，并生成occlusion weight。当catmull-rom区域不匹配时，则降为使用occlusion weight的bilinear区域。Catmull-Rom区域为4x4，中间2x2对应了bilinear区域，定义如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">/*</span><br><span class="hljs-comment">      Gather      =&gt; CatRom12    =&gt; Bilinear</span><br><span class="hljs-comment">    0x 0y 1x 1y       0y 1x</span><br><span class="hljs-comment">    0z 0w 1z 1w    0z 0w 1z 1w       0w 1z</span><br><span class="hljs-comment">    2x 2y 3x 3y    2x 2y 3x 3y       2y 3x</span><br><span class="hljs-comment">    2z 2w 3z 3w       2w 3z</span><br><span class="hljs-comment">     CatRom12     =&gt; Bilinear</span><br><span class="hljs-comment">       0x 1x</span><br><span class="hljs-comment">    0y 0z 1y 1z       0z 1y</span><br><span class="hljs-comment">    2x 2y 3x 3y       2y 3x</span><br><span class="hljs-comment">       2z 3z</span><br><span class="hljs-comment">*/</span><br><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">CatmullRom</span></span><br><span class="hljs-class">&#123;</span><br>    float2 origin;<br>    float2 weights[<span class="hljs-number">4</span>];<br>&#125;;<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><p>通过GatherRed提取上一帧像素smbPixelUv的<code>smbCatromFilter</code>区域的view z数据。<code>smbCatromGatherUv</code>为gather 0x的左上角，而 GatherRed 采样得到的是 bilinear 区域的4个像素，顺序如下</p>
+<img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230829165239433.png" srcset="/img/loading.gif" lazyload alt="image-20230829165239433" style="zoom: 67%;">
+
+<p>通过 GatherRed 的以下偏移量取wzxy，正好对应上面 Gather 区域（注意首数字 0123 表明了屏幕坐标轴方向），有</p>
+<ul>
+<li><p>(1, 1): smbViewZ0 &#x3D; (0x, 0y, 0z, 0w)。取yzw，prevViewZ0 &#x3D; (0y, 0z, 0w)</p>
+</li>
+<li><p>(3, 1): smbViewZ1 &#x3D; (1x, 1y, 1z, 1w)。取xzw，prevViewZ1 &#x3D; (1x, 1z, 1w)</p>
+</li>
+<li><p>(1, 3): smbViewZ2 &#x3D; (2x, 2y, 2z, 2w)。取xyw，prevViewZ2 &#x3D; (2x, 2y, 2w)</p>
+</li>
+<li><p>(3, 3): smbViewZ3 &#x3D; (3x, 3y, 3z, 3w)。取xyz， prevViewZ3 &#x3D; (3x, 3y, 3z)</p>
+</li>
+</ul>
+</li>
+<li><p>比较view z的差异判断Catmull-Rom区域的occlusion，并生成其中bilinear区域的occlusion weights，以及bilinear区域的可信度(用于之后的累积速度)。</p>
+<p><code>Xprev</code>变换到上一帧的view space得到<code>Xvprev.z</code>(注意：这是当前帧像素 PixelUv 的着色点在上一帧坐标空间下的坐标)。如果差异绝对值超过 smbDisocclusionThreshold，则认为像素不匹配，取0；否则取1。最后可得到 smbOcclusion0、smbOcclusion1、smbOcclusion2、smbOcclusion3。</p>
+<ul>
+<li><p>计算bilinear区域的<code>smbOcclusionWeights</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">float4 smbOcclusionWeights = GetBilinearCustomWeights(smbBilinearFilter, float4(smbOcclusion0.z, smbOcclusion1.y, smbOcclusion2.y, smbOcclusion3.x))<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>Catmull-Rom区域是否匹配，只有匹配时后续才会对历史信息进行 Catmull-Rom filter。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">bool</span> smbAllowCatRom = dot(smbOcclusion0 + smbOcclusion1 + smbOcclusion2 + smbOcclusion3, <span class="hljs-number">1.0</span>) &gt; <span class="hljs-number">11.5</span><br></code></pre></td></tr></table></figure>
+</li>
+<li><p>bilinear区域的可信度<code>smbFootprintQuality</code>：对 occlusion 进行 smbBilinearFilter 再开方得到，用以之后调整累积速度（越大越倾向于历史信息）。应对视角变化，对于可信度进行调整。例如相机斜对着表面(NoVPrev&lt;1)变为正对着(NoV&#x3D;1)，那么历史信息相对当前帧可信度下降</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> sizeQuality = (NoVprev + <span class="hljs-number">1e-3</span>) / (NoV + <span class="hljs-number">1e-3</span>);<br>sizeQuality *= sizeQuality;<br>sizeQuality = lerp(<span class="hljs-number">0.1</span>, <span class="hljs-number">1.0</span>, saturate(sizeQuality));<br>smbFootprintQuality *= sizeQuality;<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>处理材质变化，如果材质ID不匹配，那么视为像素不匹配</p>
+<p>上一帧像素的bilinear区域得到的prevMaterialIDs，与当前像素materialID比较，得到 <code>float4 materialCmps</code>(相同为1，不同为0)，bilinear区域的occlusion乘上 materialCmps 后再计算上述occlusion值，得到</p>
+<p>smbOcclusionWeightsWithMaterialID、smbAllowCatRomWithMaterialID、smbFootprintQualityWithMaterialID</p>
+</li>
+<li><p>上一帧像素 smbPixelUv 的 bilinear 区域 <code>smbBilinearFilter</code></p>
+<p>使用 linear 采样法线得到上一帧 <code>prevNavg</code>，再转到当前帧世界坐标（gWorldPrevToWorld，本例为单位阵）</p>
+<p>收集 smbBilinearFilter 区域4个像素的 diffAccumSpeeds、specAccumSpeeds、prevMaterialIDs。</p>
+</li>
+</ol>
+<h2 id="3-3-History-fix"><a href="#3-3-History-fix" class="headerlink" title="3.3 History fix"></a>3.3 History fix</h2><h3 id="3-3-1-Preload与数据准备-1"><a href="#3-3-1-Preload与数据准备-1" class="headerlink" title="3.3.1 Preload与数据准备"></a>3.3.1 Preload与数据准备</h3><p>与 temporal accumulation 阶段相同，将tile (GROUP_X + BORDER * 2) x (GROUP_Y + BORDER * 2) 加载到 <code>float2 s_FrameNum[BUFFER_Y][BUFFER_X]</code> 中，即累积的帧数(x为diffuse、y为specular)。本阶段的 BORDER 为 2。</p>
+<p>提取当前像素数据：<code>N</code>(世界空间法线)、<code>roughness</code>、<code>Xv</code>(view space坐标)、<code>Nv</code>(view space法线)</p>
+<h3 id="3-3-2-平滑累积帧数"><a href="#3-3-2-平滑累积帧数" class="headerlink" title="3.3.2 平滑累积帧数"></a>3.3.2 平滑累积帧数</h3><p>从 preload 数据中获取当前像素的累积帧数 <code>float2 frameNumUnclamped</code>，当前像素在 preload 数据中的位置 <code>int2 smemPos = threadPos + BORDER;</code></p>
+<p>再使用 <code>gHistoryFixFrameNum</code> 进行归一化得到 <code>normFrameNum</code>。</p>
+<p>在当前像素的 (BORDER * 2 + 1) X (BORDER * 2 + 1) 区域，对归一化累积帧数超过当前像素的样本取平均，得到 <code>normFrameNum</code>。 权重为</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">float2 w = step(c, s);	<span class="hljs-comment">// c 是当前像素归一化后的累计帧数，s是当前样本归一化后的累积帧数</span><br></code></pre></td></tr></table></figure>
+
+<p>最终得到 </p>
+<ul>
+<li><p>float2 scale &#x3D; saturate(1.0 - normFrameNum);</p>
+<p>gHistoryFixFrameNum 作为累积帧数阈值，scale相当于累积帧数不足的比例，history fix会对scale超出一定阈值执行。</p>
+</li>
+<li><p>float2 frameNum &#x3D; normFrameNum * gHistoryFixFrameNum;</p>
+</li>
+</ul>
+<h1 id="4-Diffuse-Denoise-Pipeline"><a href="#4-Diffuse-Denoise-Pipeline" class="headerlink" title="4 Diffuse Denoise Pipeline"></a>4 Diffuse Denoise Pipeline</h1><img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230820112644427.png" srcset="/img/loading.gif" lazyload alt="image-20230820112644427" style="zoom:67%;">
+
+<h1 id="5-Specular-Denoise-Pipeline"><a href="#5-Specular-Denoise-Pipeline" class="headerlink" title="5 Specular Denoise Pipeline"></a>5 Specular Denoise Pipeline</h1><img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230820112723742.png" srcset="/img/loading.gif" lazyload alt="image-20230820112723742" style="zoom:67%;">
+
+<h2 id="5-1-Pre-blur"><a href="#5-1-Pre-blur" class="headerlink" title="5.1 Pre blur"></a>5.1 Pre blur</h2><p>准备好参数后，执行 <a href="#6">6 Specular Spatial Filter</a> </p>
+<h3 id="5-1-1-默认参数与数据准备"><a href="#5-1-1-默认参数与数据准备" class="headerlink" title="5.1.1 默认参数与数据准备"></a>5.1.1 默认参数与数据准备</h3><ol>
+<li>宏定义的默认参数<br><code>REBLUR_SPATIAL_MODE == REBLUR_PRE_BLUR</code><br><code>REBLUR_PRE_BLUR_NON_LINEAR_ACCUM_SPEED</code> 1&#x2F;9<br><code>REBLUR_PRE_BLUR_FRACTION_SCALE</code> 2.0</li>
+<li>CPU传入的可调参数<br>gSpecPrepassBlurRadius 默认 50.0<br>lobeAngleFraction 默认 0.15<br>roughnessFraction 默认 0.15<br>resolutionScale 默认 (1.0, 1.0)<br>gPlaneDistSensitivity 默认 0.005<br>gMinRectDimMulUnproject : <code>(float)ml::Min(rectW, rectH) * unproject</code> </li>
+<li>数据准备<ul>
+<li>当前像素为checkboard选中的采样点时，权重和初始化 sum &#x3D; 1, 获取反射数据 spec</li>
+<li>否则，sum &#x3D; 0，spec &#x3D; float4(0)。因此反射距离为0，表示没有反射光线</li>
+</ul>
+</li>
+</ol>
+<h3 id="5-1-2-blur策略"><a href="#5-1-2-blur策略" class="headerlink" title="5.1.2 blur策略"></a>5.1.2 blur策略</h3><ol>
+<li><p>blur平面的选择：这里选用世界空间的blur平面，与 Reflected GGX-D 垂直，可以更多保留特征<br><img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230820113124323.png" srcset="/img/loading.gif" lazyload alt="image-20230820113124323" style="zoom:80%;"> <img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230820113146073.png" srcset="/img/loading.gif" lazyload alt="image-20230820113146073" style="zoom: 60%;"></p>
+</li>
+<li><p>blur半径的选择：由下图可以看出，反射物体离着色点越近，特征越明显，越远越模糊；此外越粗糙，specular lobe夹角越大，反射也会越模糊。因此反射距离越远、着色点越粗糙，对应越大的blur半径。</p>
+<p>也就是说，specular lobe与反射物体形成的锥形底面的直径越大，对应的blur半径越大。<br><img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230820113322228.png" srcset="/img/loading.gif" lazyload alt="image-20230820113322228" style="zoom: 55%;"><img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230820113351881.png" srcset="/img/loading.gif" lazyload alt="image-20230820113351881" style="zoom:45%;"></p>
+</li>
+</ol>
+<h3 id="5-1-3-blur-radius计算"><a href="#5-1-3-blur-radius计算" class="headerlink" title="5.1.3 blur radius计算"></a>5.1.3 blur radius计算</h3><ol>
+<li><p><code>float hitDist</code> ：基于roughess与viewZ 进行一定缩放，roughness 越小 scale 越大。scale 定义如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> _REBLUR_GetHitDistanceNormalization(<span class="hljs-type">float</span> viewZ, float4 hitDistParams, <span class="hljs-type">float</span> roughness = <span class="hljs-number">1.0</span>)<br>&#123;<br>	<span class="hljs-keyword">return</span> (hitDistParams.x + <span class="hljs-built_in">abs</span>(viewZ) * hitDistParams.y) <br>        					* <span class="hljs-built_in">lerp</span>(<span class="hljs-number">1.0</span>, hitDistParams.z, <span class="hljs-built_in">saturate</span>(<span class="hljs-built_in">exp2</span>(hitDistParams.w * roughness * roughness)));<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>其中 gHitDistParams 定义如下</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-keyword">struct</span> <span class="hljs-title class_">HitDistanceParameters</span><br>&#123;<br>    <span class="hljs-type">float</span> A = <span class="hljs-number">3.0f</span>; <span class="hljs-comment">// 来自 hitDistScale * meterToUnitsMultiplier，默认为 3.0 * 1.0。大概是米到单位值的变换</span><br>    <span class="hljs-type">float</span> B = <span class="hljs-number">0.1f</span>; <span class="hljs-comment">// (&gt; 0) - viewZ based linear scale (1 m - 10 cm, 10 m - 1 m, 100 m - 10 m)</span><br>    <span class="hljs-type">float</span> C = <span class="hljs-number">20.0f</span>; <span class="hljs-comment">// (&gt;= 1) - roughness based scale, use values &gt; 1 to get bigger hit distance for low roughness</span><br>    <span class="hljs-type">float</span> D = <span class="hljs-number">-25.0f</span>; <span class="hljs-comment">// (&lt;= 0) - absolute value should be big enough to collapse &quot;exp2(D * roughness ^ 2)&quot; to &quot;~0&quot; for roughness = 1</span><br>&#125;;<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><p>在 TraceOpaque 中，会针对reblur 的 hist dist 执行 normalize，变换到 [0, 1] 范围。和上面 scale hit dist 是反向操作，因此相当于是抵消了 :confused: :exclamation:</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++">normHitDist = <span class="hljs-built_in">REBLUR_FrontEnd_GetNormHitDist</span>(accumulatedHitDist, viewZ, gHitDistParams, isDiffusePath ? <span class="hljs-number">1.0</span> : desc.materialProps.roughness);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>会将无交点的反射距离，由 NRD_INF 变为 0</p>
+</li>
+</ul>
+</li>
+<li><p><code>lobeRadius</code> ：反射lobe形成的锥形底面的半径</p>
+<ul>
+<li><p>Specular lobe的主方向 <code>float4 Dv</code>：(GGX Dominant Direction, lerp factor) 见附录<br> <code>NoD</code> ：法线与 Dv 的夹角余弦</p>
+</li>
+<li><p>计算lobe夹角正切 <code>float lobeTanHalfAngle</code> ：根据roughness估算specular lobe的半角正切 <a href="#%5B1%5D">[1]</a>(page 72)</p>
+</li>
+<li><p>估算lobe半径大小</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> lobeRadius = hitDist * NoD * lobeTanHalfAngle;    <span class="hljs-comment">// 没看出有什么精确的几何变换，更像是一个近似模型</span><br></code></pre></td></tr></table></figure>
+
+<p>对于一个标准圆锥，底部半径正好为 hitDist * lobeTanHalfAngle，这对应的是观察角度与法线夹角为 0 的情况。当观察角度与法线夹角逐渐增大时，如下图所示</p>
+<img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20241022155550629.png" srcset="/img/loading.gif" lazyload alt="image-20241022155550629" style="zoom:50%;">
+
+<p>NoD 逐渐增大，近似的 lobe 半径逐渐减小。</p>
+</li>
+</ul>
+</li>
+<li><p><code>minBlurRadius</code>: lobeRadius 从世界空间转换到屏幕空间得到。pre blur 的 filter 半径不会超过该值</p>
+<p>转换为像素单位： 世界空间半径 &#x2F; 一个像素对应的世界空间大小。像素对应的世界空间大小，与像素的深度有关，即投影到 viewZ 处的截面</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c++">minBlurRadius = lobeRaidus / <span class="hljs-built_in">PixelRadiusToWorld</span>(gUnproject, gOrthoMode, <span class="hljs-number">1.0</span>, viewZ + hitDist * Dv.w);<br><span class="hljs-comment">// 将屏幕空间以像素为单位的半径投影回视锥体 viewZ 处的截面上的几何半径</span><br><span class="hljs-function"><span class="hljs-type">float</span> <span class="hljs-title">PixelRadiusToWorld</span><span class="hljs-params">(<span class="hljs-type">float</span> unproject, <span class="hljs-type">float</span> orthoMode, <span class="hljs-type">float</span> pixelRadius, <span class="hljs-type">float</span> viewZ)</span></span><br><span class="hljs-function"></span>&#123; <span class="hljs-keyword">return</span> pixelRadius * unproject * <span class="hljs-built_in">lerp</span>(viewZ, <span class="hljs-number">1.0</span>, <span class="hljs-built_in">abs</span>(orthoMode)); &#125;<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><p>gUnproject：1.0f &#x2F; (0.5f * rectH * project[1]); project[1] 计算的是<br> $$<br> \frac{1}{\tan\alpha_1}<br> $$<br> <img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230917160953598.png" srcset="/img/loading.gif" lazyload alt="image-20230917160953598" style="zoom:50%;"><img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230917161201304.png" srcset="/img/loading.gif" lazyload alt="image-20230917161201304" style="zoom:50%;"></p>
+<p> 如上图所示，视锥体在 viewZ 处的截面高度为 $2 * \text{viewZ} * \tan\alpha_1$，该<strong>截面高度与屏幕高度</strong>的比值为<br> $$<br> \begin{align}<br> &amp; 2 * \text{viewZ} * \tan\alpha_1 * \frac{1}{\text{rectH}} &#x3D; 2 * \text{viewZ} * \frac{1}{\text{project[1]}} * \frac{1}{\text{rectH}} \<br> &amp; &#x3D; \text{viewZ} * \frac{1}{\text{project[1]} * 0.5 * \text{rectH}} \<br> &amp; &#x3D; \text{viewZ} * \text{gUnproject}<br> \end{align}<br> $$<br> 因此屏幕空间像素乘上以上比值，可以投影回viewZ处，得到几何半径。</p>
+</li>
+</ul>
+</li>
+<li><p><code>blurRadius</code> ：使用一个 hitDistFactor 与 specular magic curve 缩放输入radius参数。不理解原理 :question: :confused:</p>
+<ul>
+<li><p><code>float hitDistFactor = hitDist * NoD / frustumSize</code> 并 clamp 到 0~1</p>
+<ul>
+<li><p><code>float frustumSize</code>：<strong>视锥体在 viewZ 处截面的高度</strong>  :confused: ​</p>
+ <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function"><span class="hljs-type">float</span> <span class="hljs-title">GetFrustumSize</span><span class="hljs-params">(<span class="hljs-type">float</span> minRectDimMulUnproject, <span class="hljs-type">float</span> orthoMode, <span class="hljs-type">float</span> viewZ)</span></span><br><span class="hljs-function"></span>&#123; <span class="hljs-keyword">return</span> minRectDimMulUnproject * <span class="hljs-built_in">lerp</span>(viewZ, <span class="hljs-number">1.0</span>, <span class="hljs-built_in">abs</span>(orthoMode)); &#125;<br></code></pre></td></tr></table></figure>
+<p> gMinRectDimMulUnproject : <code>(float)ml::Min(rectW, rectH) * unproject</code></p>
+<p> 因此 frustum size 计算为<br> $$<br> \min(\text{rectW},\text{rectH}) * \text{viewZ} * \text{unproject}<br> $$</p>
+<p> 前述已经讲过 viewZ * unproject 为视锥体在 viewZ 处的截面高度与屏幕高度的比值，因此 frustumSize 描述的是 viewZ 处截面的高度（宽高较小者）</p>
+</li>
+</ul>
+</li>
+<li><p>基于 roughness 与 hitDistFactor 对预设blur radius进行缩放</p>
+<p> 将roughness输入到specular magic curve中，得到 smc。该曲线如下图所示，roughness越大，系数越大，对应更大的blur半径</p>
+ <img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20231123161625155.png" srcset="/img/loading.gif" lazyload alt="image-20231123161625155" style="zoom: 50%;">
+
+ <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++">blurRadius = gSpecPrepassBlurRadius * hitDistFactor * smc;<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li><p>hitDistFactor &#x3D; hitDist * NoD &#x2F; frustumSize: </p>
+<p>如前述，frustumSize 表示 viewZ 处截面的高度，即处于世界空间。hitDist&#x2F;frustumSize 用于适应不同尺度的场景，作为缩放。NoD 则是越 grazing，半径越小。这与 lobeRadius 表现一致</p>
+</li>
+</ul>
+</li>
+<li><p><code>blurRadius = min(blurRadius, minBlurRadius);</code></p>
+</li>
+</ul>
+</li>
+</ol>
+<h3 id="5-1-4-采样"><a href="#5-1-4-采样" class="headerlink" title="5.1.4 采样"></a>5.1.4 采样</h3><p>确定好filter半径后，开始在像素的 filter 区域进行采样。采样过程需要记录 <code>float minHitDist = hitDist == 0.0 ? NRD_INF : hitDist;</code>，5.1.1 小节提到 hitDist &#x3D;&#x3D; 0 表示无反射光线情况:heavy_exclamation_mark:，此时 blur radius 也正好对应 0。</p>
+<p>在确定好一个采样点后，由于是checkboard模式，需要将采样点偏移到所属checkboard采样位置，即具有反射光线的位置：</p>
+<ul>
+<li><p>样本权重计算：与 <a href="#6">6</a> 中的权重设计一致，但 pre blur 还会有额外处理</p>
+<ul>
+<li><p>hs：采样点的 scaled hit distance</p>
+</li>
+<li><p>d：采样点到着色点的距离</p>
+</li>
+<li><p>调整权重 w</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> t = hs / (d + hitDist); <span class="hljs-comment">// hisDist 为着色点的 scaled hit distance</span><br>w *= <span class="hljs-built_in">lerp</span>(<span class="hljs-built_in">saturate</span>(t), <span class="hljs-number">1.0</span>, <span class="hljs-built_in">LinearStep</span>(<span class="hljs-number">0.5</span>, <span class="hljs-number">1.0</span>, roughness)); <span class="hljs-comment">// LinearStep(a, b, x) = saturate((x-a)/(b-a))</span><br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>minHitDist：记录最小 scaled hit distance，但引入了随机</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> geometryWeight = w * <span class="hljs-built_in">saturate</span>(hs / d);<br><span class="hljs-keyword">if</span>(Rng::Hash::<span class="hljs-built_in">GetFloat</span>() &lt; geometryWeight) minHitDist = <span class="hljs-built_in">min</span>(minHitDist, hs);<br></code></pre></td></tr></table></figure></li>
+</ul>
+<p>输出结果：</p>
+<ul>
+<li><p><code>Spec_HitDistForTracking</code> ：记录采样区域的最小反射距离（scaled）<code>minHitDist == NRD_INF ? 0.0 : minHitDist;</code></p>
+</li>
+<li><p>specular 执行加权平均，对于权重为 0 的情况，使用相邻像素进行基于深度的bilateral加权平均</p>
+</li>
+</ul>
+<h2 id="5-2-Temporal-Accumulation"><a href="#5-2-Temporal-Accumulation" class="headerlink" title="5.2 Temporal Accumulation"></a>5.2 Temporal Accumulation</h2><h3 id="5-2-1-Preload-与数据准备"><a href="#5-2-1-Preload-与数据准备" class="headerlink" title="5.2.1 Preload 与数据准备"></a>5.2.1 Preload 与数据准备</h3><ol>
+<li><p>预加载 tile <code>(GROUP_X+BORDER*2) x (GROUP_Y+BORDER*2)</code> 的数据，</p>
+<ul>
+<li><p>normal roughness 数据加载到 <code>s_Normal_Roughness[GROUP_X+BORDER*2][GROUP_Y+BORDER*2]</code> 中</p>
+</li>
+<li><p>HitDistForTracking 加载到 <code>s_HitDistForTracking[GROUP_X+BORDER*2][GROUP_Y+BORDER*2]</code></p>
+</li>
+</ul>
+</li>
+<li><p>访问预加载数据，遍历当前像素的 <code>(BORDER*2) x (BORDER*2)</code>区域，(i, j) &#x3D;&#x3D; (BORDER, BORDER) 表示当前像素数据</p>
+<ul>
+<li><p><code>Navg</code>：法线平均</p>
+</li>
+<li><p><code>hitDistForTracking</code> ：最短反射路径</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> h = s_HitDistForTracking[pos.y][pos.x];<br>hitDistForTracking = <span class="hljs-built_in">min</span>(hitDistForTracking, h == <span class="hljs-number">0.0</span> ? NRD_INF : h);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p><code>roughnessM1</code>、<code>roughnessM2</code> 这里使用 (roughness * roughness) 的一阶矩、二阶矩</p>
+</li>
+<li><p>这里只遍历了 (i &lt; 2 &amp;&amp; j &lt; 2) 部分，相当于像素左上角区域，有点奇怪 :confused:  :question:</p>
+</li>
+</ul>
+</li>
+<li><p>当前像素数据：view space 坐标<code>Xv</code>，世界坐标 <code>X</code>，法线 <code>N</code>，<code>roughness</code></p>
+<ul>
+<li><code>roughnessModified</code>：基于 Navg 对 roughness 进行修改</li>
+<li><code>roughnessSigma</code>：roughness 标准差</li>
+<li><code>histDistForTracking</code> 再次更新到<code>gOut_Spec_HitDistForTracking</code></li>
+</ul>
+</li>
+</ol>
+<h3 id="5-2-2-估算沿运动方向的-curvature"><a href="#5-2-2-估算沿运动方向的-curvature" class="headerlink" title="5.2.2 估算沿运动方向的 curvature"></a>5.2.2 估算沿运动方向的 curvature</h3><h4 id="5-2-2-1-着色点的运动方向"><a href="#5-2-2-1-着色点的运动方向" class="headerlink" title="5.2.2.1 着色点的运动方向"></a>5.2.2.1 着色点的运动方向</h4><p>将相机的运动转为着色点的运动 Xprev - gCameraDelta(将上一帧的着色点施加上一帧相机到当前帧的运动)，再变换到当前帧 screen uv空间，得到运动后的着色点的 <code>motionUv</code>。因此，uv空间的运动方向 <code>cameraMotion2d</code> 计算如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">cameraMotion2d = normalize((motionUV-pixelUV) * gRectSize) * gInvRectSize;	<span class="hljs-comment">// 转为像素单位标准化，再转为uv单位</span><br></code></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意：这里的 cameraMotion2d 不只是相机的运动矢量，如果着色点具有动画，由于 Xprev 是动画前的世界坐标，因此还有动画带来的运动</p>
+</blockquote>
+<p>接下来选择两个运动方向上的视差点，基于这两点以及着色点的法线、位置以及观察方向来计算曲率：</p>
+<ul>
+<li><p>在运动方向上走一个单位得到一个低 parallax 点</p>
+<p><code>float2 uv = pixelUv + cameraMotion2d * 0.99;</code></p>
+</li>
+<li><p>在运动方向上走前述计算的视差距离个单位</p>
+<p><code>float2 uvHigh = pixelUv + cameraMotion2d * smbParallaxInPixels;</code></p>
+</li>
+</ul>
+<h4 id="5-2-2-2-Low-parallax"><a href="#5-2-2-2-Low-parallax" class="headerlink" title="5.2.2.2 Low parallax"></a>5.2.2.2 Low parallax</h4><p>像素的bilinear区域以及描述定义如下</p>
+<img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230822111025809.png" srcset="/img/loading.gif" lazyload alt="image-20230822111025809" style="zoom: 67%;">
+
+<p><code>Bilinear f</code>的定义与计算如下，origin 是 bilinear 2x2 区域起始坐标(像素单位)，weights是距 origin 像素中心的偏移量</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-class"><span class="hljs-keyword">struct</span> <span class="hljs-title">Bilinear</span></span><br><span class="hljs-class">&#123;</span><br>    float2 origin;	<span class="hljs-comment">// Bilinar 2x2 区域起点</span><br>    float2 weights;	<span class="hljs-comment">// 插值权重</span><br>&#125;;<br>Bilinear <span class="hljs-title function_">GetBilinearFilter</span><span class="hljs-params">(float2 uv, float2 texSize)</span> &#123;<br>	float2 t = uv * texSize - <span class="hljs-number">0.5</span>;<br>    Bilinear result;<br>    result.origin = <span class="hljs-built_in">floor</span>(t);<br>    result.weights = t - result.origin;<br>    <span class="hljs-keyword">return</span> result;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<ol>
+<li><p>当前像素的bilinear区域考虑了小的视差，所位于的bilinear区域大多在Preload的数据 <code>s_Normal_MinHitDist</code> 中。存储位置计算如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">// threadPos+BORDER为当前像素在tile数据中的位置，int2(f.origin)-pixelPos为bilinear区域相对于当前像素的偏移量</span><br>int2 pos = threadPos + BORDER + int2(f.origin) - pixelPos;<br>pos = clamp(pos, <span class="hljs-number">0</span>, int2(BUFFER_X, BUFFER_Y) - <span class="hljs-number">2</span>);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>Bilinear filter后的法线 <code>n</code>，2x2区域的4个像素的法线为 n00 (pos + (0, 0))、n10 (pos + (1, 0))、n01 (pos + (0, 1))、n11 (pos + (1, 1))<br>bilinear计算如下，两个水平方向的插值，再加上一个垂直方向的插值</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">lerp(lerp(s00, s10, f.weights.x), lerp(s01, s11, f.weights.x), f.weights.y);<br></code></pre></td></tr></table></figure></li>
+</ol>
+<h4 id="5-2-2-3-High-parallax"><a href="#5-2-2-3-High-parallax" class="headerlink" title="5.2.2.3 High parallax"></a>5.2.2.3 High parallax</h4><p>与 low parallax 计算normal不同的是 uvHigh 的视差较大，因此其bilinear区域大多不在preload tile数据内，从贴图中采样并执行 bilinear filter，得到 <code>nHigh</code>。</p>
+<p>同时bilinear filter uvHigh 的 view space深度得到<code>zHigh</code>。计算 zHigh 与当前着色点 viewZ 之间的相对误差</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> zError = <span class="hljs-built_in">abs</span>(zHigh - viewZ) * rcp(max(zHigh, viewZ));<br></code></pre></td></tr></table></figure>
+
+<p>如果相对误差 <code>zError</code> &lt; 0.1，则选择high parallax的 uvHigh 与 nHigh；否则，选择 low parallax 的 uv 与 n。</p>
+<h4 id="5-2-2-4-计算-curvature"><a href="#5-2-2-4-计算-curvature" class="headerlink" title="5.2.2.4 计算 curvature"></a>5.2.2.4 计算 curvature</h4><p>使用当前像素的 <code>X</code>(世界坐标)、<code>N</code>(法线)、<code>Navg</code> 以及所选parallax 点的 <code>v</code>(世界空间观察方向)、<code>n</code>(世界空间法线)计算这两点曲率 :question:</p>
+<h3 id="5-2-5-累积速度更新"><a href="#5-2-5-累积速度更新" class="headerlink" title="5.2.5 累积速度更新"></a>5.2.5 累积速度更新</h3><p>本例中 gSpecMaterialMask &#x3D; 0，因此 <code>specOcclusionWeights</code> 采用前面计算的不带材质比较的 smbOcclusionWeights；<code>specHistoryConfidence</code> 采用 smbFootprintQuality，即<code>smbPixelUv</code>的bilinear区域的可信度。</p>
+<p>历史帧<code>smbPixelUv</code>的bilinear区域的累积速度 specAccumSpeeds，使用specOcclusionWeights得到加权平均<code>specAccumSpeed</code>。根据bilinear区域的可信度调整历史信息的累积帧数：如果 confidence &#x3D; 1，累积帧数不变；如果confidence &lt; 1，累积帧数减小，则混合权重更倾向于当前帧。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">// specAccumSpeed *= ((specAccumSpeed * confidence + 1) / (1 + specAccumSpeed));</span><br>specAccumSpeed *= lerp(specHistoryConfidence, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span> / ( <span class="hljs-number">1.0</span> + specAccumSpeed));	<span class="hljs-comment">// +1 避免除 0 </span><br>specAccumSpeed = min(specAccumSpeed, gMaxAccumulatedFrameNum);	<span class="hljs-comment">// fast history下 gMaxAccumulatedFrameNum = 5，否则 30</span><br></code></pre></td></tr></table></figure>
+
+<blockquote>
+<p>注意：累积速度在保存时除以最大累积帧数<code>REBLUR_MAX_ACCUM_FRAME_NUM</code>(63)，在提取时再乘上最大累积帧数。因此计算过程中，表示的是历史帧信息的累积帧数</p>
+</blockquote>
+<h3 id="5-2-6-Virtual-motion-based-reprojection"><a href="#5-2-6-Virtual-motion-based-reprojection" class="headerlink" title="5.2.6 Virtual motion based reprojection"></a>5.2.6 Virtual motion based reprojection</h3><img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230903135344354.png" srcset="/img/loading.gif" lazyload alt="image-20230903135344354" style="zoom:50%;">
+
+<p>对于反射的重投影，反射的世界具有自己的运动，例如反射点具有动画，而着色点与相机是静止的，这时着色点的反射也发生了运动。而反射点的运动常常使用虚拟反射点来追踪，如上图所示的镜面反射的虚拟反射点可以通过在着色点处，沿着相机到着色点的方向延长反射距离得到，计算如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c">float3 Xvirtual = X - V * hitDist;<br>float2 pixelUvVirtualPrev = GetScreenUv(gWorldToClipPrev, Xvirtual);<br></code></pre></td></tr></table></figure>
+
+<p>但这种方法只对镜面反射有效，而实际的glossy反射，虚拟反射点会更加接近表面。</p>
+<ol>
+<li><p>计算虚拟反射点<code>Xvirtual</code></p>
+<ul>
+<li><p>对preload阶段得到的当前像素2x2区域最小反射距离进行一定scale <code>hitDistForTracking *= hitDistScale</code></p>
+</li>
+<li><p>计算着色点处的GGX Dominant Direction <code>float4 D</code>，D.w 是 n 到 r(镜面反射方向) 的插值，roughness增大会导致specular lobe主方向偏向法线。</p>
+</li>
+<li><p>虚拟反射点计算如下:question:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> <span class="hljs-title function_">ApplyThinLensEquation</span><span class="hljs-params">( <span class="hljs-type">float</span> NoV, <span class="hljs-type">float</span> hitDist, <span class="hljs-type">float</span> curvature )</span><br>&#123; <span class="hljs-comment">// https://www.geeksforgeeks.org/sign-convention-for-spherical-mirrors/</span><br>    <span class="hljs-type">float</span> hitDistFocused = hitDist / (<span class="hljs-number">2.0</span> * curvature * hitDist * NoV + <span class="hljs-number">1.0</span>);<br>    <span class="hljs-keyword">return</span> hitDistFocused;<br>&#125;<br>float3 <span class="hljs-title function_">GetXvirtual</span><span class="hljs-params">(<span class="hljs-type">float</span> NoV, <span class="hljs-type">float</span> hitDist, <span class="hljs-type">float</span> curvature, float3 X, float3 Xprev, float3 V, <span class="hljs-type">float</span> dominantFactor)</span><br>&#123;<br>    <span class="hljs-type">float</span> hitDistFocused = ApplyThinLensEquation(NoV, hitDist, curvature);<br>    <span class="hljs-type">float</span> closenessToSurface = saturate(<span class="hljs-built_in">abs</span>(hitDistFocused) / (hitDist + NRD_EPS));<br><br>    <span class="hljs-keyword">return</span> lerp(Xprev, X, closenessToSurface * dominantFactor) - V * hitDistFocused * dominantFactor;<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>Xvritual 变换到上一帧screen uv空间，得到 <code>vmbPixelUv</code></p>
+</li>
+<li><p>使用虚拟反射点与着色点在上一帧的像素距离 <code>vmbPixelsTraveled</code> 表达virtual motion</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c">float2 vmbDelta = vmbPixelUv - smbPixelUv;<br><span class="hljs-type">float</span> vmbPixelsTraveled = length(vmbDelta * gRectSize);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>根据virtual motion对curvature进行调整，再重新计算上述虚拟反射点相关变量，例如 Xvirtual、vmbPixelUv、vmbDelta、vmbPixelsTraveled。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> curvatureCorrection = <span class="hljs-type">float</span>(vmbPixelsTraveled &lt; <span class="hljs-number">3.0</span> * smbParallaxInPixels + gInvRectSize.x);<br>curvature *= curvatureCorrection;<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>occlusion判断：虚拟反射点在上一帧的vmbPixelUv，对应bilinear区域<code>vmbBilinearFilter</code> ，计算该区域的occlusion。</p>
+<ul>
+<li><p>获取上一帧数据：</p>
+<ul>
+<li><code>vmbViewZs</code>：vmbBilinearFilter区域的view z</li>
+<li><code>vmbVv</code>：vmbPixelUv像素取view z &#x3D; 1得到的view space坐标，指向vmbPixelUv像素并且z&#x3D;1的view space下的向量</li>
+<li><code>Nvprev</code>：当前帧像素的 <code>Navg</code>转到上一帧view space</li>
+</ul>
+</li>
+<li><p>使用到着色点平面的距离的差异来评估occlusion</p>
+<ul>
+<li><p>上一帧bilinear区域到着色点平面的距离计算如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c">float4 NoX = (Nvprev.x * vmbVv.x + Nvprev.y * vmbVv.y) * (gOrthoMode == <span class="hljs-number">0</span> ? vmbViewZs : gOrthoMode) + Nvprev.z * vmbVv.z * vmbViewZs;<br><span class="hljs-comment">// gOrthoMode = 0</span><br>NoX = vmbViewZs * dot(Nvprev, vmbVv);<br></code></pre></td></tr></table></figure>
+
+<p>由于 vmbVv 是 vmbPixelUv像素在 view z &#x3D; 1 的点，通过变换可以得到 vmbViewZs * vmbVv 则是bilinear区域的四个点（这里忽略了像素点的不同）。因此NoX计算的是bilinear区域4个点到着色点平面法线的距离（这里的平面方程常数项为0）</p>
+</li>
+<li><p>着色点在上一帧的平面方程常数项：<code>float NoXreal = dot(Navg, X - gCameraDelta);</code></p>
+<p>由于 Navg 位于世界空间，因此到上一帧世界空间不需要变换</p>
+<p>X - gCameraDelta：着色点世界坐标变换到上一帧的世界空间。</p>
+<ul>
+<li><p>注意，正常情况下是不需要此变换的，因为世界空间是绝对的，但由于前面所述，这里的变换都取消掉了当前帧的相机平移，也就是以当前帧相机为原点。</p>
+</li>
+<li><p>简单推导：gCameraDelta是指向上一帧的相机运动向量，X是当前帧着色点的世界坐标，又是(着色点-&gt;相机)的向量。因此 X-gCameraDelta为(上一帧相机-&gt;着色点)的向量。</p>
+</li>
+<li><p>dot(Navg, x-gCameraDelta) &#x3D; ||Navg|| * ||x-gCameraDelta|| * cos &#x3D; ||x-gCameraDelta|| * cos</p>
+<p>相当于将 Navg与X转到上一帧的view space 下，再求平面方程常数项。保持与 NoX 的坐标空间一致。</p>
+</li>
+</ul>
+</li>
+<li><p><code>float4 vmbPlaneDist = abs(NoX-NoXreal)</code>：计算的是虚拟反射点在上一帧对应的bilinear区域到着色点平面的距离。</p>
+</li>
+</ul>
+</li>
+<li><p><code>float4 vmbOcclusion = step(vmbPlaneDist, disocclusionThresholdMulFrustumSize);</code></p>
+<p>之后就和surface motion计算类似</p>
+<ul>
+<li><p><code>float4 vmbOcclusionWeights</code>：bilinear权重施加vmbOcclusion 得到</p>
+</li>
+<li><p>是否可以使用 catrom filter：</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">bool</span> vmbAllowCatRom = dot( vmbOcclusion, <span class="hljs-number">1.0</span> ) &gt; <span class="hljs-number">3.5</span> &amp;&amp; REBLUR_USE_CATROM_FOR_VIRTUAL_MOTION_IN_TA;<br>vmbAllowCatRom = vmbAllowCatRom &amp;&amp; specAllowCatRom;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>bilinear可信度 <code>vmbFootprintQuality</code>： 对 vmbOcclusion  执行 bilinear filter 再开方得到</p>
+</li>
+</ul>
+</li>
+</ul>
+</li>
+</ol>
+<h4 id="5-2-6-1-累积速度更新"><a href="#5-2-6-1-累积速度更新" class="headerlink" title="5.2.6.1 累积速度更新"></a>5.2.6.1 累积速度更新</h4><p>使用 vmbBilinearGatherUv 获取上一帧 vmbBilinearFilter 区域的累积速度，使用vmbOcclusionWeights加权平均得到 <code>vmbSpecAccumSpeed</code>，再使用 vmbBilinearFilter  区域的可信度调整累积速度</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">// vmbSpecAccumSpeed *= ((vmbSpecAccumSpeed * confidence + 1) / (1 + vmbSpecAccumSpeed));</span><br>vmbSpecAccumSpeed *= lerp(vmbFootprintQuality, <span class="hljs-number">1.0</span>, <span class="hljs-number">1.0</span> / (<span class="hljs-number">1.0</span> + vmbSpecAccumSpeed));<br></code></pre></td></tr></table></figure>
+
+<p>与surface motion不同的是，最大帧数进行了如下限制，本例中 <code>gResponsiveAccumulationRoughnessThreshold=0</code>，因此无作用</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> <span class="hljs-title function_">GetResponsiveAccumulationAmount</span><span class="hljs-params">(<span class="hljs-type">float</span> roughness)</span>	<br>&#123;	<span class="hljs-comment">// 当 roughness 大于阈值时为0，roughness越小，返回值越大。但 gResponsiveAccumulationRoughnessThreshold 为 0，返回值恒为0</span><br>    <span class="hljs-type">float</span> amount = <span class="hljs-number">1.0</span> - (roughness + NRD_EPS) / (gResponsiveAccumulationRoughnessThreshold + NRD_EPS);<br>    <span class="hljs-keyword">return</span> STL::Math::SmoothStep01(amount);<br>&#125;<br><span class="hljs-type">float</span> responsiveAccumulationAmount = GetResponsiveAccumulationAmount(roughness);<br>responsiveAccumulationAmount = lerp(<span class="hljs-number">1.0</span>, GetSpecMagicCurve(roughness), responsiveAccumulationAmount);<br><br><span class="hljs-type">float</span> vmbMaxFrameNum = gMaxAccumulatedFrameNum * responsiveAccumulationAmount;<br>vmbSpecAccumSpeed = min(vmbSpecAccumSpeed, vmbMaxFrameNum);<br></code></pre></td></tr></table></figure>
+
+<h4 id="5-2-6-2-Surface-与-Virtual-之间的混合权重"><a href="#5-2-6-2-Surface-与-Virtual-之间的混合权重" class="headerlink" title="5.2.6.2 Surface 与 Virtual 之间的混合权重"></a>5.2.6.2 Surface 与 Virtual 之间的混合权重</h4><p><code>virtualHistoryAmount</code>，用于混合 virtual-motion based 与 surface-motion based重投影。 </p>
+<ul>
+<li><p>初始为 GGX-D 的 lerpFactor</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> virtualHistoryAmount = IsInScreen(vmbPixelUv) * D.w;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>virtual motion的bilinear区域可信度 <code>vmbFootprintQuality</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">virtualHistoryAmount *= saturate(vmbFootprintQuality / <span class="hljs-number">0.5</span>);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>normal：根据着色点法线 <code>N</code>与虚拟反射点法线<code>vmbN</code>、virtual motion走过的弧度 <code>angle</code> 得到 <code>virtualHistoryNormalBasedConfidence</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">virtualHistoryAmount *= lerp(<span class="hljs-number">1.0</span> - saturate(vmbPixelsTraveled), <span class="hljs-number">1.0</span>, virtualHistoryNormalBasedConfidence)<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>back-facing: 虚拟反射点法线 vmbN 与着色点的平均法线 Navg。</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">virtualHistoryAmount *= <span class="hljs-type">float</span>(dot(vmbN, Navg) &gt; <span class="hljs-number">0.0</span>)<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>roughness: <code>virtualHistoryRoughnessBasedConfidence</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">virtualHistoryAmount *= lerp(<span class="hljs-number">1.0</span> - saturate(vmbPixelsTraveled), <span class="hljs-number">1.0</span>, virtualHistoryRoughnessBasedConfidence)<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>在virtual motion方向上的少量像素累积roughness权重 <code>wr</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c">virtualHistoryAmount *= <span class="hljs-number">0.1</span> + wr * <span class="hljs-number">0.9</span>;<br>virtualHistoryRoughnessBasedConfidence *= wr;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="5-2-7-混合"><a href="#5-2-7-混合" class="headerlink" title="5.2.7 混合"></a>5.2.7 混合</h3><h4 id="5-2-7-1-历史数据filter"><a href="#5-2-7-1-历史数据filter" class="headerlink" title="5.2.7.1 历史数据filter"></a>5.2.7.1 历史数据filter</h4><p>当 <code>specAllowCatRom == true</code>时，使用 catrom filter；否则使用 specOcclusionWeights 进行bilinear filter，得到着色点在上一帧的specular历史filter结果 <code>smbSpecHistory, smbSpecFastHistory</code>。</p>
+<p>同理，当 <code>vmbAllowCatRom == true</code>时，使用 catrom filter；否则使用 vmbOcclusionWeights 进行bilinear filter，得到虚拟反射点在上一帧的 specular 历史filter结果<code>vmbSpecHistory, vmbSpecFastHistory</code></p>
+<p>SpecHistory 是 float4(radiance, dist)，SpecFastHistory 是 float2(luma, hitDistForTrackingPrev)</p>
+<h4 id="5-2-7-2-virtual-history-confidence"><a href="#5-2-7-2-virtual-history-confidence" class="headerlink" title="5.2.7.2 virtual history confidence"></a>5.2.7.2 virtual history confidence</h4><p>用于历史radiance clamp，以及控制累积速度</p>
+<ul>
+<li><p>virtual parallax difference：使用 SpecFastHistory 的 hitDist 得到虚拟反射点 <code>XvirtualPrev</code>，变换到上一帧的sreen uv空间得到 <code>vmbPixelUvPrev</code>。得到与 vmbPixelUv的像素距离 <code>deltaParallaxInPixels</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">// lobeRadiusInPixels 着色点处反射lobe半径</span><br><span class="hljs-type">float</span> virtualHistoryConfidence = STL::Math::SmoothStep(lobeRadiusInPixels + <span class="hljs-number">0.25</span>, <span class="hljs-number">0.0</span>, deltaParallaxInPixels);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>在virtual motion方向上的少量像素累积roughness权重 <code>wr</code>、normal权重 <code>w1</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">virtualHistoryConfidence *= isInScreen ? w1 : <span class="hljs-number">1.0</span>;<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h4 id="5-2-7-3-累积速度与混合权重更新"><a href="#5-2-7-3-累积速度与混合权重更新" class="headerlink" title="5.2.7.3 累积速度与混合权重更新"></a>5.2.7.3 累积速度与混合权重更新</h4><p><code>vmbSpecAccumSpeed *= virtualHistoryConfidence;</code></p>
+<p>surface motion based：<code>smbSpecAccumSpeed</code></p>
+<p>由 virtualHistoryAmount 混合得到最终的 <code>specAccumSpeed</code></p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">virtualHistoryAmount *= <span class="hljs-built_in">saturate</span>(vmbSpecAccumSpeed / (smbSpecAccumSpeed + NRD_EPS)); <span class="hljs-comment">// gNonReferenceAccumulation = 1</span><br>specAccumSpeed = <span class="hljs-built_in">lerp</span>(smbSpecAccumSpeed, vmbSpecAccumSpeed, virtualHistoryAmount);<br></code></pre></td></tr></table></figure>
+
+<h4 id="5-2-7-4-Specular-混合"><a href="#5-2-7-4-Specular-混合" class="headerlink" title="5.2.7.4 Specular 混合"></a>5.2.7.4 Specular 混合</h4><ul>
+<li><p>混合速度选用 <code>float specNonLinearAccumSpeed = 1.0 / (1.0 + specAccumSpeed);</code></p>
+<p>当checkboard模式下，当前无有效数据时，<code>specNonLinearAccumSpeed *= lerp(1.0 - gCheckerboardResolveAccumSpeed, 1.0, specNonLinearAccumSpeed);</code></p>
+</li>
+<li><p>混合surface motion 与 virtual motion的历史specular：<code>specHistory = lerp(smbSpecHistory, vmbSpecHistory, virtualHistoryAmount);</code></p>
+</li>
+<li><p>混合历史specular与当前specular 得到最终累积结果 <code>specResult</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs c">specResult = MixHistoryAndCurrent(specHistory, spec, specNonLinearAccumSpeed, roughnessModified);<br>float4 <span class="hljs-title function_">MixHistoryAndCurrent</span><span class="hljs-params">(float4 history, float4 current, <span class="hljs-type">float</span> f, <span class="hljs-type">float</span> roughness = <span class="hljs-number">1.0</span>)</span><br>&#123;<br>    float4 r;<br>    r.xyz = lerp(history.xyz, current.xyz, f);<br>    r.w = lerp(history.w, current.w, max(f, GetMinAllowedLimitForHitDistNonLinearAccumSpeed(roughness)));<br>    <span class="hljs-keyword">return</span> r;<br>&#125;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>specular混合结果的 hit dist 与 lum矫正（Anti-firefly suppressor）</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// REBLUR_FIREFLY_SUPPRESSOR_RADIUS_SCALE 0.1, gBlurRadius 15</span><br><span class="hljs-type">float</span> specAntifireflyFactor = specAccumSpeed * gBlurRadius * REBLUR_FIREFLY_SUPPRESSOR_RADIUS_SCALE * smc;<br>specAntifireflyFactor /= <span class="hljs-number">1.0</span> + specAntifireflyFactor;<br></code></pre></td></tr></table></figure>
+
+<p>virtual motion 与 surface motion 的混合结果 与 最终时序累积结果之间的混合</p>
+</li>
+<li><p>fast history混合</p>
+</li>
+<li><p>计算误差 GetColorErrorForAdaptiveRadiusScale，之后blur基于此调整blur radius</p>
+</li>
+</ul>
+<h2 id="5-3-History-Fix"><a href="#5-3-History-Fix" class="headerlink" title="5.3 History Fix"></a>5.3 History Fix</h2><h3 id="5-3-1-Preload"><a href="#5-3-1-Preload" class="headerlink" title="5.3.1 Preload"></a>5.3.1 Preload</h3><p>从 fast history 加载 lum 到 <code>float s_SpecLuma[BUFFER_Y][BUFFER_X]</code></p>
+<h3 id="5-3-2-History-Reconstruction"><a href="#5-3-2-History-Reconstruction" class="headerlink" title="5.3.2 History Reconstruction"></a>5.3.2 History Reconstruction</h3><p>当累积帧数相对于 <code>gHistoryFixFrameNum</code> 小于 (1-REBLUR_HISTORY_FIX_THRESHOLD_1) 比例时 (0.111)，执行 history reconstruction。</p>
+<ol>
+<li><p>采样步长 <code>scale.y</code>（像素单位）：与前面计算相同，得到specular lobe的 <code>lobeRadius</code>(世界空间)，再转到屏幕空间得到 <code>minBlurRadius</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-comment">// gHistoryFixStrideBetweenSamples = 14.0，frameNum 是 gHistoryFixFrameNum 范围内的平滑帧数</span><br>scale.y = min(gHistoryFixStrideBetweenSamples / (<span class="hljs-number">2.0</span> + frameNum.y), minBlurRadius / <span class="hljs-number">2.0</span>);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>权重参数：normal、geometry、roughness 与之前计算相同</p>
+</li>
+<li><p>在 [-2, 2] x [-2, 2] 区域进行加权平均specular得到 <code>spec</code>，</p>
+<ul>
+<li>每个样本为 <code>float2 uv = pixelUv + float2(i, j) * gInvRectSize * scale.y;</code></li>
+<li>使用权重参数计算每个样本的权重</li>
+</ul>
+</li>
+<li><p>在以当前像素为中心的 (BORDER * 2 + 1) x (BORDER * 2 + 1) 区域计算 luma 一阶矩<code>specM1</code>、二阶矩<code>specM2</code>。</p>
+<p>每个样本的luma数据都在shared data <code>s_SpecLuma</code> 中</p>
+</li>
+<li><p>如果开启了 antiFirefly ，则在 [-4, 4] x [-4, 4] 区域计算 luma 的一阶矩 m1、二阶矩 m2，限制filter结果spec的luma <code>specLuma</code> </p>
+<p><code>clamp(specLuma, m1-sigma, m1+sigma)</code>，sigma为标准差</p>
+</li>
+<li><p>使用 specM1、specM2以及当前像素的lum specCenter 对 specLuma 进行 clamp 得到 <code>specLumaClamped</code></p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> specMin = min(specM1 - specSigma, specCenter);<br><span class="hljs-type">float</span> specMax = max(specM1 + specSigma, specCenter);<br><span class="hljs-type">float</span> specLumaClamped = clamp(specLuma, specMin, specMax);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>specLumaClamped 到 specLuma 之间的插值得到最终的 specLuma，插值权重由累积帧数决定</p>
+</li>
+</ol>
+   <figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c">specLuma = lerp(specLumaClamped, specLuma, <br>                <span class="hljs-number">1.0</span> / (<span class="hljs-number">1.0</span> + <span class="hljs-type">float</span>(gMaxFastAccumulatedFrameNum &lt; gMaxAccumulatedFrameNum) * frameNumUnclamped.y));<br></code></pre></td></tr></table></figure>
+
+<p>   对filter结果ChangeLuma得到最终输出 <code>spec = ChangeLuma(spec, specLuma);</code></p>
+<h2 id="5-4-Blur"><a href="#5-4-Blur" class="headerlink" title="5.4 Blur"></a>5.4 Blur</h2><h3 id="5-4-1-blur-radius计算"><a href="#5-4-1-blur-radius计算" class="headerlink" title="5.4.1 blur radius计算"></a>5.4.1 blur radius计算</h3><p>输入参数：</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++">gBlurRadius = <span class="hljs-number">15.0f</span>;<br></code></pre></td></tr></table></figure>
+
+<p>根据时序累积信息speed(累积帧数)与error来计算blur radius。</p>
+<ul>
+<li><p>基于accum speed的boost参数：观察角度越grazing、累积帧数越少，boost越大</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> boost = <span class="hljs-number">1.0</span> - <span class="hljs-built_in">GetFadeBasedOnAccumulatedFrames</span>(accumSpeed);<br>boost *= (<span class="hljs-number">1.0</span> - <span class="hljs-built_in">pow5</span>(NoV)) * smc;<br><span class="hljs-comment">// (accumSpeed - historyFixFrameNum * 2/3) / (historyFixFrameNum * 2/3)</span><br><span class="hljs-comment">// 累积帧数超过 2/3 的 history fix frame时，boost逐渐降低，blur radius也会降低</span><br><span class="hljs-function"><span class="hljs-type">float</span> <span class="hljs-title">GetFadeBasedOnAccumulatedFrames</span><span class="hljs-params">(<span class="hljs-type">float</span> accumSpeed)</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-type">float</span> a = gHistoryFixFrameNum * <span class="hljs-number">2.0</span> / <span class="hljs-number">3.0</span> + <span class="hljs-number">1e-6</span>;<br>    <span class="hljs-type">float</span> b = gHistoryFixFrameNum * <span class="hljs-number">4.0</span> / <span class="hljs-number">3.0</span> + <span class="hljs-number">2e-6</span>;<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">saturate</span>((accumSpeed - a) / (b - a));<br>&#125;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>hitDistFactor自适应调整：累积帧数越少，hitDistFactor越趋向于1</p>
+<ul>
+<li><p>根据error的调整：<code>hitDistFactor = lerp(hitDistFactor, 1.0, error)</code></p>
+</li>
+<li><p>根据roughness的调整：<code>float relaxedHitDistFactor = lerp(1.0, hitDistFactor, roughness);</code></p>
+</li>
+<li><p>根据speed混合</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> specNonLinearAccumSpeed = <span class="hljs-number">1.0</span> / (<span class="hljs-number">1.0</span> + (<span class="hljs-number">1.0</span> - boost) * accumSpeed);<br>hitDistFactor = <span class="hljs-built_in">lerp</span>(hitDistFactor, relaxedHitDistFactor, specNonLinearAccumSpeed);<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+<li><p>计算 blurRadius：</p>
+<ul>
+<li><p>boost调控额外增加的radius</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> blurRadius = gBlurRadius * (<span class="hljs-number">1.0</span> + <span class="hljs-number">2.0</span> * boost) / <span class="hljs-number">3.0</span>;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>进行缩放：<code>blurRadius *= hitDistFactor * smc;</code></p>
+</li>
+<li><p><code>blurRadius = min(blurRadius, minBlurRadius);</code></p>
+</li>
+<li><p>额外处理</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// Blur radius - addition to avoid underblurring</span><br>blurRadius += smc;<br><span class="hljs-comment">// radiusScale = 1</span><br>blurRadius *= radiusScale * <span class="hljs-built_in">float</span>(gBlurRadius != <span class="hljs-number">0</span>);<br></code></pre></td></tr></table></figure></li>
+</ul>
+</li>
+</ul>
+<h1 id="6-Specular-Spatial-Filter"><a href="#6-Specular-Spatial-Filter" class="headerlink" title="6 Specular Spatial Filter "></a>6 Specular Spatial Filter <a name="6"></a></h1><h2 id="6-1-权重参数计算"><a href="#6-1-权重参数计算" class="headerlink" title="6.1 权重参数计算"></a>6.1 权重参数计算</h2><p>一些使用到的默认参数</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> specNonLinearAccumSpeed = REBLUR_PRE_BLUR_NON_LINEAR_ACCUM_SPEED = <span class="hljs-number">1</span>/<span class="hljs-number">9</span>;<br>gPlaneDistSensitivity = <span class="hljs-number">0.005</span>;	<span class="hljs-comment">// 用于调整几何权重影响，越大表示增大几何权重</span><br>gLobeAngleFraction = <span class="hljs-number">0.15</span>;		<span class="hljs-comment">// 用于调整法线权重影响，越大表示增大法线权重</span><br>gRoughnessFraction = <span class="hljs-number">0.15</span>;		<span class="hljs-comment">// 用于调整粗糙度权重影响，越大表示增大粗糙度权重</span><br>fractionScale = REBLUR_PRE_BLUR_FRACTION_SCALE = <span class="hljs-number">2.0</span>;<br></code></pre></td></tr></table></figure>
+
+<p>这里的各种权重设计都是基于平常见到的权重之上，再增加一个调控参数设计。对于每项权重，实现上先计算好其所需参数，再最后计算得到权重，这样实现更能够利用MAD指令。最后每项权重都会乘上各自的调控参数，权重具体形式为 <em>调控参数(a) X 平面距离(\法线夹角\粗糙度差异)</em>，细节可查看 <a href="#6.3.2">6.3.2</a> 小节。</p>
+<h3 id="6-1-1-基于平面距离"><a href="#6-1-1-基于平面距离" class="headerlink" title="6.1.1 基于平面距离"></a>6.1.1 基于平面距离</h3><p><code>float2 geometryWeightParams</code> ：用于计算基于平面距离的权重</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-function">float2 <span class="hljs-title">GetGeometryWeightParams</span><span class="hljs-params">(<span class="hljs-type">float</span> planeDistSensitivity, <span class="hljs-type">float</span> frustumSize, float3 Xv, float3 Nv, </span></span><br><span class="hljs-params"><span class="hljs-function">                               <span class="hljs-type">float</span> nonLinearAccumSpeed)</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-type">float</span> relaxation = <span class="hljs-built_in">lerp</span>(<span class="hljs-number">1.0</span>, <span class="hljs-number">0.25</span>, nonLinearAccumSpeed);<br>    <span class="hljs-type">float</span> a = relaxation / (planeDistSensitivity * frustumSize);<br>    <span class="hljs-type">float</span> b = -<span class="hljs-built_in">dot</span>(Nv, Xv) * a;<br>    <span class="hljs-keyword">return</span> <span class="hljs-built_in">float2</span>(a, b);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>$$<br>\begin{align}<br>a_g &amp;&#x3D; \frac{lerp(1.0, \space 0.25,\space 1&#x2F;9)}{g_{sensitivity} * frustumSize}\<br>g_{params} &amp;&#x3D; \begin{pmatrix}a_g, &amp; -a_g \cdot (N_v \cdot X_v)\end{pmatrix}<br>\end{align}<br>\tag{1}\label{geometry-weight-params}<br>$$</p>
+<h3 id="6-1-2-基于法线夹角"><a href="#6-1-2-基于法线夹角" class="headerlink" title="6.1.2 基于法线夹角"></a>6.1.2 基于法线夹角</h3><p><code>float normalWeightParams</code> ：用于计算基于法线夹角的权重。</p>
+<p>从下式可以看出，这里的设计从specular对法线朝向的敏感度出发，specular lobe angle越小，权重对法线夹角越敏感。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> lobeAngleFractionScale = gLobeAngleFraction * fractionScale;	<span class="hljs-comment">// fraction 参数</span><br><span class="hljs-function"><span class="hljs-type">float</span> <span class="hljs-title">GetNormalWeightParams</span><span class="hljs-params">(<span class="hljs-type">float</span> nonLinearAccumSpeed, <span class="hljs-type">float</span> fraction, <span class="hljs-type">float</span> roughness = <span class="hljs-number">1.0</span>)</span></span><br><span class="hljs-function"></span>&#123;<br>    <span class="hljs-type">float</span> angle = STL::ImportanceSampling::<span class="hljs-built_in">GetSpecularLobeHalfAngle</span>(roughness);<br>    angle *= <span class="hljs-built_in">lerp</span>(<span class="hljs-built_in">saturate</span>(fraction), <span class="hljs-number">1.0</span>, nonLinearAccumSpeed); <span class="hljs-comment">// <span class="hljs-doctag">TODO:</span> use as &quot;percentOfVolume&quot; instead?</span><br><br>    <span class="hljs-keyword">return</span> <span class="hljs-number">1.0</span> / <span class="hljs-built_in">max</span>(angle, REBLUR_NORMAL_ULP);		<span class="hljs-comment">// REBLUR_NORMAL_ULP (2.0 / 255.0)</span><br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>$$<br>\begin{align}<br>a_n &amp;&#x3D; 1.0 &#x2F; \Big( halfAngle * lerp(g_{lobeAngleF} * 2.0,\space 1.0,\space 1&#x2F;9) \Big)\<br>n_{params} &amp;&#x3D; a_n<br>\end{align}<br>\tag{2}\label{normal-weight-params}<br>$$</p>
+<h3 id="6-1-3-基于反射距离差异"><a href="#6-1-3-基于反射距离差异" class="headerlink" title="6.1.3 基于反射距离差异"></a>6.1.3 基于反射距离差异</h3><p><code>float2 hitDistanceWeightParams</code> ：基于反射距离差异的权重</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><code class="hljs c">float2 <span class="hljs-title function_">GetHitDistanceWeightParams</span><span class="hljs-params">(<span class="hljs-type">float</span> hitDist, <span class="hljs-type">float</span> nonLinearAccumSpeed, <span class="hljs-type">float</span> roughness = <span class="hljs-number">1.0</span>)</span><br>&#123;<br>    <span class="hljs-comment">// IMPORTANT: since this weight is exponential, 3% can lead to leaks from bright objects in reflections.</span><br>    <span class="hljs-comment">// Even 1% is not enough in some cases, but using a lower value makes things even more fragile</span><br>    <span class="hljs-type">float</span> smc = GetSpecMagicCurve2(roughness);<br>    <span class="hljs-type">float</span> norm = lerp(NRD_EPS, <span class="hljs-number">1.0</span>, min(nonLinearAccumSpeed, smc));	<span class="hljs-comment">// NRD_EPS 1e-6</span><br>    <span class="hljs-type">float</span> a = <span class="hljs-number">1.0</span> / norm;<br>    <span class="hljs-type">float</span> b = hitDist * a;<br>    <span class="hljs-keyword">return</span> float2(a, -b);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>$$<br>\begin{align}<br>a_h &amp;&#x3D; 1.0 &#x2F; \Big( lerp(1\times 10^{-6}, \space 1.0, \space \min(1&#x2F;9, smc) \Big)\<br>h_{params} &amp;&#x3D; \begin{pmatrix} a_h, &amp; -a_h\cdot hitDist \end{pmatrix}<br>\end{align}<br>\tag{3}\label{hit-weight-params}<br>$$</p>
+<p>根据 $\eqref{hit-weight}$ 可知，超参 $a_h$ 越大，基于反射距离的权重越小</p>
+<h3 id="6-1-4-基于roughness差异"><a href="#6-1-4-基于roughness差异" class="headerlink" title="6.1.4 基于roughness差异"></a>6.1.4 基于roughness差异</h3><p><code>float2 roughnessWeightParams</code> ：用于计算基于roughness差异的计算</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> roughnessFractionScale = gRoughnessFraction * fractionScale;	<span class="hljs-comment">// fraction 参数</span><br>float2 <span class="hljs-title function_">GetRoughnessWeightParams</span><span class="hljs-params">(<span class="hljs-type">float</span> roughness, <span class="hljs-type">float</span> fraction)</span><br>&#123;<br>    <span class="hljs-type">float</span> a = rcp(lerp(<span class="hljs-number">0.01</span>, <span class="hljs-number">1.0</span>, saturate(roughness * fraction)));<br>    <span class="hljs-type">float</span> b = roughness * a;<br>    <span class="hljs-keyword">return</span> float2(a, -b);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>$$<br>\begin{align}<br>a_r &amp;&#x3D; 1.0 &#x2F; \Big(lerp(0.01, \space 1.0,\space roughness * g_{roughness} * 2.0)\Big)\<br>r_{params} &amp;&#x3D; \begin{pmatrix} a_r, &amp; -a_r \cdot roughness \end{pmatrix}<br>\end{align}  \tag{4}\label{roughness-weight-params}<br>$$</p>
+<h2 id="6-2-Sampling-Space"><a href="#6-2-Sampling-Space" class="headerlink" title="6.2 Sampling Space"></a>6.2 Sampling Space</h2><ol>
+<li><p>TB坐标系轴</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">float2x3 TvBv = GetKernelBasis(Dv.xyz, Nv, NoD, roughness, specNonLinearAccumSpeed);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>blurRadius 转为世界空间下的 worldRadius，对TB进行缩放 <code>TvBv[0] *= worldRadius; TvBv[1] *= worldRadius;</code></p>
+</li>
+</ol>
+<h2 id="6-3-Poisson-Sampling"><a href="#6-3-Poisson-Sampling" class="headerlink" title="6.3 Poisson Sampling"></a>6.3 Poisson Sampling</h2><h3 id="6-3-1-采样样本"><a href="#6-3-1-采样样本" class="headerlink" title="6.3.1 采样样本"></a>6.3.1 采样样本</h3><ol>
+<li><p>当前样本的 uv 偏移量：泊松样本生成二维向量，再乘上 blurRadius * texelSize</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">float2 uv = pixelUv + STL::Geometry::RotateVector( rotator, offset.xy ) * gInvScreenSize * blurRadius;<br></code></pre></td></tr></table></figure>
+
+<p><code>offset</code>：(x, y) 是单位圆盘内的点坐标，z 是点距圆心的距离</p>
+</li>
+<li><p>如果是checkboard模式（gSpecCheckerboard !&#x3D; 2），当前采样样本是否有有效数据，如果没有则向左或向右偏移一个，表示取相邻像素数据</p>
+</li>
+<li><p>采样当前样本的 viewZ 与 spec，以及得到当前样本在view space的坐标 Xvs</p>
+</li>
+</ol>
+<h3 id="6-3-2-样本权重"><a href="#6-3-2-样本权重" class="headerlink" title="6.3.2 样本权重 "></a>6.3.2 样本权重 <a name="6.3.2"></a></h3><p>计算当前样本的权重，为下面几项的乘积</p>
+<ul>
+<li><p>比较当前样本与像素的材质ID，材质ID不同，返回权重 0，相同返回 1。</p>
+</li>
+<li><p>gaussian权重：当前样本在单位泊松盘中距圆心的距离 offset.z，代入权重<code>exp(-0.66 * r * r)</code></p>
+</li>
+<li><p>使用计算好的权重参数计算 combinded weight：包括基于平面距离的权重、基于法线夹角的权重、基于粗糙度差异的权重，三项乘积</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> <span class="hljs-title function_">GetCombinedWeight</span><span class="hljs-params">(</span><br><span class="hljs-params">    float2 geometryWeightParams, float3 Nv, float3 Xvs,</span><br><span class="hljs-params">    <span class="hljs-type">float</span> normalWeightParams, float3 N, float4 Ns,	<span class="hljs-comment">// Ns = (sample normal, sample roughness), N 当前像素的世界空间法线</span></span><br><span class="hljs-params">    float2 roughnessWeightParams = <span class="hljs-number">0</span></span><br><span class="hljs-params">)</span> &#123;<br>    float3 a = float3(geometryWeightParams.x, normalWeightParams, roughnessWeightParams.x);<br>    float3 b = float3(geometryWeightParams.y, <span class="hljs-number">0.0</span>, roughnessWeightParams.y);<br><br>    float3 t;<br>    t.x = dot(Nv, Xvs);<br>    t.y = STL::Math::AcosApprox(saturate(dot(N, Ns.xyz)));<br>    t.z = Ns.w;<br><br>    float3 w = _ComputeWeight(t, a, b);<br>    <span class="hljs-keyword">return</span> w.x * w.y * w.z;<br>&#125;<br><span class="hljs-comment">// _ComputeWeight</span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> _ComputeNonExponentialWeight(x, px, py) \</span><br><span class="hljs-meta">    STL::Math::SmoothStep(0.999, 0.001, abs((x) * (px) + (py)))</span><br></code></pre></td></tr></table></figure>
+
+<p>根据 $\eqref{geometry-weight-params}$、$\eqref{normal-weight-params}$、$\eqref{roughness-weight-params}$ 可简化上述代码<br>$$<br>\begin{align}<br>a &amp;&#x3D; \begin{pmatrix} a_g, &amp; a_n, &amp; a_r \end{pmatrix} \<br>b &amp;&#x3D; \begin{pmatrix} -a_g \cdot (N_v \cdot X_v), &amp; 0, &amp; -a_r\cdot roughness \end{pmatrix} \<br>t &amp;&#x3D; \begin{pmatrix} N_v \cdot X_{vs}, &amp; \arccos(N\cdot N_s), &amp; r_s\end{pmatrix} \<br>X &#x3D; t * a + b &amp;&#x3D; \begin{pmatrix} a_g \cdot (N_v \cdot X_{vs} - N_v\cdot X_v), &amp;a_n \cdot \arccos(N\cdot N_s), &amp;a_r\cdot (r_s - roughness)\end{pmatrix}<br>\end{align} \tag{5} \label{combined-weight}<br>$$<br>STL::Math::SmoothStep 的定义如下</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-meta">#<span class="hljs-keyword">define</span> _SmoothStep01(x) 							(x * x * (3.0 - 2.0 * x))	<span class="hljs-comment">// 相比y=x，在0，1两端更平缓</span></span><br><span class="hljs-meta">#<span class="hljs-keyword">define</span> _LinearStep(a, b, x) 						saturate((x - a) / (b - a))</span><br>float3 <span class="hljs-title function_">SmoothStep01</span><span class="hljs-params">(float3 x)</span> 						&#123; <span class="hljs-keyword">return</span> _SmoothStep01(saturate(x)); &#125;<br>float3 <span class="hljs-title function_">SmoothStep</span><span class="hljs-params">(float3 a, float3 b, float3 x)</span> 	&#123; x = _LinearStep(a, b, x); <span class="hljs-keyword">return</span> _SmoothStep01(x); &#125;<br></code></pre></td></tr></table></figure>
+
+<p>$$<br>\begin{align}<br>x &amp;&#x3D; saturate\left(\frac{x-a}{b-a}\right) \<br>w &amp;&#x3D;_SmoothStep01(x) &#x3D; x^2 \cdot (3 - 2x)<br>\end{align}<br>$$</p>
+<p>_LinearStep 中 a&lt;b，则得到的是反比关系。因此 $X$ 由 0.001 ~ 0.999 递增，w 由 1 到 0递减。当 $X&lt;&#x3D;0.001$ 时，w &#x3D; 1；当 $X &gt;&#x3D; 0.999$ 时，w &#x3D; 0</p>
+<p>_SmoothStep01 得到的是在0，1两端更平缓的效果，图像如下所示</p>
+<img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230820201305538.png" srcset="/img/loading.gif" lazyload alt="image-20230820201305538" style="zoom: 50%;">
+
+<p>$\eqref{combined-weight}$ 式计算的每项权重的意义：</p>
+<ul>
+<li><p>$a_g \cdot (N_v \cdot X_{vs} - N_v\cdot X_v)$ ：小括号里是样本到当前像素平面的距离，基于平面距离的几何权重，距离越小对应权重越大</p>
+</li>
+<li><p>$a_n \cdot \arccos(N\cdot N_s)$：样本法线与当前像素法线的夹角，夹角越小对应权重越大</p>
+</li>
+<li><p>$a_r\cdot (r_s - roughness)$：样本粗糙度与当前像素粗糙度的差值（后面有取绝对值），差值越小对应权重越大</p>
+</li>
+</ul>
+<p>因此这些权重的设计都是基于平常所见到的设计，但在此之上还有复杂超参设计，即 $a_g,a_n,a_r$</p>
+</li>
+<li><p>基于反射距离的权重：使用一个最小权重到1.0之间的插值，<code>lerp(minHitDistWeight, 1.0, ...)</code></p>
+<ul>
+<li><p>最小权重：<code>float minHitDistWeight</code> </p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> minHitDistWeight = REBLUR_HIT_DIST_MIN_WEIGHT * fractionScale;	<span class="hljs-comment">// REBLUR_HIT_DIST_MIN_WEIGHT 0.1</span><br></code></pre></td></tr></table></figure>
+</li>
+<li><p>基于反射距离差异的权重作为插值权重</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-meta">#<span class="hljs-keyword">define</span> _ComputeExponentialWeight(x, px, py) \</span><br><span class="hljs-meta">    ExpApprox(-NRD_EXP_WEIGHT_DEFAULT_SCALE * abs((x) * (px) + (py)))	<span class="hljs-comment">// NRD_EXP_WEIGHT_DEFAULT_SCALE 3.0</span></span><br><span class="hljs-type">float</span> <span class="hljs-title function_">GetHitDistanceWeight</span><span class="hljs-params">(float2 params, <span class="hljs-type">float</span> hitDist)</span>	<span class="hljs-comment">// 样本的反射距离</span><br>&#123;<br>    <span class="hljs-keyword">return</span> _ComputeExponentialWeight(hitDist, params.x, params.y);<br>&#125;<br></code></pre></td></tr></table></figure>
+
+<p>代入 $\eqref{hit-weight-params}$ 定义的 params，有<br>$$<br>\exp\Big(-3 \cdot abs(s_{hitDist} \cdot a_h - a_h \cdot hitDist)\Big) &#x3D; \exp\Big(-3 \cdot abs\big(a_h\cdot (s_{hitDist}-hitDist)\big)\Big) \tag{6} \label{hit-weight}<br>$$</p>
+</li>
+</ul>
+</li>
+<li><p>处理样本距反射物距离影响，距离越近，反射越shaper。但为什么roughness越大，权重越大:question::confused:</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c"><span class="hljs-type">float</span> d = length(Xvs - Xv); <span class="hljs-comment">// 当前样本到像素的距离</span><br><span class="hljs-type">float</span> h = ExtractHitDist(s) * hitDistScale; <span class="hljs-comment">// roughness weight will handle the rest，当前样本的反射距离</span><br><span class="hljs-type">float</span> t = h / (hitDist + d);	<span class="hljs-comment">// hitDist 为当前像素的反射距离</span><br>w *= lerp(saturate(t), <span class="hljs-number">1.0</span>, STL::Math::LinearStep(<span class="hljs-number">0.5</span>, <span class="hljs-number">1.0</span>, roughness));<br></code></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="6-3-3-样本speular的加权平均"><a href="#6-3-3-样本speular的加权平均" class="headerlink" title="6.3.3 样本speular的加权平均"></a>6.3.3 样本speular的加权平均</h3><p>如果checkboard模式最终带来无效数据，则使用当前像素的左右相邻像素、进行bilateral filter</p>
+<h1 id="Appendix"><a href="#Appendix" class="headerlink" title="Appendix"></a>Appendix</h1><h2 id="1-GGX-Dominant-Direction"><a href="#1-GGX-Dominant-Direction" class="headerlink" title="1 GGX Dominant Direction"></a>1 GGX Dominant Direction</h2><p>Off-Specular 现象：通常都认为 BRDF lobe 是以镜面反射方向为中心，但由于光源方向与 shadow-masking 项，在 roughness 增大时，BRDF lobe 会朝着法线方向偏移，称为 Off-specular peak。如下图所示  <a href="#%5B1%5D">[1]</a>(page 69)</p>
+<img src="/images/Rendering Blogs/Graphics Algorithm/2. Reblur解析.assets/image-20230820113637853.png" srcset="/img/loading.gif" lazyload alt="image-20230820113637853" style="zoom: 80%;">
+
+<p>为了模拟这种变化，引入一个参数 lerpFactor 来得到法线到镜面反射方向之间的dominant direction，即</p>
+<figure class="highlight c"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c">lerp(N, R, lerpFactor);<br></code></pre></td></tr></table></figure>
+
+<p>这个 lerpFactor 使用 roughness、NoV来建模。在reblur的实现中， <code>float4 GetSpecularDominantDirection</code> 返回 (dominant direction, lerpFactor)</p>
+<h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a name="[1]">[1]</a> <a target="_blank" rel="noopener" href="https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf">https://seblagarde.files.wordpress.com/2015/07/course_notes_moving_frostbite_to_pbr_v32.pdf</a>  </p>
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics-Alogrithm/" class="category-chain-item">Graphics Alogrithm</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>Reblur解析</div>
+      <div>http://example.com/2023/09/20/Rendering Blogs/Graphics Algorithm/2. Reblur解析/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>September 20, 2023</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/" title="Compute Shader 基础">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Compute Shader 基础</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2023/09/20/Rendering%20Blogs/Graphics%20Algorithm/1.%20Hierarchy%20Ray%20March/" title="Screen Space Ray Reflection">
+                        <span class="hidden-mobile">Screen Space Ray Reflection</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>

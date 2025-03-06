@@ -1,0 +1,1319 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="">
+  
+    <meta property="og:type" content="website">
+<meta property="og:title" content="Categories">
+<meta property="og:url" content="http://example.com/categories/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:locale" content="en_US">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+  
+  
+  
+  <title>Categories - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 60vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="Categories"></span>
+          
+        </div>
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      <div class="container nopadding-x-md">
+        <div id="board"
+          >
+          
+          <div class="container">
+            <div class="row">
+              <div class="col-12 col-md-10 m-auto">
+                
+
+
+
+
+
+<div class="category-list">
+  
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Paper Notes"
+        id="heading-9b658de074baba1231e73d0bfed9175a" role="tab" data-toggle="collapse" href="#collapse-9b658de074baba1231e73d0bfed9175a"
+        aria-expanded="false"
+      >
+        Paper Notes
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Paper-Notes/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>15</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-9b658de074baba1231e73d0bfed9175a"
+           role="tabpanel" aria-labelledby="heading-9b658de074baba1231e73d0bfed9175a">
+        
+        
+          
+          
+  <div class="category-post-list">
+    
+    
+  </div>
+
+          
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="GI"
+        id="heading-02c73fe4efabc7a908c3768c18d8ffe3" role="tab" data-toggle="collapse" href="#collapse-02c73fe4efabc7a908c3768c18d8ffe3"
+        aria-expanded="false"
+      >
+        GI
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Paper-Notes/GI/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>5</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-02c73fe4efabc7a908c3768c18d8ffe3"
+           role="tabpanel" aria-labelledby="heading-02c73fe4efabc7a908c3768c18d8ffe3">
+        
+        
+          
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2023/09/20/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination/" title="Forward Light Cuts A Scalable Approach to Real-Time Global Illumination"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Forward Light Cuts A Scalable Approach to Real-Time Global Illumination</span>
+        </a>
+      
+    
+  </div>
+
+          
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Light Probe"
+        id="heading-2bf3f4d69e0a379550ecfbd610362061" role="tab" data-toggle="collapse" href="#collapse-2bf3f4d69e0a379550ecfbd610362061"
+        aria-expanded="false"
+      >
+        Light Probe
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Paper-Notes/GI/Light-Probe/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>4</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-2bf3f4d69e0a379550ecfbd610362061"
+           role="tabpanel" aria-labelledby="heading-2bf3f4d69e0a379550ecfbd610362061">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2024/04/12/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination/" title="GI-1.0 - A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">GI-1.0 - A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/09/20/Paper%20Notes/GI/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes/" title="Real-Time Global Illumination using Precomputed Light Field Probes"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Real-Time Global Illumination using Precomputed Light Field Probes</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/09/20/Paper%20Notes/GI/Glossy%20Probe%20Reprojection%20for%20Interactive%20Global%20Illumination/" title="Glossy Probe Reprojection for Interactive Global Illumination"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Glossy Probe Reprojection for Interactive Global Illumination</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/09/20/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields/" title="Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Cloud Rendering"
+        id="heading-a5091fff1d05356d56ce8a5d9d34a1ad" role="tab" data-toggle="collapse" href="#collapse-a5091fff1d05356d56ce8a5d9d34a1ad"
+        aria-expanded="false"
+      >
+        Cloud Rendering
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Paper-Notes/Cloud-Rendering/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>3</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-a5091fff1d05356d56ce8a5d9d34a1ad"
+           role="tabpanel" aria-labelledby="heading-a5091fff1d05356d56ce8a5d9d34a1ad">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2024/12/07/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination/" title="Radiance Caching with On-Surface Caches for Real-Time Global Illumination"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Radiance Caching with On-Surface Caches for Real-Time Global Illumination</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2024/04/07/Paper%20Notes/Cloud%20Rendering/Surface%20Light%20Cones%20Sharing%20Direct%20Illumination%20for%20Efficient%20Multi-viewer%20Rendering/" title="Surface Light Cones - Sharing Direct Illumination for Efficient Multi-viewer Rendering"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Surface Light Cones - Sharing Direct Illumination for Efficient Multi-viewer Rendering</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/09/20/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering/" title="Effect-based Multi-viewer Caching for Cloud-native Rendering"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Effect-based Multi-viewer Caching for Cloud-native Rendering</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Ray Tracing"
+        id="heading-a957d4f10fd1319a8b3115542d9012b5" role="tab" data-toggle="collapse" href="#collapse-a957d4f10fd1319a8b3115542d9012b5"
+        aria-expanded="false"
+      >
+        Ray Tracing
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Paper-Notes/Ray-Tracing/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>3</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-a957d4f10fd1319a8b3115542d9012b5"
+           role="tabpanel" aria-labelledby="heading-a957d4f10fd1319a8b3115542d9012b5">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2023/12/15/Paper%20Notes/Ray%20Tracing/Path%20Space%20Filtering/" title="Path Space Filtering"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Path Space Filtering</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/12/03/Paper%20Notes/Ray%20Tracing/Massively%20Parallel%20Path%20Space%20Filtering/" title="Massively Parallel Path Space Filtering"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Massively Parallel Path Space Filtering</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/09/20/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/" title="Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Render Pipeline"
+        id="heading-6e4db6fa88f53b44fb7bd1e05314b57e" role="tab" data-toggle="collapse" href="#collapse-6e4db6fa88f53b44fb7bd1e05314b57e"
+        aria-expanded="false"
+      >
+        Render Pipeline
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Paper-Notes/Render-Pipeline/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>3</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-6e4db6fa88f53b44fb7bd1e05314b57e"
+           role="tabpanel" aria-labelledby="heading-6e4db6fa88f53b44fb7bd1e05314b57e">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2024/11/28/Paper%20Notes/Render%20Pipeline/Virtual%20Texture/" title="Virtual Texture"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Virtual Texture</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texel%20Shading/" title="Texel Shading"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Texel Shading</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texture%20Space%20Shading/" title="Texture Space Shading"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Texture Space Shading</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="GPGPU"
+        id="heading-03aa7bddfe8612b37f2b122da2843903" role="tab" data-toggle="collapse" href="#collapse-03aa7bddfe8612b37f2b122da2843903"
+        aria-expanded="false"
+      >
+        GPGPU
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Paper-Notes/GPGPU/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>1</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-03aa7bddfe8612b37f2b122da2843903"
+           role="tabpanel" aria-labelledby="heading-03aa7bddfe8612b37f2b122da2843903">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2023/10/15/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs/" title="DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Rendering Blogs"
+        id="heading-74a172d328809abb50fc7d55cc482856" role="tab" data-toggle="collapse" href="#collapse-74a172d328809abb50fc7d55cc482856"
+        aria-expanded="false"
+      >
+        Rendering Blogs
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Rendering-Blogs/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>11</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-74a172d328809abb50fc7d55cc482856"
+           role="tabpanel" aria-labelledby="heading-74a172d328809abb50fc7d55cc482856">
+        
+        
+          
+          
+  <div class="category-post-list">
+    
+    
+  </div>
+
+          
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Graphics"
+        id="heading-d334dfcea59127bedfcdbe0a3ee7f494" role="tab" data-toggle="collapse" href="#collapse-d334dfcea59127bedfcdbe0a3ee7f494"
+        aria-expanded="false"
+      >
+        Graphics
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Rendering-Blogs/Graphics/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>5</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-d334dfcea59127bedfcdbe0a3ee7f494"
+           role="tabpanel" aria-labelledby="heading-d334dfcea59127bedfcdbe0a3ee7f494">
+        
+        
+          
+          
+  <div class="category-post-list">
+    
+    
+  </div>
+
+          
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="PBR"
+        id="heading-f8357427a3733ebed1a8647f3d5fa31b" role="tab" data-toggle="collapse" href="#collapse-f8357427a3733ebed1a8647f3d5fa31b"
+        aria-expanded="false"
+      >
+        PBR
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Rendering-Blogs/Graphics/PBR/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>3</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-f8357427a3733ebed1a8647f3d5fa31b"
+           role="tabpanel" aria-labelledby="heading-f8357427a3733ebed1a8647f3d5fa31b">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2024/12/07/Rendering%20Blogs/Graphics%20Basis/Importance%20Sample%20BRDF/" title="Importance Sample BRDF"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Importance Sample BRDF</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Disney%20Principled%20BRDF/" title="Disney BRDF"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Disney BRDF</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Real-Time%20Physically%20Based%20Material%20Basics/" title="PBR Material"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">PBR Material</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Radiometry"
+        id="heading-7755276116537d901971ec3cea903bcc" role="tab" data-toggle="collapse" href="#collapse-7755276116537d901971ec3cea903bcc"
+        aria-expanded="false"
+      >
+        Radiometry
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Rendering-Blogs/Graphics/Radiometry/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>1</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-7755276116537d901971ec3cea903bcc"
+           role="tabpanel" aria-labelledby="heading-7755276116537d901971ec3cea903bcc">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/" title="SlabHash"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">SlabHash</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Projection"
+        id="heading-2121e8333850befac5412d69d52306f7" role="tab" data-toggle="collapse" href="#collapse-2121e8333850befac5412d69d52306f7"
+        aria-expanded="false"
+      >
+        Projection
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Rendering-Blogs/Graphics/Projection/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>1</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-2121e8333850befac5412d69d52306f7"
+           role="tabpanel" aria-labelledby="heading-2121e8333850befac5412d69d52306f7">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2024/01/07/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations/" title="SlabHash"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">SlabHash</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="GPGPU"
+        id="heading-03aa7bddfe8612b37f2b122da2843903" role="tab" data-toggle="collapse" href="#collapse-03aa7bddfe8612b37f2b122da2843903"
+        aria-expanded="false"
+      >
+        GPGPU
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Rendering-Blogs/GPGPU/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>3</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-03aa7bddfe8612b37f2b122da2843903"
+           role="tabpanel" aria-labelledby="heading-03aa7bddfe8612b37f2b122da2843903">
+        
+        
+          
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2023/10/20/Rendering%20Blogs/GPGPU/SlabHash/" title="SlabHash"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">SlabHash</span>
+        </a>
+      
+    
+  </div>
+
+          
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Synchronization"
+        id="heading-454c65346b592d2a6ddcf6e6cd91d9b3" role="tab" data-toggle="collapse" href="#collapse-454c65346b592d2a6ddcf6e6cd91d9b3"
+        aria-expanded="false"
+      >
+        Synchronization
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Rendering-Blogs/GPGPU/Synchronization/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>1</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-454c65346b592d2a6ddcf6e6cd91d9b3"
+           role="tabpanel" aria-labelledby="heading-454c65346b592d2a6ddcf6e6cd91d9b3">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2023/10/24/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization/" title="SlabHash"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">SlabHash</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Scan"
+        id="heading-22efdbe132eabc102306bd7a334fb434" role="tab" data-toggle="collapse" href="#collapse-22efdbe132eabc102306bd7a334fb434"
+        aria-expanded="false"
+      >
+        Scan
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Rendering-Blogs/GPGPU/Scan/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>1</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-22efdbe132eabc102306bd7a334fb434"
+           role="tabpanel" aria-labelledby="heading-22efdbe132eabc102306bd7a334fb434">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2024/08/19/Rendering%20Blogs/GPGPU/Parrallel%20Scan/" title="SlabHash"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">SlabHash</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Graphics Alogrithm"
+        id="heading-5bbce927d2886d3b1f7c56a86a458fe5" role="tab" data-toggle="collapse" href="#collapse-5bbce927d2886d3b1f7c56a86a458fe5"
+        aria-expanded="false"
+      >
+        Graphics Alogrithm
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Rendering-Blogs/Graphics-Alogrithm/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>2</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-5bbce927d2886d3b1f7c56a86a458fe5"
+           role="tabpanel" aria-labelledby="heading-5bbce927d2886d3b1f7c56a86a458fe5">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2023/09/20/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90/" title="Reblur解析"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Reblur解析</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/09/20/Rendering%20Blogs/Graphics%20Algorithm/1.%20Hierarchy%20Ray%20March/" title="Screen Space Ray Reflection"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Screen Space Ray Reflection</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Profile"
+        id="heading-cce99c598cfdb9773ab041d54c3d973a" role="tab" data-toggle="collapse" href="#collapse-cce99c598cfdb9773ab041d54c3d973a"
+        aria-expanded="false"
+      >
+        Profile
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Rendering-Blogs/Profile/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>1</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-cce99c598cfdb9773ab041d54c3d973a"
+           role="tabpanel" aria-labelledby="heading-cce99c598cfdb9773ab041d54c3d973a">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2024/11/22/Rendering%20Blogs/Profile/GPU%20Logic/" title="GPU Logic"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">GPU Logic</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Render Engine"
+        id="heading-63ea294b3b17bc8e8fa992e911b71a9d" role="tab" data-toggle="collapse" href="#collapse-63ea294b3b17bc8e8fa992e911b71a9d"
+        aria-expanded="false"
+      >
+        Render Engine
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Render-Engine/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>5</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-63ea294b3b17bc8e8fa992e911b71a9d"
+           role="tabpanel" aria-labelledby="heading-63ea294b3b17bc8e8fa992e911b71a9d">
+        
+        
+          
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2023/09/20/Render%20Engine/Scene%20Graph%20and%20Draw%20Call%20Grouping%20Strategy/" title="Scene Graph and Draw Call Grouping Strategy"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Scene Graph and Draw Call Grouping Strategy</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/09/20/Render%20Engine/Vulkan%20Render%20Design/" title="Vulkan Render Design"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Vulkan Render Design</span>
+        </a>
+      
+    
+  </div>
+
+          
+  
+    
+    
+    
+    <div class="category-sub row nomargin-x">
+      <a class="category-subitem collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="UE5"
+        id="heading-4bceb6784d976f24bd43be8e1b3c0fd2" role="tab" data-toggle="collapse" href="#collapse-4bceb6784d976f24bd43be8e1b3c0fd2"
+        aria-expanded="false"
+      >
+        UE5
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Render-Engine/UE5/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>3</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-4bceb6784d976f24bd43be8e1b3c0fd2"
+           role="tabpanel" aria-labelledby="heading-4bceb6784d976f24bd43be8e1b3c0fd2">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2025/03/04/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/" title="3. Lumen - Radiance Cache"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">3. Lumen - Radiance Cache</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2025/03/04/Render%20Engine/UE5/Lumen/2.%20Surface%20Cache/" title="2. Lumen - Surface Cache"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">2. Lumen - Surface Cache</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2025/03/04/Render%20Engine/UE5/Lumen/1.%20Introdution/" title="1. Lumen - Introduction"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">1. Lumen - Introduction</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+        
+      </div>
+    </div>
+  
+    
+    
+    
+    <div class="category row nomargin-x">
+      <a class="category-item collapsed
+          list-group-item category-item-action col-10 col-md-11 col-xm-11" title="Vulkan Basics"
+        id="heading-24c0c0ba90822719f2736b866ef9a20e" role="tab" data-toggle="collapse" href="#collapse-24c0c0ba90822719f2736b866ef9a20e"
+        aria-expanded="false"
+      >
+        Vulkan Basics
+        <span class="list-group-count"></span>
+        <i class="iconfont icon-arrowright"></i>
+      </a>
+      
+        <a href="/categories/Vulkan-Basics/" class="category-count col-2 col-md-1 col-xm-1">
+          <i class="iconfont icon-articles"></i>
+          <span>2</span>
+        </a>
+      
+      <div class="category-collapse collapse " id="collapse-24c0c0ba90822719f2736b866ef9a20e"
+           role="tabpanel" aria-labelledby="heading-24c0c0ba90822719f2736b866ef9a20e">
+        
+        
+          
+  <div class="category-post-list">
+    
+    
+      
+      
+        <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/" title="Compute Shader 实现 Pyramid Algorithm"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Compute Shader 实现 Pyramid Algorithm</span>
+        </a>
+      
+    
+      
+      
+        <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/" title="Compute Shader 基础"
+           class="list-group-item list-group-item-action
+           ">
+          <span class="category-post">Compute Shader 基础</span>
+        </a>
+      
+    
+  </div>
+
+        
+      </div>
+    </div>
+  
+</div>
+
+
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>
