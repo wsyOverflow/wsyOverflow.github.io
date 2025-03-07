@@ -382,15 +382,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/" target="_self">
-          Compute Shader 实现 Pyramid Algorithm
+        <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/" target="_self">
+          Compute Shader 基础
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/" target="_self">
         <div>
-          使用 compute shader 生成 mipmap本文是参考 https://github.com/nvpro-samples/vk_compute_mipmaps 的算法复现。 将输入层级记为 $L$，将 $L$ 的 2x2 样本区域生成一个样本则得到 $L+1$ 层级。下面介绍从 $L$ 到 $L+M$ 层级的生成算法，$M\in[1,6]$，算法输入为 $L$ 层级的大小为 $2^M\t
+          基础概念1. GPU 中的概念1.1 处理器核心的层级概念GPU 具有非常多的处理器核心，在 Nvidia 中称为 Streaming Multiprocessor(SM)，AMD 称为 Compute Unit(CU)，以下使用 SM。在 SM 内部包含最基本的处理单元 lane，lane 可以近似理解为一个线程。SM 进行调度执行任务时，最小单位并不是 lane，而是 Warp(Nvidia
         </div>
       </a>
 
@@ -436,15 +436,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/" target="_self">
-          Compute Shader 基础
+        <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/" target="_self">
+          Compute Shader 实现 Pyramid Algorithm
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/" target="_self">
         <div>
-          基础概念1. GPU 中的概念1.1 处理器核心的层级概念GPU 具有非常多的处理器核心，在 Nvidia 中称为 Streaming Multiprocessor(SM)，AMD 称为 Compute Unit(CU)，以下使用 SM。在 SM 内部包含最基本的处理单元 lane，lane 可以近似理解为一个线程。SM 进行调度执行任务时，最小单位并不是 lane，而是 Warp(Nvidia
+          使用 compute shader 生成 mipmap本文是参考 https://github.com/nvpro-samples/vk_compute_mipmaps 的算法复现。 将输入层级记为 $L$，将 $L$ 的 2x2 样本区域生成一个样本则得到 $L+1$ 层级。下面介绍从 $L$ 到 $L+M$ 层级的生成算法，$M\in[1,6]$，算法输入为 $L$ 层级的大小为 $2^M\t
         </div>
       </a>
 

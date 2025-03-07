@@ -227,15 +227,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/" target="_self">
-          Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting
+        <a href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texture%20Space%20Shading/" target="_self">
+          Texture Space Shading
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texture%20Space%20Shading/" target="_self">
         <div>
-          1 SummarySpatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting [1] 解决 many-lights 下的直接光照的重要性采样问题。 2 Background本论文将光源视为场景中的发光几何体，因此 many-lights 下的渲染方程为：着色点 $y$ 在方向
+          1 Summary传统的光栅化管线（forward或者deferred）执行于屏幕空间，表面采样率或者像素密度与相机距离、视角相关。同时，GPU光栅化管线的流水线作业使得shading rate完全由分辨率、几何复杂度、帧率控制。而texture space shading(TSS)提出在texture space着色，使得shading rate变得更加可控。同时texture space下的t
         </div>
       </a>
 
@@ -264,7 +264,7 @@
   
     <span>></span>
     
-  <a href="/categories/Paper-Notes/Ray-Tracing/" class="category-chain-item">Ray Tracing</a>
+  <a href="/categories/Paper-Notes/Render-Pipeline/" class="category-chain-item">Render Pipeline</a>
   
   
 
@@ -349,15 +349,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texture%20Space%20Shading/" target="_self">
-          Texture Space Shading
+        <a href="/2023/09/20/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/" target="_self">
+          Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texture%20Space%20Shading/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/" target="_self">
         <div>
-          1 Summary传统的光栅化管线（forward或者deferred）执行于屏幕空间，表面采样率或者像素密度与相机距离、视角相关。同时，GPU光栅化管线的流水线作业使得shading rate完全由分辨率、几何复杂度、帧率控制。而texture space shading(TSS)提出在texture space着色，使得shading rate变得更加可控。同时texture space下的t
+          1 SummarySpatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting [1] 解决 many-lights 下的直接光照的重要性采样问题。 2 Background本论文将光源视为场景中的发光几何体，因此 many-lights 下的渲染方程为：着色点 $y$ 在方向
         </div>
       </a>
 
@@ -386,7 +386,7 @@
   
     <span>></span>
     
-  <a href="/categories/Paper-Notes/Render-Pipeline/" class="category-chain-item">Render Pipeline</a>
+  <a href="/categories/Paper-Notes/Ray-Tracing/" class="category-chain-item">Ray Tracing</a>
   
   
 
@@ -511,67 +511,6 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering/" target="_self">
-          Effect-based Multi-viewer Caching for Cloud-native Rendering
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering/" target="_self">
-        <div>
-          1 Summary本文基于object-space&#x2F;texture-space shading管线，提出一种面向multi-viewers的云渲染的cache系统设计。对于effect中与视角无关的部分，通过转换为texture-space下的渲染任务，并且设计effect-based cache系统，使得不同viewers共享同一份effect中间数据。提出的effect-based
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Paper-Notes/Cloud-Rendering/" class="category-chain-item">Cloud Rendering</a>
-  
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
         <a href="/2023/09/20/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields/" target="_self">
           Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields
         </a>
@@ -678,6 +617,67 @@
     <span>></span>
     
   <a href="/categories/Paper-Notes/GI/" class="category-chain-item">GI</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2023/09/20/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering/" target="_self">
+          Effect-based Multi-viewer Caching for Cloud-native Rendering
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering/" target="_self">
+        <div>
+          1 Summary本文基于object-space&#x2F;texture-space shading管线，提出一种面向multi-viewers的云渲染的cache系统设计。对于effect中与视角无关的部分，通过转换为texture-space下的渲染任务，并且设计effect-based cache系统，使得不同viewers共享同一份effect中间数据。提出的effect-based
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2023-09-20 23:21" pubdate>
+              2023-09-20
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/Cloud-Rendering/" class="category-chain-item">Cloud Rendering</a>
   
   
 
