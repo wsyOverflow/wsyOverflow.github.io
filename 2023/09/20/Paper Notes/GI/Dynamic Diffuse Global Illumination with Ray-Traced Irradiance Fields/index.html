@@ -27,10 +27,12 @@
 <meta property="og:description" content="1 Summary本文提出了一种基于light probe的实时动态diffuse GI(DDGI) 算法。该算法的probe在世界空间下摆放，其数据完全实时生成，不需要预计算，因此支持具有动态光源与动态几何的场景。 DDGI算法主要包含了probe数据更新与probe-based shading：  probe数据更新：为场景中的每个probe生成 $n$ 条probe-update光线，光线与">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields.assets/image-20230224010007700.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields.assets/image-20230226115136810.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields.assets/image-20230226115205828.png">
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields.assets/image-20230226143129489.png">
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields.assets/image-20230226145015593.png">
 <meta property="article:published_time" content="2023-09-20T15:21:10.835Z">
-<meta property="article:modified_time" content="2023-09-17T05:36:06.514Z">
+<meta property="article:modified_time" content="2025-03-07T02:36:01.214Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="http://example.com/images/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields.assets/image-20230224010007700.png">
@@ -226,7 +228,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          2.9k words
+          2.8k words
         
       </span>
     
@@ -237,7 +239,7 @@
         
         
         
-          25 mins
+          24 mins
         
       </span>
     
@@ -325,7 +327,9 @@
 <p>对于面积光源的直接光照，作者使用一次反射的间接光照管线计算。间接光照管线中，一次反射的间接光是计算场景中直接光的一次反射，多次反射的间接光则是基于前一次反射的间接光计算得到。而对于面积光源的一次反射间接光是基于区域的自发光，而不是面积光源下的直接光照，因此计算得到的是面积光源的直接光照。[图4.1](#Fig 4.1) 的最后一行给出了面积光源特殊处理的直观感受，直接光照结果只有面积光源区域的自发光，而没有照明场景中其他物体。</p>
 <p>面积光源的特殊处理避免了对面积光源的直接光照的传统近似方式，例如在面积光源上采样多个点光源计算来近似面积光源的直接光照。除此之外，对面积光源的计算统一为本文提出的probe-base shading技术，可以得到平滑的面积光阴影与反射。</p>
 <p><a name="Fig 4.1"></a></p>
-<p>![image-20230226115136810](&#x2F;images&#x2F;Paper Notes&#x2F;GI&#x2F;Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields.assets&#x2F;image-20230226115136810.png)<br>![image-20230226115205828](&#x2F;images&#x2F;Paper Notes&#x2F;GI&#x2F;Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields.assets&#x2F;image-20230226115205828.png)</p>
+<img src="/images/Paper Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields.assets/image-20230226115136810.png" srcset="/img/loading.gif" lazyload alt="image-20230226115136810" style="zoom:80%;">
+<img src="/images/Paper Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields.assets/image-20230226115205828.png" srcset="/img/loading.gif" lazyload alt="image-20230226115205828" style="zoom:80%;">
+
 <center>图 4.1 第一列只有直接光照，第二列有完整的全局光照</center>
 
 <h3 id="4-2-Diffuse间接光"><a href="#4-2-Diffuse间接光" class="headerlink" title="4.2 Diffuse间接光"></a>4.2 Diffuse间接光</h3><p>为了弥补probe位置的入射irradiance没有考虑着色点周围的局部遮挡，作者使用SSAO得到的遮挡系数调制漫反射的出射radiance。但在更新probe过程中不会包含局部遮挡，间接光忽略该项的影响要远远小于直接可见表面的光照。</p>

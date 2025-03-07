@@ -26,12 +26,14 @@
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="1 Summary本文基于object-space&#x2F;texture-space shading管线，提出一种面向multi-viewers的云渲染的cache系统设计。对于effect中与视角无关的部分，通过转换为texture-space下的渲染任务，并且设计effect-based cache系统，使得不同viewers共享同一份effect中间数据。提出的effect-based">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering.assets/image-20230703130901243.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering.assets/image-20230704143603816.png">
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering.assets/image-20230925161736654.png">
 <meta property="article:published_time" content="2023-09-20T15:21:10.835Z">
-<meta property="article:modified_time" content="2024-04-08T06:48:09.353Z">
+<meta property="article:modified_time" content="2025-03-07T02:27:59.944Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering.assets/image-20230925161736654.png">
+<meta name="twitter:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering.assets/image-20230703130901243.png">
   
   
   
@@ -279,7 +281,7 @@
                 
                 <h1 id="1-Summary"><a href="#1-Summary" class="headerlink" title="1 Summary"></a>1 Summary</h1><p>本文基于object-space&#x2F;texture-space shading管线，提出一种面向multi-viewers的云渲染的cache系统设计。对于effect中与视角无关的部分，通过转换为texture-space下的渲染任务，并且设计effect-based cache系统，使得不同viewers共享同一份effect中间数据。提出的effect-based cache系统共包含定义在物体表面的On-Surface Cache(OSC)与定义在grid上的World-Space Cache(WSC)两种策略，统一使用hash table的形式进行存储管理，但二者具有不同的hash key设计，包含实际数据的cache entry由具体的effect定义。作者为两种cache策略分别给出相应的具体effect应用，同时提出通过为不同的effect使用不同的bias配置来为低频effect选择低分辨率，减少内存开销。</p>
 <h1 id="2-Background"><a href="#2-Background" class="headerlink" title="2 Background"></a>2 Background</h1><h1 id="3-Pipeline设计"><a href="#3-Pipeline设计" class="headerlink" title="3 Pipeline设计"></a>3 Pipeline设计</h1><p>管线设计如图 <a href="#Fig-1">Fig-1</a>，首先为每个viewer执行visibility pass来决定那些cache entries会被使用到；然后对所有viewers的cache request进行整合更新，这一步可以执行在不同的GPU上；之后viewers再通过采样cache来着色帧；最后是后处理，将生成的图像插入到output stream。</p>
-<p><a name="Fig-1"></a><br>![image-20230703130901243](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Effect-based Multi-viewer Caching for Cloud-native Rendering.assets&#x2F;image-20230703130901243.png)</p>
+<p><a name="Fig-1"></a><br><img src="/images/Paper Notes/Cloud Rendering/Effect-based Multi-viewer Caching for Cloud-native Rendering.assets/image-20230703130901243.png" srcset="/img/loading.gif" lazyload alt="image-20230703130901243" style="zoom:90%;"></p>
 <center>Fig-1 Cloud Native Rendering Pipeline</center>
 
 <p>想要被多个viewer复用，被cache的计算只能是视角无关的，同时作者提出基于effect的cache设计，可以为不同类型的渲染计算进行调整。经过对现代游戏引擎中的效果分析，作者提出两种类型的cache：on-surface cache，共享表面点上的计算；world-space cache，共享世界空间数据。</p>
@@ -303,7 +305,8 @@
 <li>Compositing：整合cache数据以及剩余的渲染计算生成最终渲染结果</li>
 </ol>
 <p><a name="Fig-2"></a></p>
-<p>![image-20230704143603816](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Effect-based Multi-viewer Caching for Cloud-native Rendering.assets&#x2F;image-20230704143603816.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Effect-based Multi-viewer Caching for Cloud-native Rendering.assets/image-20230704143603816.png" srcset="/img/loading.gif" lazyload alt="image-20230704143603816" style="zoom:90%;">
+
 <center>Fig-2 OSC Pipeline</center>
 
 <h3 id="3-1-1-Visibility"><a href="#3-1-1-Visibility" class="headerlink" title="3.1.1 Visibility"></a>3.1.1 Visibility</h3><p>为每个viewer执行visibility pass生成所请求的cache entry，此外可以根据屏幕空间梯度以及每个effect的先验知识来调整cache entry的bias，提高目标mip level。例如空间低频的effect可以渲染的目标分辨率更低。</p>
@@ -401,7 +404,7 @@
 <h3 id="3-3-1-Hard-Shadows"><a href="#3-3-1-Hard-Shadows" class="headerlink" title="3.3.1 Hard Shadows"></a>3.3.1 Hard Shadows</h3><p>硬阴影只需要记录着色点到光源的可见性，cache在OSC。每个texel使用 2 Bytes记录16根shadow rays。</p>
 <h3 id="3-3-2-Ambient-Occlusion"><a href="#3-3-2-Ambient-Occlusion" class="headerlink" title="3.3.2 Ambient Occlusion"></a>3.3.2 Ambient Occlusion</h3><p>AO缓存在OSC，具有时序累积过程。每个texel共 4 Bytes：记录16-bit AO值，以及16-bit 样本数量（最大样本数量64）。</p>
 <h3 id="3-3-3-Indirect-Diffuse-Illumination"><a href="#3-3-3-Indirect-Diffuse-Illumination" class="headerlink" title="3.3.3 Indirect Diffuse Illumination"></a>3.3.3 Indirect Diffuse Illumination</h3><h3 id="3-3-4-Reseroir-Sampling"><a href="#3-3-4-Reseroir-Sampling" class="headerlink" title="3.3.4 Reseroir Sampling"></a>3.3.4 Reseroir Sampling</h3><h2 id="3-4-Cloud-Setup"><a href="#3-4-Cloud-Setup" class="headerlink" title="3.4 Cloud Setup"></a>3.4 Cloud Setup</h2><p>在分布式云渲染下，viewer GPUs发送cache request(V-buffer)到每个effect GPU，待effect GPU更新完effect cache后，再由 viewer GPUs 合成最终画面。</p>
-<img src="/images/Paper Notes/Cloud Rendering/Effect-based Multi-viewer Caching for Cloud-native Rendering.assets/image-20230925161736654.png" srcset="/img/loading.gif" lazyload alt="image-20230925161736654" style="zoom: 67%;">
+<img src="/images/Paper Notes/Cloud Rendering/Effect-based Multi-viewer Caching for Cloud-native Rendering.assets/image-20230925161736654.png" srcset="/img/loading.gif" lazyload alt="image-20230925161736654" style="zoom: 80%;">
 
 <h1 id="4-Evaluation"><a href="#4-Evaluation" class="headerlink" title="4 Evaluation"></a>4 Evaluation</h1><h2 id="4-1-Memory-requirements"><a href="#4-1-Memory-requirements" class="headerlink" title="4.1 Memory requirements"></a>4.1 Memory requirements</h2><p>每个texel block具有 8x8 texels，effect定义具体的texel大小，如3.3节。texel block的内存回收策略采用：当经过一定帧，没有被访问到后的texel block返回free list。</p>
 <p>对于比较远或者比较小的物体，有可能对应的mip层级分辨率不足8x8或者texel block只有一个texel命中，此时会导致存储利用率降低。因此对于bias为2的版本，理论上存储开销为unbiased版本的1&#x2F;16，但实际上只有 1.5~3 倍的减少。对于texel的更新数量能达到理论上的减少，因为有texel mask。</p>

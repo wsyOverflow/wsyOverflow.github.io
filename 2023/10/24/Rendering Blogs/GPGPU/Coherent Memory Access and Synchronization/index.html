@@ -21,11 +21,12 @@
   
     <meta name="description" content="1 Summary经常看到glsl的type修饰 coherent，系统整理下有关coherent的理解。 2 基础概念2.1 Coherent or Incoherent Memory Access [2]2.1.1 Coherent 内存访问以最简单的例子——单处理器系统来说，对于同一内存区域同时只会有一个线程访问。因此，当一个处理元件对某一内存区域写，然后另一处理元件对同一内存区域读时，总能">
 <meta property="og:type" content="article">
-<meta property="og:title" content="SlabHash">
+<meta property="og:title" content="Coherent Memory Access and Synchronization">
 <meta property="og:url" content="http://example.com/2023/10/24/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization/index.html">
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="1 Summary经常看到glsl的type修饰 coherent，系统整理下有关coherent的理解。 2 基础概念2.1 Coherent or Incoherent Memory Access [2]2.1.1 Coherent 内存访问以最简单的例子——单处理器系统来说，对于同一内存区域同时只会有一个线程访问。因此，当一个处理元件对某一内存区域写，然后另一处理元件对同一内存区域读时，总能">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access.assets/image-20231024143243815.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access.assets/image-20231024143637826.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024163924062.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024164125968.png">
@@ -39,14 +40,14 @@
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024203351835.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024203440579.png">
 <meta property="article:published_time" content="2023-10-24T06:04:13.780Z">
-<meta property="article:modified_time" content="2023-10-24T12:36:34.822Z">
+<meta property="article:modified_time" content="2025-03-07T02:25:49.084Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access.assets/image-20231024143637826.png">
+<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access.assets/image-20231024143243815.png">
   
   
   
-  <title>SlabHash - Hexo</title>
+  <title>Coherent Memory Access and Synchronization - Hexo</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -212,7 +213,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="SlabHash"></span>
+            <span id="subtitle" data-typed-text="Coherent Memory Access and Synchronization"></span>
           
         </div>
 
@@ -283,7 +284,7 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">SlabHash</h1>
+            <h1 id="seo-header">Coherent Memory Access and Synchronization</h1>
             
             
               <div class="markdown-body">
@@ -293,7 +294,8 @@
 <h3 id="2-1-2-Incoherent-内存访问"><a href="#2-1-2-Incoherent-内存访问" class="headerlink" title="2.1.2 Incoherent 内存访问"></a>2.1.2 Incoherent 内存访问</h3><p>但对于多处理器系统，每个处理器都有其本地缓存，当多个处理器同时访问同一内存区域时，同一内存区域的数据在这些处理器的缓存中都有一个备份。此时可能存在处理器读到的是本地缓存中的旧数据，而不是其他处理器写操作生成的新数据，即出现 <strong>Incoherent 内存访问</strong>。为了避免这种情况，多处理器系统的设计需要采用存储器一致性协议，粗略地说，当一个处理器对某一内存区域更新时，对该内存区域存在缓存备份的其他处理器也要对其本地缓存的相应位置进行更新。</p>
 <h2 id="2-2-GPU-Architecture"><a href="#2-2-GPU-Architecture" class="headerlink" title="2.2 GPU Architecture"></a>2.2 GPU Architecture</h2><p>GPU 具有非常多的处理器核心，在 Nvidia 中称为 Streaming Multiprocessor(SM)，AMD 称为 Compute Unit(CU)，以下使用 SM。在 SM 内部包含最基本的处理单元 lane，lane 可以近似理解为一个线程。SM 进行调度执行任务时，最小单位并不是 lane，而是 Warp(Nvidia 中的称呼，AMD 称为 wavefront)。一个 Warp 包含一定数量的 lane，在 Nvidia 中是 32，AMD 是 64。不同的架构，一个 SM 中包含的 warp 数量不同，目前的 Nvidia GPU 中一个 SM 包含 4 个 warp，即 128 个 lane(shader core、cuda core等)。GPU 显卡型号不同，GPU 包含的 SM 数量也不同，3080Ti 包含 80 个 SM。</p>
 <p>下面来自 <a href="#%5B4%5D">[4]</a> 的图 Fig-1 为GPU示意图，Fig-2为其中单个SM示意图。</p>
-<p>![image-20231024143243815](&#x2F;images&#x2F;Rendering Blogs&#x2F;GPGPU&#x2F;Coherent Memory Access.assets&#x2F;image-20231024143243815.png)</p>
+<img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access.assets/image-20231024143243815.png" srcset="/img/loading.gif" lazyload alt="image-20231024143243815" style="zoom:90%;">
+
 <center>Fig-1 GPU 整体的结构图</center>
 
 <img src="/images/Rendering Blogs/GPGPU/Coherent Memory Access.assets/image-20231024143637826.png" srcset="/img/loading.gif" lazyload alt="image-20231024143637826" style="zoom: 67%;">
@@ -471,7 +473,7 @@
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>SlabHash</div>
+      <div>Coherent Memory Access and Synchronization</div>
       <div>http://example.com/2023/10/24/Rendering Blogs/GPGPU/Coherent Memory Access and Synchronization/</div>
     </div>
     <div class="license-meta">
@@ -516,9 +518,9 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/" title="SlabHash">
+                      <a href="/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/" title="Basic Radiometry">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">SlabHash</span>
+                        <span class="hidden-mobile">Basic Radiometry</span>
                         <span class="visible-mobile">Previous</span>
                       </a>
                     

@@ -26,10 +26,22 @@
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="1 Summary本文提出了在 On-Surface Caches 管线下的两种类型radiance cache，以及基于这两种radiance cache的GI方法。定义在texture space下的radiance cache相较于probe或者hash grid等方案，有更好的时序一致性、直接位于表面之上的避免漏光等优点，以及可以在multi-viewer下共享radiance信息。 两种">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241207155709420.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241207164153230.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241207171925197.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241207171132639.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241207180126279.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241209110506190.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241209111702863.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241209113157530.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241209132939923.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241209133723897.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241209134052245.png">
 <meta property="article:published_time" content="2024-12-07T06:12:15.046Z">
-<meta property="article:modified_time" content="2024-12-09T10:11:57.917Z">
+<meta property="article:modified_time" content="2025-03-07T02:31:10.363Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination.assets/image-20241207155709420.png">
   
   
   
@@ -222,7 +234,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          4k words
+          3.8k words
         
       </span>
     
@@ -233,7 +245,7 @@
         
         
         
-          34 mins
+          32 mins
         
       </span>
     
@@ -306,11 +318,13 @@
 </blockquote>
 <p>这两种radiance cache存储不同类型的radiance是有实际意义的。如果在 secondary hit cache 中存放 incoming radiance，那么当从 secondary hit cache 采样指定方向的outgoing radiance时，由渲染方程可知，需要执行一次积分，每次采样一次积分是不现实的；而在 primary hit cache 中存放 outgoing radiance，也就是直接查询着色点到视点方向的 outgoing radiance，这样cache在表面满足不了视口分辨率的精度。</p>
 <p><a name="Fig-3.1"></a></p>
-<p>![image-20241207155709420](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241207155709420.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241207155709420.png" srcset="/img/loading.gif" lazyload alt="image-20241207155709420" style="zoom:80%;">
+
 <center>Fig-3.1 左图：两种类型cache之间交互以及与环境、光照的交互；右图：cache的spatial filter，只能在位于同一island的caches之间执行</center>
 
 <h3 id="3-1-1-Primary-Cache"><a href="#3-1-1-Primary-Cache" class="headerlink" title="3.1.1 Primary Cache"></a>3.1.1 Primary Cache</h3><p><a name="Fig-3.2"></a></p>
-<p>![image-20241207164153230](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241207164153230.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241207164153230.png" srcset="/img/loading.gif" lazyload alt="image-20241207164153230" style="zoom:80%;">
+
 <center>Fig-3.2 Primary radiance cache 的可视化。(a) 每个方形是一个 8x8 texels 的cache entry，存储incoming radiance；(b) 展示了hit distance，用于 detail-preserving filtering。</center>
 
 <p>primary cache entries 放置在由视点观察到的primary hits位置（即直接可见表面），存放了半球面上的incoming radiance数据，如图 <a href="#Fig-3.2">Fig-3.2</a> 所示。半球分辨率为 8x8，每个 texel 4通道，rgb 存放 radiance，a 存放hit distance。相比于 grid 形式的probe放置，定义在texture space的cache entry能够保留更多几何表面细节。</p>
@@ -319,18 +333,21 @@
 <p>对于 diffuse 表面，利用缓存的radiance信息执行 ray guiding 策略 <a href="#%5B3%5D">[3]</a><a href="#%5B4%5D">[4]</a> 。对于单个viewer的 glossy 反射，使用 BRDF 重要性采样。在更新 cache entry 的 incoming radiance 时，会将rays样本加载到shared memory中以atomic操作进行累积。</p>
 <p>对于光线交于发光表面或者环境光，获取直接光照。对于小的发光表面，它们可能根本无法被 ray guiding 采样到（尤其是考虑到 8 × 8 的有限分辨率），因此可能导致时序不稳定性。</p>
 <p><a name="Fig-3.3"></a></p>
-<p>![image-20241207171925197](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241207171925197.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241207171925197.png" srcset="/img/loading.gif" lazyload alt="image-20241207171925197" style="zoom:80%;">
+
 <center>Fig-3.3 (a) 场景几何的实际triangle ID；(b) 方形表示了表面上的一个cache entry；(c) 2x2 下的triangle ID cache entry的三角形编号；(d) 4x4 下更精细的编号</center>
 
 <p><a name="Fig-3.4"></a></p>
-<p>![image-20241207171132639](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241207171132639.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241207171132639.png" srcset="/img/loading.gif" lazyload alt="image-20241207171132639" style="zoom:80%;">
+
 <center>Fig-3.4 (a) Black artifacts，由triangle ID对于cache表面的覆盖不充足，导致从cache到world的转换得到光线起点的过程匹配到相邻世界坐标；(b) 更精细的triangle ID可以明显缓解该问题</center>
 
 <h3 id="3-1-2-Secondary-Cache"><a href="#3-1-2-Secondary-Cache" class="headerlink" title="3.1.2 Secondary Cache"></a>3.1.2 Secondary Cache</h3><p>irradiance probe 以及 <a href="#%5B4%5D">[4]</a> hash grid 的radiance caching方法会有潜在的漏光问题，主要是由于其放置于空间或者接近表面的位置，而不是表面上。因此需要一些启发式策略避免漏光。而本文提出的secondary cache直接放置于表面。</p>
 <p>secondary cache 缓存了半球面的outgoing radiance，能够采样任意方向，并且由于cache entry之间可以彼此采样，可以达到多次弹射的全局光照，如图 <a href="#%5BFig-3.6%5D">Fig-3.6</a>。hemisphere采用 8x8 tile的分辨率。直接光照采用时序重采样的 ReSTIR <a href="#%5B5%5D">[5]</a> 。对于多次弹射光照，投射了 32 条余弦加权的光线，以使secondary cache entries 能够互相采样，也可以使用更复杂的采样策略。outgoing radiance则是为每个cached direction对incoming radiance(ray radiance)应用BRDF，即每个光线会执行64次计算。</p>
 <p>与primary cache不同，secondary cache以固定的表面大小进行放置，大概 20cm X 20cm 到 30cm X 30cm。对于大场景，可以在距离所有视角远的区域降低cache分辨率。secondary cache entry的分配发生于primary cache的光线交于一个表面时。在cache区域采样时，triangle ID的改进与primary cache相同。</p>
 <p><a name="Fig-3.5"></a></p>
-<p>![image-20241207180126279](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241207180126279.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241207180126279.png" srcset="/img/loading.gif" lazyload alt="image-20241207180126279" style="zoom:80%;">
+
 <center>Fig-3.5 secondary radiance cache 的可视化。每个方形表示一个8x8 texels的cache entry，其中存放了outgoing radiance。secondary cache是紧密附着在表面上的，可以避免漏光。(a) 没有temporal filtering，比较噪；(b) filter后更平滑</center>
 
 <p><a name="Fig-3.6"></a></p>
@@ -348,16 +365,19 @@
 <p>同一表面上也可能出现light bleeds，例如，Sponza场景中窗帘下方的光线溢出到地板上。作者使用 <a href="#%5B3%5D">[3]</a> 提出的angle error detection 方法解决该问题。此外，在选择filter邻居时，引入视差矫正方向，避免过度模糊，如图 <a href="#Fig-3.7">Fig-3.7</a>。</p>
 <p>island 边界问题，位于不同的island的邻居无法被访问，这会导致一条明显的缝。这在定义不佳的island上尤为明显，例如，当一个平坦表面由多个islands组成时。这种在没有表面纹理的场景中非常显眼，但在许多应用了表面纹理的场景中，接缝的可见性会大大降低，如图 <a href="#Fig-3.8">Fig-3.8</a> 所示。</p>
 <p><a name="Fig-3.7"></a></p>
-<p>![image-20241209110506190](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241209110506190.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241209110506190.png" srcset="/img/loading.gif" lazyload alt="image-20241209110506190" style="zoom:80%;">
+
 <center>Fig-3.7 Sponza 场景窗帘被间接光照照亮。(a) filter过程中，为相邻cache entriy使用相同方向，导致细节丢失以及过渡平坦。(b) 使用视差矫正方向保留了光照特征。</center>
 
 <p><a name="Fig-3.8"></a></p>
-<p>![image-20241209111702863](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241209111702863.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241209111702863.png" srcset="/img/loading.gif" lazyload alt="image-20241209111702863" style="zoom:80%;">
+
 <center>Fig-3.8 由于spatial filter无法跨island边界，导致明显的缝隙。相接、平坦或者曲率很低的表面应该位于一个island上，来避免island边界的缝隙问题。最左边两张图中，被划分了多个不同的island，导致明显的缝隙；有时这些边界可能被surface texture隐藏，例如最右边两张图中</center>
 
 <h2 id="3-5-Irradiance-Evaluation"><a href="#3-5-Irradiance-Evaluation" class="headerlink" title="3.5 Irradiance Evaluation"></a>3.5 Irradiance Evaluation</h2><p>在相邻两个mip层级的primary cache之间执行trilinear插值得到像素的irradiance。primary cache可以转为SH提供diffuse illumination；或者应用半球上incoming radiance的 BRDF重要性采样，支持更细节的surface shading以及glossy reflections，如图 <a href="#Fig-3.9">Fig-3.9</a>。trilinear 插值来自SH的irradiance是比较高效的，但重要性采样的trilinear插值相对较慢。对此，作者选择在三线性插值样本中进行基于插值权重的随机采样。这种方法将每像素的cache访问次数从 8 次减少到 1 次。然而，它会引入少量额外噪声，这可以通过temporal filter减轻。</p>
 <p><a name="Fig-3.9"></a></p>
-<p>![image-20241209113157530](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241209113157530.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241209113157530.png" srcset="/img/loading.gif" lazyload alt="image-20241209113157530" style="zoom:80%;">
+
 <center>Fig-3.9 除窗帘外，roughness 设置为 0.4。(a)~(c) 是没有TAA或者其它filter，对primary hit cache的不同spp下的BRDF重要性采样。时间与每个VB像素采样primary cache相关；(d) 8spp下以及简单temporal filter的TAA；(e) path-traced reference，五次bounce累积40K帧。本文的方法成功捕捉了glossy反射。然而，与参考图像相比，某些高光未能完全重现，作者认为这与filter过程以及cache分辨率可能不足有关。</center>
 
 <h2 id="3-6-Reflections"><a href="#3-6-Reflections" class="headerlink" title="3.6 Reflections"></a>3.6 Reflections</h2><p>与AMD-GI1.1<a href="#%5B6%5D">[6]</a> 相似，本文提供了两种处理反射的方式，多个视角可以在secondary hit时共享radiance信息并提供多次反射光照：</p>
@@ -374,16 +394,19 @@
 </blockquote>
 <p>通过在两种方法中都依赖次级缓存中的入射辐射，我们的系统通过反射提供了多次反射光照，如图 <a href="#Fig-3.12">Fig-3.12</a> 所示。然而，需要注意的是，这两种方法仍然会出现一些噪声，因此需要进行screen-space filer。</p>
 <p><a name="Fig-3.10"></a></p>
-<p>![image-20241209132939923](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241209132939923.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241209132939923.png" srcset="/img/loading.gif" lazyload alt="image-20241209132939923" style="zoom:80%;">
+
 <center>Fig-3.10 重要性采样primary cache、path-traced reference与AMD-GI1.1之间的对比。尽管secondary cache entry覆盖的区域要大得多，但它们为primary cache生成了令人满意的光滑反射，接近路径追踪的参考结果。对primary cache进行重要性采样更适合处理较大物体的反射，并且粗糙度的最低值大约为 0.2。
 </center>
 
 <p><a name="Fig-3.11"></a></p>
-<p>![image-20241209133723897](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241209133723897.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241209133723897.png" srcset="/img/loading.gif" lazyload alt="image-20241209133723897" style="zoom:80%;">
+
 <center>Fig-3.11 在VB的ray-traced反射中，secondary cache为反射光线提供radiance，消除了进一步光线投射的昂贵开销。左图，具有近似镜面反射的地板；secondary cache覆盖范围广，偶尔会出现在反射中。由于缓存分辨率较低，表面细节（如黄色便签上的画）受到影响。右图，粗糙度为 0.1，场景显得更平滑，使得secondary cache变得更难以辨认。</center>
 
 <p><a name="Fig-3.12"></a></p>
-<p>![image-20241209134052245](&#x2F;images&#x2F;Paper Notes&#x2F;Cloud Rendering&#x2F;Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets&#x2F;image-20241209134052245.png)</p>
+<img src="/images/Paper Notes/Cloud Rendering/Radiance Caching with On-Surface Caches for Real-Time Global Illumination.assets/image-20241209134052245.png" srcset="/img/loading.gif" lazyload alt="image-20241209134052245" style="zoom:80%;">
+
 <center>Fig-3.12 secondary cache 能够为 ray-traced reflections 提供无限反弹。左图没有无限反弹；中间使用secondary cache达到的无限反弹；右图是AMD-GI1.1的效果，无法提供屏幕外的无限反弹</center>
 
 <h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a name="[1]">[1]</a> Wolfgang Tatzgern, Alexander Weinrauch, Pascal Stadlbauer, Joerg H. Mueller, Martin Winter, and Markus Steinberger. 2024. Radiance Caching with On-Surface Caches for Real-Time Global Illumination. Proc. ACM Comput. Graph. Interact. Tech. 7, 3, Article 38 (August 2024), 17 pages.</p>

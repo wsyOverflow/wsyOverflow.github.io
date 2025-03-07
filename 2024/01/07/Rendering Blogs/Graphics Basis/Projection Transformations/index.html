@@ -21,7 +21,7 @@
   
     <meta name="description" content="1 Summary本文介绍投影变换的计算，包括正交投影、透视投影。最后介绍一些实际应用中的技巧、以及如何运用到 Vulkan 坐标系。  Settings：本文的向量采用列向量，与 glm 库的默认为列主序一致，只需将本文描述的公式整体转置即可转为行向量形式；clip 空间的深度值范围采用与 OpenGL 的 $[-1,1]$ ；相机 forward 方向为 $-z$，up 方向为 $+y$ 。相">
 <meta property="og:type" content="article">
-<meta property="og:title" content="SlabHash">
+<meta property="og:title" content="Projection Transformations">
 <meta property="og:url" content="http://example.com/2024/01/07/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations/index.html">
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="1 Summary本文介绍投影变换的计算，包括正交投影、透视投影。最后介绍一些实际应用中的技巧、以及如何运用到 Vulkan 坐标系。  Settings：本文的向量采用列向量，与 glm 库的默认为列主序一致，只需将本文描述的公式整体转置即可转为行向量形式；clip 空间的深度值范围采用与 OpenGL 的 $[-1,1]$ ；相机 forward 方向为 $-z$，up 方向为 $+y$ 。相">
@@ -35,14 +35,14 @@
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20230917153537979.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20230917153610395.png">
 <meta property="article:published_time" content="2024-01-07T09:53:52.626Z">
-<meta property="article:modified_time" content="2024-05-30T05:18:44.220Z">
+<meta property="article:modified_time" content="2025-03-07T02:33:05.511Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations.assets/image-20211125103026931.png">
   
   
   
-  <title>SlabHash - Hexo</title>
+  <title>Projection Transformations - Hexo</title>
 
   <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
 
@@ -208,7 +208,7 @@
       <div class="banner-text text-center fade-in-up">
         <div class="h2">
           
-            <span id="subtitle" data-typed-text="SlabHash"></span>
+            <span id="subtitle" data-typed-text="Projection Transformations"></span>
           
         </div>
 
@@ -279,7 +279,7 @@
       <div class="container nopadding-x-md" id="board-ctn">
         <div id="board">
           <article class="post-content mx-auto">
-            <h1 id="seo-header">SlabHash</h1>
+            <h1 id="seo-header">Projection Transformations</h1>
             
             
               <div class="markdown-body">
@@ -432,7 +432,7 @@ $$
 
   <div class="license-box my-3">
     <div class="license-title">
-      <div>SlabHash</div>
+      <div>Projection Transformations</div>
       <div>http://example.com/2024/01/07/Rendering Blogs/Graphics Basis/Projection Transformations/</div>
     </div>
     <div class="license-meta">

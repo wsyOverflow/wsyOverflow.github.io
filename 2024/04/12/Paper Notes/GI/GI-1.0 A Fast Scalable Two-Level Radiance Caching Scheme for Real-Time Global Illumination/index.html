@@ -32,12 +32,15 @@
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415110725456.png">
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415113213730.png">
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415140118581.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415151024688.png">
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415154453580.png">
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415154324296.png">
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240415163819243.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240426133627889.png">
 <meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240426140012373.png">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240426145746727.png">
 <meta property="article:published_time" content="2024-04-12T06:18:02.299Z">
-<meta property="article:modified_time" content="2025-03-06T04:34:02.525Z">
+<meta property="article:modified_time" content="2025-03-07T02:37:05.025Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="http://example.com/images/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination.assets/image-20240412142048484.png">
@@ -356,7 +359,8 @@
 
 <h3 id="2-1-5-Probe-Masking"><a href="#2-1-5-Probe-Masking" class="headerlink" title="2.1.5 Probe Masking"></a>2.1.5 Probe Masking</h3><p>probe是放置在 8x8 screen tiles内的任意一个像素上，因此使用 32-bit 整数编码 tile 内的像素坐标，来确定probe位置。该整数使用一张2D贴图存储 <code>probe_mask</code>。对于empty tile或者无效tile，使用一个 sentinel value 表示，如 <a href="#Fig-7">Fig-7</a> 所示。</p>
 <p><a name="Fig-7"></a></p>
-<p>![image-20240415151024688](&#x2F;images&#x2F;Paper Notes&#x2F;GI&#x2F;GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets&#x2F;image-20240415151024688.png)</p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240415151024688.png" srcset="/img/loading.gif" lazyload alt="image-20240415151024688" style="zoom:110%;">
+
 <center>Fig-7: sentinel 被标记为红色。</center>
 
 <p>在运动中，有大量区域缺失probe。在采样probe时，通常需要查找某一方向上最近的probe。作者提出生成 probe_mask 的 mip chain 来实现高效查找最近的有效probe，其中 mip chain 维护了上一层 2x2 中第一个找到的有效probe。查找像素给定方向上的最近有效probe的算法如下所示</p>
@@ -422,7 +426,8 @@
 <p>每帧还要执行 re-ordering pass，将 MRU 中的cache entries永远放在LRU queue最前面。上述情况中，更新cache entry需要使用 atomic compare and swap，避免多个work groups在radiance blending阶段同时更新同一cache。</p>
 <h2 id="2-2-World-Cache"><a href="#2-2-World-Cache" class="headerlink" title="2.2 World Cache"></a>2.2 World Cache</h2><p>world cache 维护了次级光路顶点的出射radiance（按照forward path tracing的方向来看），作者基于 <a href="#%5B5%5D">[5]</a> 中的 hash cells 数据结构，提出新的 tiling 方法，该方法能够更高效地在相邻cells之间filter。</p>
 <h3 id="2-2-1-Caching-Outgoing-Radiance-for-Secondary-Path-Vertices"><a href="#2-2-1-Caching-Outgoing-Radiance-for-Secondary-Path-Vertices" class="headerlink" title="2.2.1 Caching Outgoing Radiance for Secondary Path Vertices"></a>2.2.1 Caching Outgoing Radiance for Secondary Path Vertices</h3><p>world cache通过对顶点描述的hash来寻址hash table中的radiance cell。寻址过程如下图所示，先使用一个fast hash定位bucket index；再使用另一个hash函数计算一个fingerprint，用于在bucket内 linear probing，确定cell的存储位置。作者选择了两个彼此之间几乎不会冲突的hash函数，即linear probing过程不会比较顶点描述，而是直接比较第二次hash生成fingerprint，忽略了第二次hash冲突的可能性。</p>
-<p>![image-20240426133627889](&#x2F;images&#x2F;Paper Notes&#x2F;GI&#x2F;GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets&#x2F;image-20240426133627889.png)</p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240426133627889.png" srcset="/img/loading.gif" lazyload alt="image-20240426133627889" style="zoom:110%;">
+
 <p>作者构建的顶点描述包含：</p>
 <ul>
 <li>顶点坐标、光线方向：邻近顶点间的重用与filter</li>
@@ -435,7 +440,8 @@
 
 <p>作者发现这类light leaking大部分出现在次级光线长度小于要查找cell大小的情况下，也就是光线没有离开cell。对于此，向descriptor中加入比较结果 (ray_length &lt; cell_size)，可以避免这种情况发生。</p>
 <h3 id="2-2-3-Prefiltering-Radiance"><a href="#2-2-3-Prefiltering-Radiance" class="headerlink" title="2.2.3 Prefiltering Radiance"></a>2.2.3 Prefiltering Radiance</h3><p>cell之间filter需要访问 3x3x3 相邻cell，但在hash space的开销非常大。作者提出 two-level 数据结构，其中 cell 被组织到 tile 内，bucket 中索引的是tile，cell由tile内的局部坐标来索引，如下图所示。</p>
-<p>![image-20240426145746727](&#x2F;images&#x2F;Paper Notes&#x2F;GI&#x2F;GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets&#x2F;image-20240426145746727.png)</p>
+<img src="/images/Paper Notes/GI/GI-1.0 A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination.assets/image-20240426145746727.png" srcset="/img/loading.gif" lazyload alt="image-20240426145746727" style="zoom:110%;">
+
 <p>每个tille表示了场景固定大小的区域，相当于一个比较大的voxel，但tile中的cell在三维空间下是相对稀疏的，同时小范围的表面接近于二维平面，因此作者选择将cell投影到2D tile上的方式，将cell向最大outgoing方向的轴向投影。</p>
 <blockquote>
 <p> 最大outgoing方向应该是值tile内所有cell的所有光线方向取最大</p>
@@ -583,9 +589,9 @@
                   <article class="post-prev col-6">
                     
                     
-                      <a href="/2024/08/19/Rendering%20Blogs/GPGPU/Parrallel%20Scan/" title="SlabHash">
+                      <a href="/2024/08/19/Rendering%20Blogs/GPGPU/Parrallel%20Scan/" title="Parallel Scan">
                         <i class="iconfont icon-arrowleft"></i>
-                        <span class="hidden-mobile">SlabHash</span>
+                        <span class="hidden-mobile">Parallel Scan</span>
                         <span class="visible-mobile">Previous</span>
                       </a>
                     

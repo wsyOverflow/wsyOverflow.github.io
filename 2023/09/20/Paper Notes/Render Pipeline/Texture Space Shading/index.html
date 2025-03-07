@@ -26,10 +26,12 @@
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="1 Summary传统的光栅化管线（forward或者deferred）执行于屏幕空间，表面采样率或者像素密度与相机距离、视角相关。同时，GPU光栅化管线的流水线作业使得shading rate完全由分辨率、几何复杂度、帧率控制。而texture space shading(TSS)提出在texture space着色，使得shading rate变得更加可控。同时texture space下的t">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Paper%20Notes/Render%20Pipeline/Texture%20Space%20Shading.assets/image-20230628191733254.png">
 <meta property="article:published_time" content="2023-09-20T15:21:10.852Z">
-<meta property="article:modified_time" content="2023-09-17T05:16:18.647Z">
+<meta property="article:modified_time" content="2025-03-07T02:38:24.780Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Paper%20Notes/Render%20Pipeline/Texture%20Space%20Shading.assets/image-20230628191733254.png">
   
   
   
@@ -222,7 +224,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          416 words
+          401 words
         
       </span>
     
@@ -283,7 +285,14 @@
 <li>更加准确的空间复用。屏幕空间的像素之间暴露出incoherent性质，这对于空间复用很不友好。而texture space下，相邻像素往往满足世界空间的coherent。</li>
 </ol>
 <h1 id="2-Category"><a href="#2-Category" class="headerlink" title="2 Category"></a>2 Category</h1><p>本文按照 <a href="#%5B1%5D">[1]</a> 给出的分类方法描述TSS的相关工作，以及设想中的大致实现思路。</p>
-<p>![image-20230628191733254](&#x2F;images&#x2F;Paper Notes&#x2F;Render Pipeline&#x2F;Texture Space Shading.assets&#x2F;image-20230628191733254.png)</p>
+<img src="/images/Paper Notes/Render Pipeline/Texture Space Shading.assets/image-20230628191733254.png" srcset="/img/loading.gif" lazyload alt="image-20230628191733254" style="zoom:80%;">
+
+
+
+
+
+
+
 <h1 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h1><p><a name="[1]">[1]</a> Neff, T., Mueller, J.H., Steinberger, M. and Schmalstieg, D. (2022), Meshlets and How to Shade Them: A Study on Texture-Space Shading. Computer Graphics Forum, 41: 277-287. <a target="_blank" rel="noopener" href="https://doi.org/10.1111/cgf.14474">https://doi.org/10.1111/cgf.14474</a></p>
 
                 

@@ -19,19 +19,26 @@
   <meta name="author" content="John Doe">
   <meta name="keywords" content="GPU, Performance">
   
-    <meta name="description" content="1 Life of triangle [1]![NVIDIA’s logical pipeline](&#x2F;images&#x2F;Rendering Blogs&#x2F;Profile&#x2F;GPU Logic.assets&#x2F;fermipipeline.png) 1.1 GPUs are super parallel work distributors为什么需要这些复杂性？">
+    <meta name="description" content="1 Life of triangle [1]  1.1 GPUs are super parallel work distributors为什么需要这些复杂性？在图形渲染中，我们需要处理数据扩展 (data amplification) 的问题，这会带来大量不确定的工作负载。每个 draw call 可能生成不同数量的三角形。裁剪后的顶点数量可能与最初的三角形数量不同。在背面剔除和深度剔除之后，不">
 <meta property="og:type" content="article">
 <meta property="og:title" content="GPU Logic">
 <meta property="og:url" content="http://example.com/2024/11/22/Rendering%20Blogs/Profile/GPU%20Logic/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="1 Life of triangle [1]![NVIDIA’s logical pipeline](&#x2F;images&#x2F;Rendering Blogs&#x2F;Profile&#x2F;GPU Logic.assets&#x2F;fermipipeline.png) 1.1 GPUs are super parallel work distributors为什么需要这些复杂性？">
+<meta property="og:description" content="1 Life of triangle [1]  1.1 GPUs are super parallel work distributors为什么需要这些复杂性？在图形渲染中，我们需要处理数据扩展 (data amplification) 的问题，这会带来大量不确定的工作负载。每个 draw call 可能生成不同数量的三角形。裁剪后的顶点数量可能与最初的三角形数量不同。在背面剔除和深度剔除之后，不">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/GPU%20Logic.assets/fermipipeline.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/GPU%20Logic.assets/fermipipeline_maxwell_gpu.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/GPU%20Logic.assets/fermipipeline_begin.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/GPU%20Logic.assets/fermipipeline_sm.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/GPU%20Logic.assets/fermipipeline_memoryflow.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/GPU%20Logic.assets/fermipipeline_raster.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/GPU%20Logic.assets/fermipipeline_distribution.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/GPU%20Logic.assets/pasted-image-0-8-1024x246.png">
 <meta property="article:published_time" content="2024-11-22T02:26:59.836Z">
-<meta property="article:modified_time" content="2024-11-24T10:37:13.377Z">
+<meta property="article:modified_time" content="2025-03-07T02:22:57.612Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Profile/GPU%20Logic.assets/pasted-image-0-8-1024x246.png">
+<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Profile/GPU%20Logic.assets/fermipipeline.png">
   
   
   
@@ -224,7 +231,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          5.6k words
+          5.5k words
         
       </span>
     
@@ -235,7 +242,7 @@
         
         
         
-          47 mins
+          46 mins
         
       </span>
     
@@ -277,16 +284,19 @@
             
               <div class="markdown-body">
                 
-                <h1 id="1-Life-of-triangle-1"><a href="#1-Life-of-triangle-1" class="headerlink" title="1 Life of triangle [1]"></a>1 Life of triangle <a href="#%5B1%5D">[1]</a></h1><p>![NVIDIA’s logical pipeline](&#x2F;images&#x2F;Rendering Blogs&#x2F;Profile&#x2F;GPU Logic.assets&#x2F;fermipipeline.png)</p>
+                <h1 id="1-Life-of-triangle-1"><a href="#1-Life-of-triangle-1" class="headerlink" title="1 Life of triangle [1]"></a>1 Life of triangle <a href="#%5B1%5D">[1]</a></h1><img src="/images/Rendering Blogs/Profile/GPU Logic.assets/fermipipeline.png" srcset="/img/loading.gif" lazyload alt="NVIDIA's logical pipeline" style="zoom:150%;">
+
 <h2 id="1-1-GPUs-are-super-parallel-work-distributors"><a href="#1-1-GPUs-are-super-parallel-work-distributors" class="headerlink" title="1.1 GPUs are super parallel work distributors"></a>1.1 GPUs are super parallel work distributors</h2><p>为什么需要这些复杂性？在图形渲染中，我们需要处理数据扩展 (data amplification) 的问题，这会带来大量不确定的工作负载。每个 draw call 可能生成不同数量的三角形。裁剪后的顶点数量可能与最初的三角形数量不同。在背面剔除和深度剔除之后，不同的三角形可能生成不同的像素。</p>
 <p>因此，现代GPU让它们的基本图元（三角形、线、点）遵循的是逻辑流水线，而不是物理流水线。在早期（G80统一架构之前，如DX9硬件、PS3、Xbox360），流水线在芯片上通过不同的阶段体现，工作依次通过这些阶段处理。G80架构基本上对部分单元进行了复用，可以根据负载在顶点着色器和片段着色器之间切换，但仍然以串行方式处理图元、光栅化等。而从Fermi架构开始，流水线变得完全并行，这意味着芯片通过复用多个内部引擎实现了逻辑流水线（即三角形经过的各个步骤）。</p>
 <p>假设有两个三角形A和B。它们可能处于不同的逻辑流水线步骤中。例如，A已经被变换，正在进行光栅化。一些像素可能在执行fragment shader，一些像素可能被深度缓冲剔除（Z-cull），还有一些像素可能已经写入帧缓冲区，而还有一些可能仍在等待。同时，三角形B可能在提取顶点数据。因此，尽管每个三角形都需要经过这些逻辑步骤，但许多三角形生命周期的不同阶段可以同时被处理。整个draw call任务被拆分为许多较小的任务，甚至是子任务，这些任务可以并行运行。每个任务都会根据可用的资源进行调度，这种调度不限于某种特定类型的任务（例如顶点着色和片段着色可以并行进行）。</p>
 <p>可以把这想象成一条分叉的河流。并行的pipeline stream是彼此独立的，每条pipeline都有自己的时间线，有些pipeline可能分支更多。如果我们用颜色对GPU中的单元进行编码，标记它们当前正在处理的三角形或draw call，那么整个系统就会像一片多彩的“闪烁灯”景象 :)</p>
-<h2 id="1-2-GPU-architecture"><a href="#1-2-GPU-architecture" class="headerlink" title="1.2 GPU architecture"></a>1.2 GPU architecture</h2><p>![GPU architecture](&#x2F;images&#x2F;Rendering Blogs&#x2F;Profile&#x2F;GPU Logic.assets&#x2F;fermipipeline_maxwell_gpu.png)</p>
+<h2 id="1-2-GPU-architecture"><a href="#1-2-GPU-architecture" class="headerlink" title="1.2 GPU architecture"></a>1.2 GPU architecture</h2><img src="/images/Rendering Blogs/Profile/GPU Logic.assets/fermipipeline_maxwell_gpu.png" srcset="/img/loading.gif" lazyload alt="GPU architecture" style="zoom: 90%;">
+
 <p>由于 Fermi 架构的 NVIDIA GPU 拥有相似的基本架构设计，其中核心部分是一个管理所有任务的 <strong>Giga Thread Engine</strong>。GPU 被划分为多个 <strong>GPC（Graphics Processing Cluster，图形处理簇）</strong>，每个 GPC 包含多个 <strong>SM（Streaming Multiprocessor，流式多处理器）</strong> 和一个 <strong>Raster Engine（光栅引擎）</strong>。在这些组件之间有大量的互联结构，其中最为重要的是 <strong>Crossbar（交叉开关）</strong>，它允许任务在 GPC 或其他功能单元（例如 <strong>ROP（Render Output Unit，渲染输出单元）</strong> 子系统）之间迁移。</p>
 <p>程序员编写的任务（例如着色器程序的执行）实际上是由 SM 来完成的。SM 包含许多 <strong>Core（核心）</strong>，这些核心负责执行线程的数学运算。例如，一个线程可以对应于一个顶点着色器或像素着色器的调用。这些核心以及其他单元由 <strong>Warp Scheduler（Warp 调度器）</strong> 驱动，每个 Warp 调度器管理一组 32 个线程（称为一个 Warp），并将需要执行的指令交给 <strong>Dispatch Unit（分发单元）</strong>。指令的逻辑由调度器处理，而核心本身并不负责逻辑计算。核心接收到的指令类似于“<em>“sum register 4234 with register 4235 and store in 4230</em>”。相比之下，GPU 的核心显得相对“简单”，而 CPU 的核心则更“智能”。GPU 将智能设计集中在更高的架构层面，协调整个系统（甚至多个系统）的工作。</p>
 <p>GPU 上这些单元的具体数量（例如每个 GPC 包含多少个 SM，每个 GPU 有多少个 GPC）取决于具体的芯片配置。</p>
-<h2 id="1-3-The-logical-pipeline"><a href="#1-3-The-logical-pipeline" class="headerlink" title="1.3 The logical pipeline"></a>1.3 The logical pipeline</h2><p>![The logical pipeline](&#x2F;images&#x2F;Rendering Blogs&#x2F;Profile&#x2F;GPU Logic.assets&#x2F;fermipipeline_begin.png)</p>
+<h2 id="1-3-The-logical-pipeline"><a href="#1-3-The-logical-pipeline" class="headerlink" title="1.3 The logical pipeline"></a>1.3 The logical pipeline</h2><img src="/images/Rendering Blogs/Profile/GPU Logic.assets/fermipipeline_begin.png" srcset="/img/loading.gif" lazyload alt="The logical pipeline" style="zoom:80%;">
+
 <p>为简化起见，省略了一些细节。我们假设 drawcall 引用了一些已经填充好数据的 index- and vertex-buffer，这些缓冲区存储在 GPU 的 DRAM 中，并且仅使用 VS 和 PS：</p>
 <ol>
 <li><p>程序在图形 API中发起 drawcall。该调用最终会到达驱动程序，驱动程序对调用进行一些合法性验证，并将命令以 GPU 可读取的编码形式插入到 <strong>pushbuffer（推送缓冲区）</strong> 中。在此过程中，CPU 端可能出现许多瓶颈，因此程序员需要合理使用 API，并采用能充分利用现代 GPU 性能的技术。</p>
@@ -294,7 +304,7 @@
 <li><p>一段时间后或显式的“flush”调用，驱动程序在 pushbuffer 中积累了足够的工作量，将其发送给 GPU 进行处理（这一过程可能需要操作系统的部分参与）。GPU 的 <strong>Host Interface（主机接口）</strong> 接收到这些命令，并通过 <strong>Front End（前端）</strong> 进行处理。</p>
 </li>
 <li><p>接着，工作分发开始于 <strong>Primitive Distributor（图元分发器）</strong>，通过处理 index buffer 中的索引数据生成三角形工作批次，并将其分发到多个 <strong>GPC</strong>。</p>
-<p>![The logical pipeline](&#x2F;images&#x2F;Rendering Blogs&#x2F;Profile&#x2F;GPU Logic.assets&#x2F;fermipipeline_sm.png)</p>
+<img src="/images/Rendering Blogs/Profile/GPU Logic.assets/fermipipeline_sm.png" srcset="/img/loading.gif" lazyload alt="The logical pipeline" style="zoom:90%;">
 </li>
 <li><p>在 <strong>GPC（图形处理簇）</strong> 内，一个 <strong>SM（流式多处理器）</strong> 的 <strong>Poly Morph Engine（多边形形变引擎）</strong> 负责从三角形索引中提取顶点数据（即Vertex Fetch）</p>
 </li>
@@ -311,10 +321,10 @@
 <li><p>Warp 的一条指令可能一次完成，也可能需要多个调度周期。例如，在 <strong>SM</strong> 中，处理 <strong>load&#x2F;store</strong> 操作的单元通常比处理基本数学运算的单元要少。</p>
 </li>
 <li><p>由于某些指令（特别是内存加载）需要更长的时间来完成，<strong>Warp 调度器</strong> 会切换到其他不需要等待内存的 Warp。这正是 <strong>GPU</strong> 克服内存读取延迟的关键机制：通过切换warp，隐藏延迟并减少等待时间。为了实现快速切换，调度器管理的所有线程在 <strong>寄存器文件（register file）</strong> 中拥有各自独立的寄存器。如果某个着色器程序需要的寄存器较多，那么可容纳的线程&#x2F;Warps 就会减少。这意味着可供切换的 Warp 也减少，从而在等待指令完成（尤其是内存加载）期间，可执行的有效工作量也会减少。这种<strong>寄存器资源的限制</strong>可能会导致效率下降。</p>
-<p>![The logical pipeline](&#x2F;images&#x2F;Rendering Blogs&#x2F;Profile&#x2F;GPU Logic.assets&#x2F;fermipipeline_memoryflow.png)</p>
+<img src="/images/Rendering Blogs/Profile/GPU Logic.assets/fermipipeline_memoryflow.png" srcset="/img/loading.gif" lazyload alt="The logical pipeline" style="zoom:90%;">
 </li>
 <li><p>当 <strong>Warp</strong> 完成所有顶点着色器的指令后，其结果将由 <strong>视口变换</strong> 进行处理。随后，三角形将在 clip space volume 内进行裁剪，准备进入光栅化阶段。 在这一过程中，我们使用 <strong>L1 缓存</strong> 和 <strong>L2 缓存</strong> 来存储并管理各个任务之间通信的数据。</p>
-<p>![The logical pipeline](&#x2F;images&#x2F;Rendering Blogs&#x2F;Profile&#x2F;GPU Logic.assets&#x2F;fermipipeline_raster.png)</p>
+<img src="/images/Rendering Blogs/Profile/GPU Logic.assets/fermipipeline_raster.png" srcset="/img/loading.gif" lazyload alt="The logical pipeline" style="zoom:90%;">
 </li>
 <li><p>现在到了令人兴奋的部分，我们的三角形即将被分解，并可能会离开当前所在的 <strong>GPC（图形处理簇）</strong>。三角形的 <strong>bounding box</strong> 被用来决定哪些**光栅引擎（raster engines）**需要对其进行处理，因为每个光栅引擎负责屏幕上的多个 <strong>tile（瓦片）</strong>。 随后，三角形通过 <strong>Work Distribution Crossbar</strong> 被发送到一个或多个 GPC。此时，我们有效地将三角形分解成许多更小的任务进行处理。</p>
 </li>
@@ -337,9 +347,10 @@
 <p>我们已经成功将像素写入到渲染目标中。希望这部分信息能帮助您了解 GPU 内部的工作流和数据流。同时，这也可以帮助您理解为何与 CPU 的同步操作会对性能造成如此大的影响。</p>
 <p>当 GPU 必须等待所有任务完成且没有新的工作提交时，所有硬件单元都会变为闲置状态（<strong>Idle</strong>）。当发送新的工作任务时，整个 GPU 从完全闲置状态到再次完全负载需要一些时间，尤其是对于那些规模较大的 GPU。</p>
 <p>在下面的图片中，您可以看到一个 CAD 模型的渲染结果，其中不同的颜色表示了对图像贡献的不同 <strong>SM（流式多处理器）</strong> 或 <strong>Warp ID</strong>。需要注意，这种结果通常是帧间不一致的（<strong>Frame-Coherent</strong>），因为工作分配会在每一帧之间有所变化。这幅场景使用了许多 <strong>Draw Calls</strong> 渲染完成，其中一些可能是并行处理的（通过 <strong>NSIGHT</strong> 工具可以观察到这种 <strong>Draw Call</strong> 的并行性）。</p>
-<p>![The logical pipeline](&#x2F;images&#x2F;Rendering Blogs&#x2F;Profile&#x2F;GPU Logic.assets&#x2F;fermipipeline_distribution.png)</p>
+<img src="/images/Rendering Blogs/Profile/GPU Logic.assets/fermipipeline_distribution.png" srcset="/img/loading.gif" lazyload alt="The logical pipeline" style="zoom:80%;">
+
 <h1 id="2-The-Peak-Performance-Percentage-Analysis-Method-for-Optimizing-Any-GPU-Workload"><a href="#2-The-Peak-Performance-Percentage-Analysis-Method-for-Optimizing-Any-GPU-Workload" class="headerlink" title="2 The Peak-Performance-Percentage Analysis Method for Optimizing Any GPU Workload"></a>2 The Peak-Performance-Percentage Analysis Method for Optimizing Any GPU Workload</h1><p>这篇博客介绍基于硬件指标 (hardware metrics) 的性能分析方法，帮助我们了解整个GPU的使用情况，哪些硬件单元或子单元限制了性能，以及它们的运行效率多大程度接近各自的最大吞吐量 (maximum throughput，也成为 Speed of Light <strong>SOL</strong>)。假设应用程序没有使用异步计算或异步复制队列，那么这种硬件为中心的信息可以映射回图形 API 和着色器的操作，进而为提升任何给定工作负载的 GPU 性能提供指导，如图 1 所示： </p>
-<img src="/images/Rendering Blogs/Profile/GPU Logic.assets/pasted-image-0-8-1024x246.png" srcset="/img/loading.gif" lazyload alt="GPU performance data flow" style="zoom: 80%;">
+<img src="/images/Rendering Blogs/Profile/GPU Logic.assets/pasted-image-0-8-1024x246.png" srcset="/img/loading.gif" lazyload alt="GPU performance data flow" style="zoom: 90%;">
 
 
 
