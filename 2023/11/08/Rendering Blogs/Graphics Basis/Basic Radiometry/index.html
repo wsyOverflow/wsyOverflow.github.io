@@ -19,12 +19,12 @@
   <meta name="author" content="John Doe">
   <meta name="keywords" content="Graphics, Radiometry">
   
-    <meta name="description" content="辐射度量学基础Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。 相关术语   物理量 公式 单位    Radiant Energy(辐射能) $Q&#x3D;\frac{hc}{\lambda}$ $J$(焦耳)   Radiant Flux(辐射通量)或Power(功率) $\Phi&amp;">
+    <meta name="description" content="1 辐射度量学基础Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。 相关术语如下表：    物理量 公式 单位    Radiant Energy(辐射能) $Q&#x3D;\frac{hc}{\lambda}$ $J$(焦耳)   Radiant Flux(辐射通量)或Power(功率)">
 <meta property="og:type" content="article">
 <meta property="og:title" content="Basic Radiometry">
 <meta property="og:url" content="http://example.com/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/index.html">
 <meta property="og:site_name" content="Hexo">
-<meta property="og:description" content="辐射度量学基础Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。 相关术语   物理量 公式 单位    Radiant Energy(辐射能) $Q&#x3D;\frac{hc}{\lambda}$ $J$(焦耳)   Radiant Flux(辐射通量)或Power(功率) $\Phi&amp;">
+<meta property="og:description" content="1 辐射度量学基础Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。 相关术语如下表：    物理量 公式 单位    Radiant Energy(辐射能) $Q&#x3D;\frac{hc}{\lambda}$ $J$(焦耳)   Radiant Flux(辐射通量)或Power(功率)">
 <meta property="og:locale" content="en_US">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20231114163033588.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418105514511.png">
@@ -40,7 +40,7 @@
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418141032723.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20210418143001958.png">
 <meta property="article:published_time" content="2023-11-08T12:16:21.093Z">
-<meta property="article:modified_time" content="2025-03-07T02:32:46.637Z">
+<meta property="article:modified_time" content="2025-04-21T05:36:52.028Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry.assets/image-20231114163033588.png">
@@ -289,8 +289,9 @@
             
               <div class="markdown-body">
                 
-                <h1 id="辐射度量学基础"><a href="#辐射度量学基础" class="headerlink" title="辐射度量学基础"></a>辐射度量学基础</h1><p>Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。</p>
-<h2 id="相关术语"><a href="#相关术语" class="headerlink" title="相关术语"></a>相关术语</h2><table>
+                <h1 id="1-辐射度量学基础"><a href="#1-辐射度量学基础" class="headerlink" title="1 辐射度量学基础"></a>1 辐射度量学基础</h1><p>Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。</p>
+<p>相关术语如下表：</p>
+<table>
 <thead>
 <tr>
 <th>物理量</th>
@@ -334,33 +335,33 @@
 <td>$W&#x2F;(m^2\cdot sr)$ 或 nit(尼特)</td>
 </tr>
 </tbody></table>
-<h4 id="1-Radiant-Energy-辐射能量"><a href="#1-Radiant-Energy-辐射能量" class="headerlink" title="1. Radiant Energy(辐射能量)"></a>1. Radiant Energy(辐射能量)</h4><p>电磁辐射的能量，单位焦耳 $J$</p>
+<h2 id="1-1-术语介绍"><a href="#1-1-术语介绍" class="headerlink" title="1.1 术语介绍"></a>1.1 术语介绍</h2><h3 id="1-1-1-Radiant-Energy-辐射能量"><a href="#1-1-1-Radiant-Energy-辐射能量" class="headerlink" title="1.1.1 Radiant Energy(辐射能量)"></a>1.1.1 Radiant Energy(辐射能量)</h3><p>电磁辐射的能量，单位焦耳 $J$</p>
 <p>光源发射光子，每个光子具有特定的波长以及特定数量的能量。波长为 $\lambda$ 的光子携带的能量<br>$$<br>Q &#x3D; \frac{hc}{\lambda}<br>$$<br>其中，$c$ 为光速，$h$ 为普朗克常量</p>
-<h4 id="2-Radiant-Flux-Power-辐射通量-功率"><a href="#2-Radiant-Flux-Power-辐射通量-功率" class="headerlink" title="2. Radiant Flux&#x2F;Power(辐射通量&#x2F;功率)"></a>2. Radiant Flux&#x2F;Power(辐射通量&#x2F;功率)</h4><p>单位时间内通过表面或空间区域的能量，即功率</p>
+<h3 id="1-1-2-Radiant-Flux-Power-辐射通量-功率"><a href="#1-1-2-Radiant-Flux-Power-辐射通量-功率" class="headerlink" title="1.1.2 Radiant Flux&#x2F;Power(辐射通量&#x2F;功率)"></a>1.1.2 Radiant Flux&#x2F;Power(辐射通量&#x2F;功率)</h3><p>单位时间内通过表面或空间区域的能量，即功率</p>
 <p>$$<br>\Phi &#x3D; \frac{dQ}{dt}<br>$$</p>
 <p>光源发出(emitted)的总量通常使用通量描述。下图描述了来自点光源的通量通过球面的能量，在两个球上测量得到的通量应该是相同的。</p>
  <img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20231114163033588.png" srcset="/img/loading.gif" lazyload alt="image-20231114163033588" style="zoom: 50%;">
 
 <p>经常会遇到throughput说法，但throughput并不是物理量，只是对光线传播时所保持能量的描述。例如由光源发出的光线，经过一级反射会累积交点处的BSDF，在下一级光路传播时，该光线的throughput指的是其携带能量乘上BSDF。可以理解为 scaled radiance。而辐射通量则是某点对到达该点的光线的throughput * 该点的BSDF的积分。</p>
-<h4 id="3-Angle"><a href="#3-Angle" class="headerlink" title="3. Angle"></a>3. Angle</h4><p>圆上的弧长与半径的比值: $\theta&#x3D;\frac{l}{r}$ ，圆有 $2\pi$ 弧度</p>
+<h3 id="1-1-3-Angle"><a href="#1-1-3-Angle" class="headerlink" title="1.1.3 Angle"></a>1.1.3 Angle</h3><p>圆上的弧长与半径的比值: $\theta&#x3D;\frac{l}{r}$ ，圆有 $2\pi$ 弧度</p>
 <img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418105514511.png" srcset="/img/loading.gif" lazyload alt="image-20210418105514511" style="zoom:33%;">
 
-<h4 id="4-Solid-Angle-立体角"><a href="#4-Solid-Angle-立体角" class="headerlink" title="4. Solid Angle(立体角)"></a>4. Solid Angle(立体角)</h4><p>球面上的投影面积与半径的平方之比: $\Omega &#x3D; \frac{A}{r^2}$，球的立体角为 $4\pi$ 球面角度(steradians)</p>
+<h3 id="1-1-4-Solid-Angle-立体角"><a href="#1-1-4-Solid-Angle-立体角" class="headerlink" title="1.1.4 Solid Angle(立体角)"></a>1.1.4 Solid Angle(立体角)</h3><p>球面上的投影面积与半径的平方之比: $\Omega &#x3D; \frac{A}{r^2}$，球的立体角为 $4\pi$ 球面角度(steradians)</p>
 <img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418105703119.png" srcset="/img/loading.gif" lazyload alt="image-20210418105703119" style="zoom:33%;">
 
-<h4 id="5-Differential-Solid-Angle-微分立体角"><a href="#5-Differential-Solid-Angle-微分立体角" class="headerlink" title="5. Differential Solid Angle(微分立体角)"></a>5. Differential Solid Angle(微分立体角)</h4><img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418105937707.png" srcset="/img/loading.gif" lazyload alt="image-20210418105937707" style="zoom: 25%;">
+<h3 id="1-1-5-Differential-Solid-Angle-微分立体角"><a href="#1-1-5-Differential-Solid-Angle-微分立体角" class="headerlink" title="1.1.5 Differential Solid Angle(微分立体角)"></a>1.1.5 Differential Solid Angle(微分立体角)</h3><img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418105937707.png" srcset="/img/loading.gif" lazyload alt="image-20210418105937707" style="zoom: 25%;">
 
 <ul>
 <li><p>球面坐标：$\theta\in[0,\pi],\phi\in[0,2\pi]$</p>
 </li>
-<li><p>单位面积：$dA&#x3D;(rd\theta)(rsin\theta d\phi)&#x3D;r^2sin\theta d\theta d\phi$，单位立体角对应的球面上单位区域的面积</p>
+<li><p>单位面积：单位立体角对应的球面上单位区域的面积<br>$$<br>dA&#x3D;(rd\theta)(r\sin\theta d\phi)&#x3D;r^2\sin\theta d\theta d\phi<br>$$</p>
 </li>
-<li><p>单位立体角：$d\omega &#x3D; \frac{dA}{r^2}&#x3D;sin\theta d\theta d\phi$</p>
+<li><p>单位立体角：<br>$$<br>d\omega &#x3D; \frac{dA}{r^2}&#x3D;sin\theta d\theta d\phi<br>$$</p>
 </li>
 <li><p>球面的微分立体角：$\Omega&#x3D;\int_{S^2}d\omega&#x3D;\int_0^{2\pi}\int_0^{\pi}sin\theta d\theta d\phi&#x3D;4\pi$，其中 $S^2$ 是球面积</p>
 <blockquote>
 <p>$dA$ 的证明，$dA$ 可看作 $d\theta$ 和 $d\phi$ 对应的微分弧组成的小矩形，如下图中红色弧线与蓝色弧线</p>
-<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/2.PNG" srcset="/img/loading.gif" lazyload alt="2" style="zoom: 50%;">
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/2.PNG" srcset="/img/loading.gif" lazyload alt="2" style="zoom: 40%;">
 
 <p>其中蓝色弧线位于半径为 $r_\phi$ 的小圆上，而红色弧线位于半径为 $r_\theta$ 的大圆上，又知道 $sin\theta &#x3D; \frac{r_\phi}{r_\theta}$，由弧长公式有</p>
 <p>红色弧：$r_\theta d\theta$，蓝色弧：$r_\phi d\phi&#x3D;r_\theta sin\theta d\phi$。</p>
@@ -372,15 +373,22 @@
 </li>
 </ul>
 <p>$\omega$ 作为单位立体角的方向向量</p>
-<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418111221992.png" srcset="/img/loading.gif" lazyload alt="image-20210418111221992" style="zoom:25%;">
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418111221992.png" srcset="/img/loading.gif" lazyload alt="image-20210418111221992" style="zoom:20%;">
 
 <ul>
-<li>Isotropic Point Source(各向同性光源)：球面上各单位立体角辐射强度 (Radiant Intensity) 相同。整个球面的辐射通量&#x2F;功率：$\Phi&#x3D;\int_{S^2}Id\omega&#x3D;4\pi I$，辐射强度 $I&#x3D;\frac{\phi}{4\pi}$。</li>
+<li><p>Isotropic Point Source(各向同性光源)：球面上各单位立体角辐射强度 (Radiant Intensity) 相同。</p>
+<ul>
+<li><p>整个球面的辐射通量&#x2F;功率，<br>$$<br>\Phi&#x3D;\int_{S^2}Id\omega&#x3D;4\pi I<br>$$</p>
+</li>
+<li><p>辐射强度，<br>$$<br>I&#x3D;\frac{\phi}{4\pi}<br>$$</p>
+</li>
 </ul>
-<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418111805822.png" srcset="/img/loading.gif" lazyload alt="image-20210418111805822" style="zoom:25%;">
+</li>
+</ul>
+<img src="/images/Rendering Blogs/Graphics Basis/Basic Radiometry.assets/image-20210418111805822.png" srcset="/img/loading.gif" lazyload alt="image-20210418111805822" style="zoom:15%;">
 
-<h4 id="6-Radiant-Intensity-辐射强度"><a href="#6-Radiant-Intensity-辐射强度" class="headerlink" title="6. Radiant Intensity(辐射强度)"></a>6. Radiant Intensity(辐射强度)</h4><p>点光源<strong>每立体角</strong>发出的功率<br>$$<br>I(\omega)&#x3D;\frac{d\Phi}{d\omega}<br>$$</p>
-<h4 id="7-Irradiance-辐照度"><a href="#7-Irradiance-辐照度" class="headerlink" title="7. Irradiance(辐照度)"></a>7. Irradiance(辐照度)<a name="7. Irradiance(辐照度)"></a></h4><p>前述flux(辐射通量或功率)是单位时间内通过表面的能量，irradiance则为辐射通量在表面上的平均强度，即单位面积的强度。</p>
+<h3 id="1-1-6-Radiant-Intensity-辐射强度"><a href="#1-1-6-Radiant-Intensity-辐射强度" class="headerlink" title="1.1.6 Radiant Intensity(辐射强度)"></a>1.1.6 Radiant Intensity(辐射强度)</h3><p>点光源<strong>每立体角</strong>发出的功率<br>$$<br>I(\omega)&#x3D;\frac{d\Phi}{d\omega}<br>$$</p>
+<h3 id="1-1-7-Irradiance-辐照度"><a href="#1-1-7-Irradiance-辐照度" class="headerlink" title="1.1.7 Irradiance(辐照度)"></a>1.1.7 Irradiance(辐照度)<a name="7. Irradiance(辐照度)"></a></h3><p>前述flux(辐射通量或功率)是单位时间内通过表面(垂直于表面)的能量，irradiance则为辐射通量在表面上的平均强度，即单位面积的辐射通量。</p>
 <p>辐照度是每(垂直&#x2F;投影)<strong>单位面积</strong>入射到一个表面上一点的<strong>辐射通量</strong>(功率)，<br>$$<br>E(x)&#x3D;\frac{d\Phi(x)}{dA}<br>$$</p>
 <p>单位时间内光子离开或进入单位面积的通量</p>
 <p>Lambert 余弦定律：表面辐照度与光方向和表面法线夹角的余弦值成正比</p>
@@ -394,7 +402,7 @@
 
 
 
-<h4 id="8-Radiance-辐射率"><a href="#8-Radiance-辐射率" class="headerlink" title="8. Radiance(辐射率)"></a>8. Radiance(辐射率)</h4><p>Radiance 用于描述光在环境中的分布的基本场量。辐射率(Radiance)或亮度(luminance) ：是指一个表面在<strong>每单位立体角、每单位投影面积</strong>上所发射(emitted)、反射(reflected)、透射(transmitted)或接收(received)的辐射通量(功率)。</p>
+<h3 id="1-1-8-Radiance-辐射率"><a href="#1-1-8-Radiance-辐射率" class="headerlink" title="1.1.8 Radiance(辐射率)"></a>1.1.8 Radiance(辐射率)</h3><p>Radiance 用于描述光在环境中的分布的基本场量。辐射率(Radiance)或亮度(luminance) ：是指一个表面在<strong>每单位立体角、每单位投影面积</strong>上所发射(emitted)、反射(reflected)、透射(transmitted)或接收(received)的辐射通量(功率)。</p>
 <p>$$<br>L(p,\omega)&#x3D;\frac{d^2\Phi (p,\omega)}{d\omega dA \cos\theta}<br>$$</p>
 <blockquote>
 <p>$p$ 点所在表面、立体角方向$w$接收到的辐射通量 $\Phi(p,w)$，对立体角、面积的二阶求偏导的辐射率 $L(p,w)$。反过来求辐射通量，这里得到的是表面的整个积分域与立体角的积分域收到的辐射通量。<br>$$<br>\Phi(p,w)&#x3D;\int\int L(p,w)\cdot \cos\theta\space dwdA<br>$$</p>
@@ -427,7 +435,7 @@
 <blockquote>
 <p>具有单位立体角限制的 irradiance 等同于 radiance，具有单位投影面积的 Radiance Intensity 等同于 radiance</p>
 </blockquote>
-<h2 id="辐照度-Irradiance-VS-辐射率-Radiance"><a href="#辐照度-Irradiance-VS-辐射率-Radiance" class="headerlink" title="辐照度(Irradiance) VS. 辐射率(Radiance)"></a>辐照度(Irradiance) VS. 辐射率(Radiance)</h2><ul>
+<h2 id="1-2-辐照度-Irradiance-VS-辐射率-Radiance"><a href="#1-2-辐照度-Irradiance-VS-辐射率-Radiance" class="headerlink" title="1.2 辐照度(Irradiance) VS. 辐射率(Radiance)"></a>1.2 辐照度(Irradiance) VS. 辐射率(Radiance)</h2><ul>
 <li>Irradiance：在面积 $dA$ 的总辐射通量</li>
 <li>Radiance：在面积 $dA$ 、方向 $d\omega$ 上的辐射通量</li>
 </ul>

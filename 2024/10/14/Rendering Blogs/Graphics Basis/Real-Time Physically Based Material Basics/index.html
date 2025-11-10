@@ -34,7 +34,7 @@
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Real-Time%20Physically%20Based%20Material%20Basics.assets/image-20211226183133063.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Real-Time%20Physically%20Based%20Material%20Basics.assets/image-20211226183325979.png">
 <meta property="article:published_time" content="2024-10-14T06:08:00.349Z">
-<meta property="article:modified_time" content="2024-10-14T06:13:53.181Z">
+<meta property="article:modified_time" content="2025-03-13T05:59:59.605Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20Basis/Real-Time%20Physically%20Based%20Material%20Basics.assets/image-20211223113437451.png">
@@ -230,7 +230,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          2.7k words
+          2.6k words
         
       </span>
     
@@ -241,7 +241,7 @@
         
         
         
-          23 mins
+          22 mins
         
       </span>
     
@@ -342,12 +342,13 @@
 <h3 id="2-2-NDF-Specular-D"><a href="#2-2-NDF-Specular-D" class="headerlink" title="2.2 NDF (Specular D)"></a>2.2 NDF (Specular D)</h3><p>NDF(Normal Distribution Function) 为微表面法线分布函数，描述微观表面的微表面法线的统计分布。着色时，我们需要得到观察方向能够看到的信息，并且当入射光方向和观察方向的 half vector 与法线重合时，对应信息才能被观察到。 因此我们需要得到微表面法线在此 half vector 方向上的分布情况，即概率。 NDF 输入某点的 roughness(微表面法线集中程度，越集中 roughness 越低)、宏观表面法线以及入射光方向与观察方向的 half vector 作为微表面法线方向，输出分布函数在此微表面法线方向的概率。</p>
 <p><a href="#%5B2%5D">[2]</a> 这篇博客总结得很好，不再赘述</p>
 <h3 id="2-3-Shadow-Masking-Term-Specular-G"><a href="#2-3-Shadow-Masking-Term-Specular-G" class="headerlink" title="2.3 Shadow-Masking Term (Specular G)"></a>2.3 Shadow-Masking Term (Specular G)</h3><p><a href="#%5B3%5D">[3]</a> 这篇博客总结得很好，不再赘述</p>
-<h2 id="3-Diffuse-BRDF"><a href="#3-Diffuse-BRDF" class="headerlink" title="3 Diffuse BRDF"></a>3 Diffuse BRDF</h2><h3 id="3-1-Lambertian-Diffuse-BRDF"><a href="#3-1-Lambertian-Diffuse-BRDF" class="headerlink" title="3.1 Lambertian Diffuse BRDF"></a>3.1 Lambertian Diffuse BRDF</h3><p>Lambertian 模型将漫发射理解为：光交于 diffuse 表面发生折射，在物体表面下进行了充足的散射后离开表面，向每个方向均匀反射，因此 Lambertian Diffuse BRDF 是一个常数。假设该常数为 $\mathcal{C}$，下面根据能量守恒推算出 $\mathcal{C}$。我们先来介绍 Lambert’s Consine Law。</p>
-<h4 id="3-1-1-Lambert’s-Cosine-Law"><a href="#3-1-1-Lambert’s-Cosine-Law" class="headerlink" title="3.1.1 Lambert’s Cosine Law"></a>3.1.1 Lambert’s Cosine Law</h4><p>对于以一定角度入射的 irradiance，物体接受到的 irradiance 与角度余弦成正比，该角度为入射方向与法线的夹角。详情查看 <a href="#%5B4%5D">[4]</a> 的 Irradiance(辐照度)部分。</p>
-<h4 id="3-1-2-能量守恒计算-Lambertian-Diffuse-BRDF"><a href="#3-1-2-能量守恒计算-Lambertian-Diffuse-BRDF" class="headerlink" title="3.1.2 能量守恒计算 Lambertian Diffuse BRDF"></a>3.1.2 能量守恒计算 Lambertian Diffuse BRDF</h4><p>假设空间中任何方向入射的光 radiance 都一样，即 unifom incident lighting。如果物体不吸收光，根据能量守恒，入射 irradiance 等于出射 irradiance。假设入射方向 $\omega_i$ 的入射 irradiance 为 $L_i(\omega_i)$，入射角为 $\theta_i$，那么在 $\omega_o$ 出射方向上的出射 irradiance 为，<br>$$<br>L_o(\omega_o)&#x3D;\int_{\Omega^+} \mathcal{C}\cdot L_i(\omega_i)\cdot \cos\theta_i\space d\omega_i<br>$$<br>由于是 uniform incident lighting，因此入射 irradiance 是常数，上式可变为，<br>$$<br>\begin{align}<br>L_o(\omega_o)&amp;&#x3D;\mathcal{C}\cdot L_i\cdot\int_{\Omega^+}\cos\theta_i\space d\omega_i \<br>&amp;&#x3D; \mathcal{C}\cdot L_i\cdot\int_0^{2\pi}\int_0^{\pi&#x2F;2}\cos\theta_i\sin\theta_i\space d\theta_id\phi_i \<br>&amp;&#x3D; \mathcal{C}\cdot L_i\cdot\pi<br>\end{align}<br>$$<br>由于 Lambertian 模型认为每个方向均匀反射，因此 $L_o$ 是常数，所以有 $L_o&#x3D;L_i$，<strong>Lambertian Diffuse BRDF (无能量损失情况下)为</strong><br>$$<br>\mathcal{C}&#x3D;\frac{1}{\pi}<br>$$</p>
-<h4 id="3-1-3-具有能量损失的-diffuse-材质"><a href="#3-1-3-具有能量损失的-diffuse-材质" class="headerlink" title="3.1.3 具有能量损失的 diffuse 材质"></a>3.1.3 具有能量损失的 diffuse 材质</h4><p>上述为了计算出 diffuse brdf 假定了无能量损失，但大多数材质会有能量吸收，只有部分能量反射出。反射能量的多少即为反射率，听起来像是前述 <a href="#Fresnel">Fresnel</a> 的功能，但并非如此。Fresnel 是定义在无限小且无限光滑的微表面上的，例如前述的反射定律与折射定律的计算过程。而 Lambertian diffuse 材质是针对整个宏表面，在整个宏表面上均匀反射，因此 diffuse 材质的反射率不需要 Fresnel 这样精确的微观尺度。</p>
+<h2 id="3-Diffuse-BRDF"><a href="#3-Diffuse-BRDF" class="headerlink" title="3 Diffuse BRDF"></a>3 Diffuse BRDF</h2><h3 id="3-1-Lambertian-Diffuse-BRDF"><a href="#3-1-Lambertian-Diffuse-BRDF" class="headerlink" title="3.1 Lambertian Diffuse BRDF"></a>3.1 Lambertian Diffuse BRDF</h3><p>Lambertian 模型将漫发射理解为：光交于 diffuse 表面发生折射，在物体表面下进行了充足的散射后离开表面，向每个方向均匀反射，因此 Lambertian Diffuse BRDF 是一个常数。假设该常数为 $\mathcal{C}$，渲染方程如下<br>$$<br>L_o(\omega_o)&#x3D;\int_{\Omega^+} \mathcal{C}\cdot L_i(\omega_i)\cdot \cos\theta_i\space d\omega_i&#x3D;\mathcal{C}\cdot\int_{\Omega^+}  L_i(\omega_i)\cdot \cos\theta_i\space d\omega_i<br>$$</p>
+<h4 id="3-1-1-能量守恒计算-Lambertian-Diffuse-BRDF"><a href="#3-1-1-能量守恒计算-Lambertian-Diffuse-BRDF" class="headerlink" title="3.1.1 能量守恒计算 Lambertian Diffuse BRDF"></a>3.1.1 能量守恒计算 Lambertian Diffuse BRDF</h4><p>给定一些预设条件，可以根据能量守恒推算出 $\mathcal{C}$。</p>
+<p>假设空间中任何方向入射的光 radiance 都一样，即 unifom incident lighting。同时假设物体不吸收光，即入射与出射能量守恒。由于是 uniform incident lighting，因此每个入射方向上的 radiance 是常数，上式可变为，<br>$$<br>\begin{align}<br>L_o(\omega_o)&amp;&#x3D;\int_{\Omega^+} \mathcal{C}\cdot L_i(\omega_i)\cdot \cos\theta_i\space d\omega_i \<br>&amp;&#x3D; \mathcal{C}\cdot L_i\cdot\int_{\Omega^+}\cos\theta_i\space d\omega_i \<br>&amp;&#x3D; \mathcal{C}\cdot L_i\cdot\int_0^{2\pi}\int_0^{\pi&#x2F;2}\cos\theta_i\sin\theta_i\space d\theta_id\phi_i \<br>&amp;&#x3D; \mathcal{C}\cdot L_i\cdot\pi<br>\end{align}<br>$$<br>由于 Lambertian 模型认为每个方向均匀反射，因此 $L_o$ 是常数，所以有 $L_o&#x3D;L_i$，<strong>Lambertian Diffuse BRDF (无能量损失情况下)为</strong><br>$$<br>\mathcal{C}&#x3D;\frac{1}{\pi}<br>$$</p>
+<h4 id="3-1-2-具有能量损失的-diffuse-材质"><a href="#3-1-2-具有能量损失的-diffuse-材质" class="headerlink" title="3.1.2 具有能量损失的 diffuse 材质"></a>3.1.2 具有能量损失的 diffuse 材质</h4><p>上述为了计算出 diffuse brdf 假定了无能量损失，但大多数材质会有能量吸收，只有部分能量反射出。反射能量的多少即为反射率，听起来像是前述 <a href="#Fresnel">Fresnel</a> 的功能，但并非如此。Fresnel 是定义在无限小且无限光滑的微表面上的，例如前述的反射定律与折射定律的计算过程。而 Lambertian diffuse 材质是针对整个宏表面，在整个宏表面上均匀反射，因此 diffuse 材质的反射率不需要 Fresnel 这样精确的微观尺度。</p>
 <p>实际中的 Lambertian diffuse 材质的反射率是通过 albedo 来定义，albedo 一般又定义为 diffuse color。这也符合我们常识中对颜色的认知——颜色即物体吸收了入射光的部分波段而反射出剩余波段的能量。diffuse color 在图形学中视为物体的固有色，即在自然界日光照射下所呈现的颜色。</p>
 <p>因此，<strong>在具有能量损失时，Lambertian Diffuse BRDF</strong> 为<br>$$<br>f_{diffuse}&#x3D;\frac{albedo}{\pi}&#x3D;\frac{C_{diffuse}}{\pi}<br>$$</p>
+<p>漫反射渲染方程写为<br>$$<br>L_o(\omega_o)&#x3D;\frac{\rho}{\pi}\cdot\int_{\Omega^+}  L_i(\omega_i)\cdot \cos\theta_i\space d\omega_i<br>$$</p>
 <h2 id="Reference"><a href="#Reference" class="headerlink" title="Reference"></a>Reference</h2><p><a name="[1]">[1]</a> <a target="_blank" rel="noopener" href="https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel">https://www.scratchapixel.com/lessons/3d-basic-rendering/introduction-to-shading/reflection-refraction-fresnel</a></p>
 <p><a name="[2]">[2]</a> <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/69380665">https://zhuanlan.zhihu.com/p/69380665</a></p>
 <p><a name="[3]">[3]</a> <a target="_blank" rel="noopener" href="https://zhuanlan.zhihu.com/p/81708753">https://zhuanlan.zhihu.com/p/81708753</a></p>

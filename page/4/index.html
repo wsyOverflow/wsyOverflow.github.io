@@ -227,15 +227,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texture%20Space%20Shading/" target="_self">
-          Texture Space Shading
+        <a href="/2024/04/07/Paper%20Notes/Cloud%20Rendering/Surface%20Light%20Cones%20Sharing%20Direct%20Illumination%20for%20Efficient%20Multi-viewer%20Rendering/" target="_self">
+          Surface Light Cones - Sharing Direct Illumination for Efficient Multi-viewer Rendering
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texture%20Space%20Shading/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/04/07/Paper%20Notes/Cloud%20Rendering/Surface%20Light%20Cones%20Sharing%20Direct%20Illumination%20for%20Efficient%20Multi-viewer%20Rendering/" target="_self">
         <div>
-          1 Summary传统的光栅化管线（forward或者deferred）执行于屏幕空间，表面采样率或者像素密度与相机距离、视角相关。同时，GPU光栅化管线的流水线作业使得shading rate完全由分辨率、几何复杂度、帧率控制。而texture space shading(TSS)提出在texture space着色，使得shading rate变得更加可控。同时texture space下的t
+          1 Summary直接光照与视角相关，无法直接缓存，但渲染方程中表面着色点的入射radiance与视角无关。基于此，这篇论文提出了一种基于cone的缓存表面入射radiance的方法——surface light cone。依靠这些cones来表示主要可见光源的投影，允许跨帧甚至同一场景内的多个相机之间复用入射radiance。 作者提出的 surface light cone 方法主要分为两部分
         </div>
       </a>
 
@@ -243,8 +243,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
+            <time datetime="2024-04-07 17:01" pubdate>
+              2024-04-07
             </time>
           </div>
         
@@ -264,7 +264,7 @@
   
     <span>></span>
     
-  <a href="/categories/Paper-Notes/Render-Pipeline/" class="category-chain-item">Render Pipeline</a>
+  <a href="/categories/Paper-Notes/Cloud-Rendering/" class="category-chain-item">Cloud Rendering</a>
   
   
 
@@ -288,15 +288,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texel%20Shading/" target="_self">
-          Texel Shading
+        <a href="/2024/01/07/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations/" target="_self">
+          Projection Transformations
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/Render%20Pipeline/Texel%20Shading/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/01/07/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations/" target="_self">
         <div>
-          1 Summary传统的光栅化管线着色（forward&#x2F;deferred）是基于屏幕空间像素的着色过程，由于光栅化流水线作业的限制，shading rate完全由分辨率、几何复杂度、帧率控制。而本文提出的texel shading管线将着色转化为texture space的任务，并将着色结果cache在texture space，最终的着色通过采样cache完成。 基于texture s
+          1 Summary本文介绍投影变换的计算，包括正交投影、透视投影。最后介绍一些实际应用中的技巧、以及如何运用到 Vulkan 坐标系。  Settings：本文的向量采用列向量，与 glm 库的默认为列主序一致，只需将本文描述的公式整体转置即可转为行向量形式；clip 空间的深度值范围采用与 OpenGL 的 $[-1,1]$ ；相机 forward 方向为 $-z$，up 方向为 $+y$ 。相
         </div>
       </a>
 
@@ -304,8 +304,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
+            <time datetime="2024-01-07 17:53" pubdate>
+              2024-01-07
             </time>
           </div>
         
@@ -320,13 +320,20 @@
     
       <span class="category-chain">
         
-  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
   
   
     <span>></span>
     
-  <a href="/categories/Paper-Notes/Render-Pipeline/" class="category-chain-item">Render Pipeline</a>
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
   
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/Projection/" class="category-chain-item">Projection</a>
+  
+  
+
   
 
   
@@ -349,15 +356,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/" target="_self">
-          Spatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting
+        <a href="/2023/12/15/Paper%20Notes/Ray%20Tracing/Path%20Space%20Filtering/" target="_self">
+          Path Space Filtering
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/Ray%20Tracing/Spatiotemporal%20reservoir%20resampling%20for%20real-time%20ray%20tracing%20with%20dynamic%20direct%20lighting/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/12/15/Paper%20Notes/Ray%20Tracing/Path%20Space%20Filtering/" target="_self">
         <div>
-          1 SummarySpatiotemporal reservoir resampling for real-time ray tracing with dynamic direct lighting [1] 解决 many-lights 下的直接光照的重要性采样问题。 2 Background本论文将光源视为场景中的发光几何体，因此 many-lights 下的渲染方程为：着色点 $y$ 在方向
+          1 Summary本文提出一种在path space对着色点平滑邻近区域的光线路径的算法，提高光线传播的蒙特卡洛追踪过程的效率。提出的平滑算法基于光子映射框架，采样着色点附近的光线路径，并基于几何、材质、可见性等方面的相似性设计平滑权重。 2 Background2.1 Particle Tracingparticle tracing算法从光源出发，进行追踪，与表面相交时在交点放置能量，然后再进行
         </div>
       </a>
 
@@ -365,8 +372,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
+            <time datetime="2023-12-15 13:48" pubdate>
+              2023-12-15
             </time>
           </div>
         
@@ -410,15 +417,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Paper%20Notes/GI/Glossy%20Probe%20Reprojection%20for%20Interactive%20Global%20Illumination/" target="_self">
-          Glossy Probe Reprojection for Interactive Global Illumination
+        <a href="/2023/12/03/Paper%20Notes/Ray%20Tracing/Massively%20Parallel%20Path%20Space%20Filtering/" target="_self">
+          Massively Parallel Path Space Filtering
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/GI/Glossy%20Probe%20Reprojection%20for%20Interactive%20Global%20Illumination/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/12/03/Paper%20Notes/Ray%20Tracing/Massively%20Parallel%20Path%20Space%20Filtering/" target="_self">
         <div>
-          1 SummaryGlossy Probe Reprojection for Interactive Global Illumination   [8] 这篇论文提出了一种基于 light probe 思想的实时全局光照算法，高效解决带有 glossy 路径的全局光照问题。light probe 思想在场景中放置多个 light probe，每个 light probe 包含了该位置的间接光照信息
+          1 Summary2 Background计算 $x$ 点处在 $\omega_r$ 方向上反射的 radiance $L_r$ 有如下四种方式：$$\begin{align}&amp;L_r(x, \omega_r) \&amp;&#x3D; \int_{S^2}L_i(x, \omega)f_r(\omega_r, x, \omega) \cos\theta_x \space d\omega
         </div>
       </a>
 
@@ -426,8 +433,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
+            <time datetime="2023-12-03 14:33" pubdate>
+              2023-12-03
             </time>
           </div>
         
@@ -447,12 +454,73 @@
   
     <span>></span>
     
-  <a href="/categories/Paper-Notes/GI/" class="category-chain-item">GI</a>
+  <a href="/categories/Paper-Notes/Ray-Tracing/" class="category-chain-item">Ray Tracing</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/" target="_self">
+          Basic Radiometry
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/" target="_self">
+        <div>
+          1 辐射度量学基础Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。 相关术语如下表：    物理量 公式 单位    Radiant Energy(辐射能) $Q&#x3D;\frac{hc}{\lambda}$ $J$(焦耳)   Radiant Flux(辐射通量)或Power(功率)
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2023-11-08 20:16" pubdate>
+              2023-11-08
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
   
   
     <span>></span>
     
-  <a href="/categories/Paper-Notes/GI/Light-Probe/" class="category-chain-item">Light Probe</a>
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/Radiometry/" class="category-chain-item">Radiometry</a>
   
   
 
@@ -478,15 +546,83 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/C++/Effective%20Modern%20C++/Chapter%201%EF%BC%9A%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC/" target="_self">
+        <a href="/2023/10/24/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization/" target="_self">
+          Coherent Memory Access and Synchronization
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/24/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization/" target="_self">
+        <div>
+          1 Summary经常看到glsl的type修饰 coherent，系统整理下有关coherent的理解。 2 基础概念2.1 Coherent or Incoherent Memory Access [2]2.1.1 Coherent 内存访问以最简单的例子——单处理器系统来说，对于同一内存区域同时只会有一个线程访问。因此，当一个处理元件对某一内存区域写，然后另一处理元件对同一内存区域读时，总能
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2023-10-24 14:04" pubdate>
+              2023-10-24
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/GPGPU/" class="category-chain-item">GPGPU</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/GPGPU/Synchronization/" class="category-chain-item">Synchronization</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2023/10/22/C++/Entity%20Component%20System/" target="_self">
           
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/C++/Effective%20Modern%20C++/Chapter%201%EF%BC%9A%E7%B1%BB%E5%9E%8B%E6%8E%A8%E5%AF%BC/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/22/C++/Entity%20Component%20System/" target="_self">
         <div>
-          条款一：模板类型推导对于下面一段模板伪代码： 12template&lt;typename T&gt;void f(ParamType param);	// ParamType  ParamType 是模板形参类型，常带有修辞词(const)或引用声明。接下来将要谈论的几种情况：  值传递：ParamType为T 引用传递： 左值引用：ParamType为T&amp;或T const&amp; 万
+          https://www.youtube.com/watch?v=W3aieHjyNvw https://www.youtube.com/watch?v=kwnb9Clh2Is https://www.youtube.com/watch?v=f9q8A-9DvPo Implementation of a component-based entity system in modern C++
         </div>
       </a>
 
@@ -494,8 +630,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
+            <time datetime="2023-10-22 17:32" pubdate>
+              2023-10-22
             </time>
           </div>
         
@@ -511,15 +647,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields/" target="_self">
-          Dynamic Diffuse Global Illumination with Ray-Traced Irradiance Fields
+        <a href="/2023/10/20/Rendering%20Blogs/GPGPU/SlabHash/" target="_self">
+          SlabHash
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/GI/Dynamic%20Diffuse%20Global%20Illumination%20with%20Ray-Traced%20Irradiance%20Fields/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/20/Rendering%20Blogs/GPGPU/SlabHash/" target="_self">
         <div>
-          1 Summary本文提出了一种基于light probe的实时动态diffuse GI(DDGI) 算法。该算法的probe在世界空间下摆放，其数据完全实时生成，不需要预计算，因此支持具有动态光源与动态几何的场景。 DDGI算法主要包含了probe数据更新与probe-based shading：  probe数据更新：为场景中的每个probe生成 $n$ 条probe-update光线，光线与
+          1 源码分析使用到的warp操作：  unsigned __ballot_sync(unsigned mask, predicate)mask中的bit为1 表示对相应id的线程执行warp操作，该线程的predicate非0将返回值对应位置为1 int __ffs (int x)  返回最低非0有效位的位置。x为0，则返回0 T __shfl_sync(unsigned mask, T var,
         </div>
       </a>
 
@@ -527,8 +663,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
+            <time datetime="2023-10-20 15:13" pubdate>
+              2023-10-20
             </time>
           </div>
         
@@ -543,80 +679,12 @@
     
       <span class="category-chain">
         
-  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
   
   
     <span>></span>
     
-  <a href="/categories/Paper-Notes/GI/" class="category-chain-item">GI</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Paper-Notes/GI/Light-Probe/" class="category-chain-item">Light Probe</a>
-  
-  
-
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2023/09/20/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination/" target="_self">
-          Forward Light Cuts A Scalable Approach to Real-Time Global Illumination
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/GI/Forward%20Light%20Cuts%20A%20Scalable%20Approach%20to%20Real-Time%20Global%20Illumination/" target="_self">
-        <div>
-          1 SummaryForward Light Cuts: A Scalable Approach to Real-Time Global Illumination    [1] 这篇论文假设了次级光源为 diffuse 材质的场景，并且不考虑次级光照的阴影，提出了一种能够很好结合 tessellation 和 geometry 阶段的并行特性的高效实时全局光照近似计算算法。该算法基于 many-l
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Paper-Notes/GI/" class="category-chain-item">GI</a>
+  <a href="/categories/Rendering-Blogs/GPGPU/" class="category-chain-item">GPGPU</a>
   
   
 
@@ -640,15 +708,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering/" target="_self">
-          Effect-based Multi-viewer Caching for Cloud-native Rendering
+        <a href="/2023/10/19/Rendering%20Blogs/GPGPU/Non-blocking%20Array-Based%20Stack/" target="_self">
+          
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/Cloud%20Rendering/Effect-based%20Multi-viewer%20Caching%20for%20Cloud-native%20Rendering/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/19/Rendering%20Blogs/GPGPU/Non-blocking%20Array-Based%20Stack/" target="_self">
         <div>
-          1 Summary本文基于object-space&#x2F;texture-space shading管线，提出一种面向multi-viewers的云渲染的cache系统设计。对于effect中与视角无关的部分，通过转换为texture-space下的渲染任务，并且设计effect-based cache系统，使得不同viewers共享同一份effect中间数据。提出的effect-based
+          
         </div>
       </a>
 
@@ -656,8 +724,41 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
+            <time datetime="2023-10-19 18:39" pubdate>
+              2023-10-19
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2023/10/15/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs/" target="_self">
+          DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/15/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs/" target="_self">
+        <div>
+          1 Summary对于GPU的高并发以及SIMT(Single Instruction Multiple Threads)执行模型而言，cache命中率对性能的影响很大。作者提出reorder算法提高对hash table数据访问的局部性，这也是该方向的首次研究与尝试。 2 Basic Design and Implementation本章节介绍了DACHash的基础设计与实现，包括数据结构、ha
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2023-10-15 13:42" pubdate>
+              2023-10-15
             </time>
           </div>
         
@@ -677,7 +778,7 @@
   
     <span>></span>
     
-  <a href="/categories/Paper-Notes/Cloud-Rendering/" class="category-chain-item">Cloud Rendering</a>
+  <a href="/categories/Paper-Notes/GPGPU/" class="category-chain-item">GPGPU</a>
   
   
 
@@ -699,7 +800,7 @@
 
   <nav aria-label="navigation">
     <span class="pagination" id="pagination">
-      <a class="extend prev" rel="prev" href="/page/3/#board"><i class="iconfont icon-arrowleft"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/#board">2</a><a class="page-number" href="/page/3/#board">3</a><span class="page-number current">4</span>
+      <a class="extend prev" rel="prev" href="/page/3/#board"><i class="iconfont icon-arrowleft"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/#board">2</a><a class="page-number" href="/page/3/#board">3</a><span class="page-number current">4</span><a class="page-number" href="/page/5/#board">5</a><a class="page-number" href="/page/6/#board">6</a><a class="extend next" rel="next" href="/page/5/#board"><i class="iconfont icon-arrowright"></i></a>
     </span>
   </nav>
 

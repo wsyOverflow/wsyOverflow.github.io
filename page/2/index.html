@@ -227,15 +227,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Real-Time%20Physically%20Based%20Material%20Basics/" target="_self">
-          PBR Material
+        <a href="/2025/04/05/Rendering%20Blogs/Graphics%20Basis/Raytracing/" target="_self">
+          Raytracing
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Real-Time%20Physically%20Based%20Material%20Basics/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/05/Rendering%20Blogs/Graphics%20Basis/Raytracing/" target="_self">
         <div>
-          1 Summary2 Microfacet BRDF微表面模型认为宏观表面的着色区域上分布着很多微表面，不同材质具有不同的微表面法线分布。如集中的微表面法线分布对应 glossy 材质，反之分散的分布对应 diffuse 材质。有如下表面及入射光、视角，   入射光方向 $\boldsymbol{l}$、观察方向 $\boldsymbol{v}$、宏观表面法向量 $\boldsymbol{n}$、
+          2 Raycastingraycasting 仅会投射两种光线：  从eye出发到场景的光线，得到最近交点，作为着色点 从着色点到光源投射光线，即shadow ray  3 Recursive Whitted Raytrace引入了反射、折射、阴影光路，虽然加入了间接光，但只支持完美镜面反射、折射的递归追踪，其过程如下：  从eye出发到场景的光线，得到最近交点 当交点为镜面时，继续trace镜面
         </div>
       </a>
 
@@ -243,8 +243,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2024-10-14 14:08" pubdate>
-              2024-10-14
+            <time datetime="2025-04-05 15:18" pubdate>
+              2025-04-05
             </time>
           </div>
         
@@ -264,15 +264,8 @@
   
     <span>></span>
     
-  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  <a href="/categories/Rendering-Blogs/Raytracing/" class="category-chain-item">Raytracing</a>
   
-  
-    <span>></span>
-    
-  <a href="/categories/Rendering-Blogs/Graphics/PBR/" class="category-chain-item">PBR</a>
-  
-  
-
   
 
   
@@ -295,15 +288,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2024/08/19/Rendering%20Blogs/GPGPU/Parrallel%20Scan/" target="_self">
-          Parallel Scan
+        <a href="/2025/04/05/Render%20Engine/PBRT/2.%20Monte%20Carlo%20Integration/" target="_self">
+          3.1 Ray-Triangle and Ray-bounding box Intersection
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/08/19/Rendering%20Blogs/GPGPU/Parrallel%20Scan/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/05/Render%20Engine/PBRT/2.%20Monte%20Carlo%20Integration/" target="_self">
         <div>
-          1 Introduction2 2-Phase Parallel Scan使用一种在并行计算中经常出现的算法模式：平衡树。其思想是，在输入数据上构建一棵平衡的二叉树，并通过自根向上和向下的遍历来计算前缀和。一棵有nn个叶子的二叉树有log⁡nlogn层，每一层d∈[0,n)d∈[0,n)有2d2d个节点。如果我们对每个节点执行一次加法操作，那么在一次树的遍历中，我们将执行O(n)O(n)次加法操作
+          1 蒙特卡洛基础假设要求解积分 $\int f(x) \space dx$，往往没有解析解，直接求解困难。蒙特卡洛引入随机化，进而对积分进行估计。选择一个自变量 $X \sim P(x)$，概率密度为 $p(x)$，只要随机变量定义域能够覆盖被积函数定义域，就可以有如下恒等变换：$$\int f(x) \space dx &#x3D; \int \frac{f(x)}{p(x)}\cdot p(x
         </div>
       </a>
 
@@ -311,8 +304,130 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2024-08-19 20:09" pubdate>
-              2024-08-19
+            <time datetime="2025-04-05 14:24" pubdate>
+              2025-04-05
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/PBRT/" class="category-chain-item">PBRT</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/05/Render%20Engine/PBRT/3.1%20Ray-Triangle%20and%20Ray-bounding%20box%20Intersection/" target="_self">
+          3.1 Ray-Triangle and Ray-bounding box Intersection
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/05/Render%20Engine/PBRT/3.1%20Ray-Triangle%20and%20Ray-bounding%20box%20Intersection/" target="_self">
+        <div>
+          1 Preliminary1.1 定义光线光线起点(position) $O$, 方向 $\textbf{d}$ (eye到所着色像素的方向)。由此可得到下面光线方程(Ray equation)，该式定义的是光线上的任一点。$$r(t)&#x3D;O+t\textbf{d}, \quad 0\leq t\leq \infty \label{ray-equation} \tag{1}$$ 1.2 叉
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-05 10:52" pubdate>
+              2025-04-05
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/PBRT/" class="category-chain-item">PBRT</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/01/Rendering%20Blogs/Graphics%20GPU/%E7%A7%BB%E5%8A%A8%E7%AB%AF%20GPU/" target="_self">
+          移动端 TBDR
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/01/Rendering%20Blogs/Graphics%20GPU/%E7%A7%BB%E5%8A%A8%E7%AB%AF%20GPU/" target="_self">
+        <div>
+          1 移动端限制移动端相比于PC，具有很小的 cache、带宽很有限，带宽带来显著的功耗与发热问题。下图是PC采用的立即渲染 (IR) 架构下的图形管线，可以看到管线的多个阶段直接访问显存，这样的带宽开销对于移动端是不现实的。   Fig-1: 立即渲染架构下的图形管线  2 TBR移动端 GPU 架构倾向于最少化直接访问显存，将 framebuffer 划分为很多小块，使得每个小块可以被 SRAM
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-01 17:49" pubdate>
+              2025-04-01
             </time>
           </div>
         
@@ -332,143 +447,7 @@
   
     <span>></span>
     
-  <a href="/categories/Rendering-Blogs/GPGPU/" class="category-chain-item">GPGPU</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Rendering-Blogs/GPGPU/Scan/" class="category-chain-item">Scan</a>
-  
-  
-
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2024/04/12/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination/" target="_self">
-          GI-1.0 - A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/04/12/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination/" target="_self">
-        <div>
-          1 Summary2 GI-1.0对于实时渲染，尽管是在目前的高端显卡上，也只能支持每像素很少的样本数量。本文提出的全局光照管线，通过设计的两级radiance cache，在空间、时间上复用样本的光照信息，如下图所示：  screen cache：将primary path上顶点的入射radiance缓存到直接可见表面上的probe中，具有精细的光照表示。 world cache：缓存了seco
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2024-04-12 14:18" pubdate>
-              2024-04-12
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Paper-Notes/GI/" class="category-chain-item">GI</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Paper-Notes/GI/Light-Probe/" class="category-chain-item">Light Probe</a>
-  
-  
-
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2024/04/07/Paper%20Notes/Cloud%20Rendering/Surface%20Light%20Cones%20Sharing%20Direct%20Illumination%20for%20Efficient%20Multi-viewer%20Rendering/" target="_self">
-          Surface Light Cones - Sharing Direct Illumination for Efficient Multi-viewer Rendering
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/04/07/Paper%20Notes/Cloud%20Rendering/Surface%20Light%20Cones%20Sharing%20Direct%20Illumination%20for%20Efficient%20Multi-viewer%20Rendering/" target="_self">
-        <div>
-          1 Summary直接光照与视角相关，无法直接缓存，但渲染方程中表面着色点的入射radiance与视角无关。基于此，这篇论文提出了一种基于cone的缓存表面入射radiance的方法——surface light cone。依靠这些cones来表示主要可见光源的投影，允许跨帧甚至同一场景内的多个相机之间复用入射radiance。 作者提出的 surface light cone 方法主要分为两部分
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2024-04-07 17:01" pubdate>
-              2024-04-07
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Paper-Notes/Cloud-Rendering/" class="category-chain-item">Cloud Rendering</a>
+  <a href="/categories/Rendering-Blogs/Graphics-GPU/" class="category-chain-item">Graphics GPU</a>
   
   
 
@@ -492,15 +471,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2024/01/07/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations/" target="_self">
-          Projection Transformations
+        <a href="/2025/03/27/Rendering%20Blogs/Graphics%20GPU/Mesh%20Shader/" target="_self">
+          Mesh Shader
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/01/07/Rendering%20Blogs/Graphics%20Basis/Projection%20Transformations/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/27/Rendering%20Blogs/Graphics%20GPU/Mesh%20Shader/" target="_self">
         <div>
-          1 Summary本文介绍投影变换的计算，包括正交投影、透视投影。最后介绍一些实际应用中的技巧、以及如何运用到 Vulkan 坐标系。  Settings：本文的向量采用列向量，与 glm 库的默认为列主序一致，只需将本文描述的公式整体转置即可转为行向量形式；clip 空间的深度值范围采用与 OpenGL 的 $[-1,1]$ ；相机 forward 方向为 $-z$，up 方向为 $+y$ 。相
+          1 传统的 Geometry Stage1.1 Geometry Pipeline在图元送入rasterizer之前，会经过下图所示几何管线，其中包括4种着色器：  vertex shader：变换vertex buffer中的输入数据为适合光栅化的形式，每个 vertex shader 仅能处理单个顶点 hull shader：作用于高阶控制面片 (control patch) 的控制顶点 do
         </div>
       </a>
 
@@ -508,8 +487,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2024-01-07 17:53" pubdate>
-              2024-01-07
+            <time datetime="2025-03-27 23:46" pubdate>
+              2025-03-27
             </time>
           </div>
         
@@ -529,15 +508,8 @@
   
     <span>></span>
     
-  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  <a href="/categories/Rendering-Blogs/Graphics-GPU/" class="category-chain-item">Graphics GPU</a>
   
-  
-    <span>></span>
-    
-  <a href="/categories/Rendering-Blogs/Graphics/Projection/" class="category-chain-item">Projection</a>
-  
-  
-
   
 
   
@@ -560,15 +532,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/12/15/Paper%20Notes/Ray%20Tracing/Path%20Space%20Filtering/" target="_self">
-          Path Space Filtering
+        <a href="/2025/03/27/Render%20Engine/UE5/Nanite/1.%20Introduction/" target="_self">
+          1. Nanite - Introduction
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/12/15/Paper%20Notes/Ray%20Tracing/Path%20Space%20Filtering/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/27/Render%20Engine/UE5/Nanite/1.%20Introduction/" target="_self">
         <div>
-          1 Summary本文提出一种在path space对着色点平滑邻近区域的光线路径的算法，提高光线传播的蒙特卡洛追踪过程的效率。提出的平滑算法基于光子映射框架，采样着色点附近的光线路径，并基于几何、材质、可见性等方面的相似性设计平滑权重。 2 Background2.1 Particle Tracingparticle tracing算法从光源出发，进行追踪，与表面相交时在交点放置能量，然后再进行
+          1 Summarycluster：提高顶点重用 gpu-driven：CPU只需要提交场景变化，而GPU完成遮挡剔除，组织绘制指令，减少CPU提交绘制指令开销以及同步开销 LOD：传统的LOD是根据物体到相机距离切换，容易出现跳变。基于有向无环图的LOD的生成过程以 cluster group 为单位，即模型的一小部分。切换LOD也是以 cluster group 为单位。  先预处理场景几何，切
         </div>
       </a>
 
@@ -576,8 +548,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-12-15 13:48" pubdate>
-              2023-12-15
+            <time datetime="2025-03-27 21:45" pubdate>
+              2025-03-27
             </time>
           </div>
         
@@ -592,13 +564,20 @@
     
       <span class="category-chain">
         
-  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
   
   
     <span>></span>
     
-  <a href="/categories/Paper-Notes/Ray-Tracing/" class="category-chain-item">Ray Tracing</a>
+  <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
   
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/UE5/Nanite/" class="category-chain-item">Nanite</a>
+  
+  
+
   
 
   
@@ -621,15 +600,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/12/03/Paper%20Notes/Ray%20Tracing/Massively%20Parallel%20Path%20Space%20Filtering/" target="_self">
-          Massively Parallel Path Space Filtering
+        <a href="/2025/03/16/Paper%20Notes/Ray%20Tracing/ReSTIR%20GI-%20Path%20Resampling%20for%20Real-Time%20Path%20Tracing/" target="_self">
+          ReSTIR GI- Path Resampling for Real-Time Path Tracing
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/12/03/Paper%20Notes/Ray%20Tracing/Massively%20Parallel%20Path%20Space%20Filtering/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/16/Paper%20Notes/Ray%20Tracing/ReSTIR%20GI-%20Path%20Resampling%20for%20Real-Time%20Path%20Tracing/" target="_self">
         <div>
-          1 Summary2 Background计算 $x$ 点处在 $\omega_r$ 方向上反射的 radiance $L_r$ 有如下四种方式：$$\begin{align}&amp;L_r(x, \omega_r) \&amp;&#x3D; \int_{S^2}L_i(x, \omega)f_r(\omega_r, x, \omega) \cos\theta_x \space d\omega
+          1 Summary本文在 path tracing 框架下，应用 ReSTIR 理论来提高 multi-bounce 全局光照质量。 NEE(next event estimation) Next Event Estimation(NEE)：在path tracing计算全局光照时，对交点进行着色拆分为两部分，直接光照与间接光照。直接光照通过显式采样光源直接计算得到，即 light samplin
         </div>
       </a>
 
@@ -637,8 +616,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-12-03 14:33" pubdate>
-              2023-12-03
+            <time datetime="2025-03-16 20:36" pubdate>
+              2025-03-16
             </time>
           </div>
         
@@ -682,15 +661,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/" target="_self">
-          Basic Radiometry
+        <a href="/2025/03/04/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/" target="_self">
+          3. Lumen - Radiance Cache
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/11/08/Rendering%20Blogs/Graphics%20Basis/Basic%20Radiometry/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/04/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/" target="_self">
         <div>
-          辐射度量学基础Whitted style 光线追踪使用 Blinn-Phong 着色模型，着色效果不真实。因此有提出基于辐射度量学的着色模型，以物理正确的方式进行光照计算。 相关术语   物理量 公式 单位    Radiant Energy(辐射能) $Q&#x3D;\frac{hc}{\lambda}$ $J$(焦耳)   Radiant Flux(辐射通量)或Power(功率) $\Phi&
+          1 概述Lumen 中的 radiance cache 是基于 world probe 实现的，与 DDGI 不同，radiance cache probe 仅用于补充世界空间的 radiance 信息，例如 screen probe、reflection 的光线样本都有可能采样到 radiance cache。 LumenRadianceCache::UpdateRadianceCaches为r
         </div>
       </a>
 
@@ -698,8 +677,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-11-08 20:16" pubdate>
-              2023-11-08
+            <time datetime="2025-03-04 21:54" pubdate>
+              2025-03-04
             </time>
           </div>
         
@@ -714,17 +693,17 @@
     
       <span class="category-chain">
         
-  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
   
   
     <span>></span>
     
-  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
   
   
     <span>></span>
     
-  <a href="/categories/Rendering-Blogs/Graphics/Radiometry/" class="category-chain-item">Radiometry</a>
+  <a href="/categories/Render-Engine/UE5/Lumen/" class="category-chain-item">Lumen</a>
   
   
 
@@ -750,15 +729,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/10/24/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization/" target="_self">
-          Coherent Memory Access and Synchronization
+        <a href="/2025/03/04/Render%20Engine/UE5/Lumen/2.%20Surface%20Cache/" target="_self">
+          2. Lumen - Surface Cache
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/24/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/04/Render%20Engine/UE5/Lumen/2.%20Surface%20Cache/" target="_self">
         <div>
-          1 Summary经常看到glsl的type修饰 coherent，系统整理下有关coherent的理解。 2 基础概念2.1 Coherent or Incoherent Memory Access [2]2.1.1 Coherent 内存访问以最简单的例子——单处理器系统来说，对于同一内存区域同时只会有一个线程访问。因此，当一个处理元件对某一内存区域写，然后另一处理元件对同一内存区域读时，总能
+          1 概述直接光照只需要关注相机看到的部分，而间接光照需要处理次级光线及之后的光照信息，也就是不依赖于相机的全局信息。每帧来计算光线交点信息对于大场景是不现实的，而 surface cache 的作用就是缓存次级表面信息，供光追采样。 surface cache 可以粗略理解为定义在 texture space 上的cache，而texture space描述的是物体表面空间，不随相机而改变。整个场
         </div>
       </a>
 
@@ -766,8 +745,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-10-24 14:04" pubdate>
-              2023-10-24
+            <time datetime="2025-03-04 21:54" pubdate>
+              2025-03-04
             </time>
           </div>
         
@@ -782,17 +761,17 @@
     
       <span class="category-chain">
         
-  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
   
   
     <span>></span>
     
-  <a href="/categories/Rendering-Blogs/GPGPU/" class="category-chain-item">GPGPU</a>
+  <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
   
   
     <span>></span>
     
-  <a href="/categories/Rendering-Blogs/GPGPU/Synchronization/" class="category-chain-item">Synchronization</a>
+  <a href="/categories/Render-Engine/UE5/Lumen/" class="category-chain-item">Lumen</a>
   
   
 
@@ -818,15 +797,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/10/22/C++/Entity%20Component%20System/" target="_self">
-          
+        <a href="/2025/03/04/Render%20Engine/UE5/Lumen/1.%20Introduction/" target="_self">
+          1. Lumen - Introduction
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/22/C++/Entity%20Component%20System/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/04/Render%20Engine/UE5/Lumen/1.%20Introduction/" target="_self">
         <div>
-          https://www.youtube.com/watch?v=W3aieHjyNvw https://www.youtube.com/watch?v=kwnb9Clh2Is https://www.youtube.com/watch?v=f9q8A-9DvPo Implementation of a component-based entity system in modern C++
+          1 Summary本系列是作者基于对 UE5 Lumen 源码以及网上资料的学习，而形成对 Lumen 实现原理的介绍。Lumen 是UE5的实时全局光照解决方案，其中包含了众多技术的工程化，本文先总体介绍 UE5 Lumen 的组成部分，之后再对各组成部分详细描述。 2 Global Illumination老生常谈，全局光照在实时渲染性能的限制下，最多只能达到 1&#x2F;2 spp的光线开
         </div>
       </a>
 
@@ -834,11 +813,46 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-10-22 17:32" pubdate>
-              2023-10-22
+            <time datetime="2025-03-04 21:54" pubdate>
+              2025-03-04
             </time>
           </div>
         
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/UE5/Lumen/" class="category-chain-item">Lumen</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
         
         
       </div>
@@ -849,7 +863,7 @@
 
   <nav aria-label="navigation">
     <span class="pagination" id="pagination">
-      <a class="extend prev" rel="prev" href="/"><i class="iconfont icon-arrowleft"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/#board">3</a><a class="page-number" href="/page/4/#board">4</a><a class="extend next" rel="next" href="/page/3/#board"><i class="iconfont icon-arrowright"></i></a>
+      <a class="extend prev" rel="prev" href="/"><i class="iconfont icon-arrowleft"></i></a><a class="page-number" href="/">1</a><span class="page-number current">2</span><a class="page-number" href="/page/3/#board">3</a><a class="page-number" href="/page/4/#board">4</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/#board">6</a><a class="extend next" rel="next" href="/page/3/#board"><i class="iconfont icon-arrowright"></i></a>
     </span>
   </nav>
 

@@ -227,15 +227,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/10/20/Rendering%20Blogs/GPGPU/SlabHash/" target="_self">
-          SlabHash
+        <a href="/2025/03/04/Render%20Engine/UE5/Mesh%20Drawing%20Pipeline/" target="_self">
+          
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/20/Rendering%20Blogs/GPGPU/SlabHash/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/04/Render%20Engine/UE5/Mesh%20Drawing%20Pipeline/" target="_self">
         <div>
-          1 源码分析使用到的warp操作：  unsigned __ballot_sync(unsigned mask, predicate)mask中的bit为1 表示对相应id的线程执行warp操作，该线程的predicate非0将返回值对应位置为1 int __ffs (int x)  返回最低非0有效位的位置。x为0，则返回0 T __shfl_sync(unsigned mask, T var,
+          
         </div>
       </a>
 
@@ -243,8 +243,461 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-10-20 15:13" pubdate>
-              2023-10-20
+            <time datetime="2025-03-04 21:54" pubdate>
+              2025-03-04
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/12/07/Rendering%20Blogs/Graphics%20Basis/Importance%20Sample%20BRDF/" target="_self">
+          Importance Sample BRDF
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/12/07/Rendering%20Blogs/Graphics%20Basis/Importance%20Sample%20BRDF/" target="_self">
+        <div>
+          1 Summary本文主要介绍微表面模型的 BRDF 的重要性采样过程，即使用重要性采样来计算渲染方程的积分。 2 Background假设如下图所示的反射过程：    Fig 1: 微表面反射图示  有渲染方程$$L_o(P, \boldsymbol{v})&#x3D;L_e(P, \boldsymbol{v})+\int_{\Omega^+}L_i(\boldsymbol{l})f(\bold
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-12-07 15:28" pubdate>
+              2024-12-07
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/PBR/" class="category-chain-item">PBR</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/12/07/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination/" target="_self">
+          Radiance Caching with On-Surface Caches for Real-Time Global Illumination
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/12/07/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination/" target="_self">
+        <div>
+          1 Summary本文提出了在 On-Surface Caches 管线下的两种类型radiance cache，以及基于这两种radiance cache的GI方法。定义在texture space下的radiance cache相较于probe或者hash grid等方案，有更好的时序一致性、直接位于表面之上的避免漏光等优点，以及可以在multi-viewer下共享radiance信息。 两种
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-12-07 14:12" pubdate>
+              2024-12-07
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/Cloud-Rendering/" class="category-chain-item">Cloud Rendering</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/11/28/Paper%20Notes/Render%20Pipeline/Virtual%20Texture/" target="_self">
+          Virtual Texture
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/11/28/Paper%20Notes/Render%20Pipeline/Virtual%20Texture/" target="_self">
+        <div>
+          GPU Pro7
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-11-28 13:58" pubdate>
+              2024-11-28
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Paper-Notes/Render-Pipeline/" class="category-chain-item">Render Pipeline</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/11/24/Rendering%20Blogs/Profile/Structured%20Buffer%20Performance/" target="_self">
+          
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/11/24/Rendering%20Blogs/Profile/Structured%20Buffer%20Performance/" target="_self">
+        <div>
+          1 对齐问题 [1]structured buffer 为在 GPU 上表示除了颜色或4分量之外的数据结构提供了一个非常便利的解决方案，非常适用于如 tile-based deferred shading 等技术。 structured buffer 的内存是紧密排列的（与C++的默认对齐似乎是一样的），例如以下代码会生成步幅20字节的缓冲区 123456struct Foo&#123;    f
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-11-24 14:48" pubdate>
+              2024-11-24
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/11/22/Rendering%20Blogs/Graphics%20GPU/GPU%20Logic/" target="_self">
+          GPU Logic
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/11/22/Rendering%20Blogs/Graphics%20GPU/GPU%20Logic/" target="_self">
+        <div>
+          1 Life of triangle [1]  1.1 GPUs are super parallel work distributors在图形管线执行过程中，存在数据扩展 (data amplification) 的问题，这会带来大量不确定的工作负载。每个 draw call 可能生成不同数量的三角形。裁剪后的顶点数量可能与最初的三角形数量不同。在背面剔除和深度剔除之后，不同的三角形可能生成不同
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-11-22 10:26" pubdate>
+              2024-11-22
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics-GPU/" class="category-chain-item">Graphics GPU</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Disney%20Principled%20BRDF/" target="_self">
+          Disney BRDF
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Disney%20Principled%20BRDF/" target="_self">
+        <div>
+          1 SummaryDisney Principled BRDF 是迪士尼动画工作室在 SIGGRAPH 2012 的 Physically-based shading at Disney [1] 提出。该工作室通过分析 MERL BRDF 材质库，总结出对 microfacet Cook-Torrance BRDF 的各项的观察，如 diffuse、specular D F G等四项。基于观察结论
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-10-14 14:13" pubdate>
+              2024-10-14
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/PBR/" class="category-chain-item">PBR</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Real-Time%20Physically%20Based%20Material%20Basics/" target="_self">
+          PBR Material
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Real-Time%20Physically%20Based%20Material%20Basics/" target="_self">
+        <div>
+          1 Summary2 Microfacet BRDF微表面模型认为宏观表面的着色区域上分布着很多微表面，不同材质具有不同的微表面法线分布。如集中的微表面法线分布对应 glossy 材质，反之分散的分布对应 diffuse 材质。有如下表面及入射光、视角，   入射光方向 $\boldsymbol{l}$、观察方向 $\boldsymbol{v}$、宏观表面法向量 $\boldsymbol{n}$、
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-10-14 14:08" pubdate>
+              2024-10-14
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Rendering-Blogs/Graphics/PBR/" class="category-chain-item">PBR</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2024/08/19/Rendering%20Blogs/GPGPU/Parrallel%20Scan/" target="_self">
+          Parallel Scan
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/08/19/Rendering%20Blogs/GPGPU/Parrallel%20Scan/" target="_self">
+        <div>
+          1 Introduction2 2-Phase Parallel Scan使用一种在并行计算中经常出现的算法模式：平衡树。其思想是，在输入数据上构建一棵平衡的二叉树，并通过自根向上和向下的遍历来计算前缀和。一棵有nn个叶子的二叉树有log⁡nlogn层，每一层d∈[0,n)d∈[0,n)有2d2d个节点。如果我们对每个节点执行一次加法操作，那么在一次树的遍历中，我们将执行O(n)O(n)次加法操作
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2024-08-19 20:09" pubdate>
+              2024-08-19
             </time>
           </div>
         
@@ -267,268 +720,12 @@
   <a href="/categories/Rendering-Blogs/GPGPU/" class="category-chain-item">GPGPU</a>
   
   
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2023/10/19/Rendering%20Blogs/GPGPU/Non-blocking%20Array-Based%20Stack/" target="_self">
-          
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/19/Rendering%20Blogs/GPGPU/Non-blocking%20Array-Based%20Stack/" target="_self">
-        <div>
-          
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2023-10-19 18:39" pubdate>
-              2023-10-19
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2023/10/15/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs/" target="_self">
-          DACHash A Dynamic, Cache-Aware and Concurrent Hash Table on GPUs
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/10/15/Paper%20Notes/GPGPU/DACHash%20A%20Dynamic,%20Cache-Aware%20and%20Concurrent%20Hash%20Table%20on%20GPUs/" target="_self">
-        <div>
-          1 Summary对于GPU的高并发以及SIMT(Single Instruction Multiple Threads)执行模型而言，cache命中率对性能的影响很大。作者提出reorder算法提高对hash table数据访问的局部性，这也是该方向的首次研究与尝试。 2 Basic Design and Implementation本章节介绍了DACHash的基础设计与实现，包括数据结构、ha
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2023-10-15 13:42" pubdate>
-              2023-10-15
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
-  
-  
     <span>></span>
     
-  <a href="/categories/Paper-Notes/GPGPU/" class="category-chain-item">GPGPU</a>
+  <a href="/categories/Rendering-Blogs/GPGPU/Scan/" class="category-chain-item">Scan</a>
   
   
 
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/" target="_self">
-          Compute Shader 基础
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%9F%BA%E7%A1%80/" target="_self">
-        <div>
-          基础概念1. GPU 中的概念1.1 处理器核心的层级概念GPU 具有非常多的处理器核心，在 Nvidia 中称为 Streaming Multiprocessor(SM)，AMD 称为 Compute Unit(CU)，以下使用 SM。在 SM 内部包含最基本的处理单元 lane，lane 可以近似理解为一个线程。SM 进行调度执行任务时，最小单位并不是 lane，而是 Warp(Nvidia
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Vulkan-Basics/" class="category-chain-item">Vulkan Basics</a>
-  
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/" target="_self">
-          Compute Shader 实现 Pyramid Algorithm
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Vulkan%20Basics/Compute%20Shader%20%E5%AE%9E%E7%8E%B0%20Pyramid%20Algorithm/" target="_self">
-        <div>
-          使用 compute shader 生成 mipmap本文是参考 https://github.com/nvpro-samples/vk_compute_mipmaps 的算法复现。 将输入层级记为 $L$，将 $L$ 的 2x2 样本区域生成一个样本则得到 $L+1$ 层级。下面介绍从 $L$ 到 $L+M$ 层级的生成算法，$M\in[1,6]$，算法输入为 $L$ 层级的大小为 $2^M\t
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Vulkan-Basics/" class="category-chain-item">Vulkan Basics</a>
-  
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2023/09/20/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90/" target="_self">
-          Reblur解析
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Rendering%20Blogs/Graphics%20Algorithm/2.%20Reblur%E8%A7%A3%E6%9E%90/" target="_self">
-        <div>
-          1 概要2 调用逻辑文件 Reblur_DiffuseSpecular.hpp，在 nrd::InstanceImpl::Add_ReblurDiffuseSpecular 里创建好所有 render pass 每个 pass 的名字使用宏 PushPass(&quot;PostFix&quot;) 设置，最后得到 pass name &#x3D; DENOISER_NAME - PostFix
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Rendering-Blogs/Graphics-Alogrithm/" class="category-chain-item">Graphics Alogrithm</a>
-  
   
 
   
@@ -551,15 +748,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2023/09/20/Rendering%20Blogs/Graphics%20Algorithm/1.%20Hierarchy%20Ray%20March/" target="_self">
-          Screen Space Ray Reflection
+        <a href="/2024/04/12/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination/" target="_self">
+          GI-1.0 - A Fast Scalable Two-Level Radiance Caching Scheme for Real-Time Global Illumination
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Rendering%20Blogs/Graphics%20Algorithm/1.%20Hierarchy%20Ray%20March/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2024/04/12/Paper%20Notes/GI/GI-1.0%20A%20Fast%20Scalable%20Two-Level%20Radiance%20Caching%20Scheme%20for%20Real-Time%20Global%20Illumination/" target="_self">
         <div>
-          1 Summary本文介绍屏幕空间反射中最重要的一步——基于 hierarchy depth buffer(HZB) 的 ray march算法，主要参考了 [1] 中的实现。 ray march算法的目的是为了根据屏幕空间深度得到光线在屏幕上的交点，相比于世界空间的光追，这是一种开销很低但仅局限于屏幕空间的做法，也就是若光线交于相机看不到的表面，那么屏幕空间ray march则无法得到求交结果。
+          1 Summary2 GI-1.0对于实时渲染，尽管是在目前的高端显卡上，也只能支持每像素很少的样本数量。本文提出的全局光照管线，通过设计的两级radiance cache，在空间、时间上复用样本的光照信息，如下图所示：  screen cache：将primary path上顶点的入射radiance缓存到直接可见表面上的probe中，具有精细的光照表示。 world cache：缓存了seco
         </div>
       </a>
 
@@ -567,177 +764,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Rendering-Blogs/Graphics-Alogrithm/" class="category-chain-item">Graphics Alogrithm</a>
-  
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2023/09/20/Render%20Engine/Scene%20Graph%20and%20Draw%20Call%20Grouping%20Strategy/" target="_self">
-          Scene Graph and Draw Call Grouping Strategy
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Render%20Engine/Scene%20Graph%20and%20Draw%20Call%20Grouping%20Strategy/" target="_self">
-        <div>
-          Summary本文介绍了表示场景的 Scene Graph ，以及场景加载过程。基于 Scene Graph 组织 draw call 的策略。 Scene GraphScene Graph 表示场景中物体的层级结构，是场景物体的组织形式。在本渲染器中，Scene Graph 主要由表示层级结构的基类UltraNode与组织场景物体的基类SceneObject组成。 1. 场景层级结构UltraN
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
-  
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2023/09/20/Render%20Engine/Vulkan%20Render%20Design/" target="_self">
-          Vulkan Render Design
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Render%20Engine/Vulkan%20Render%20Design/" target="_self">
-        <div>
-          Summary本文介绍了本渲染器的 Vulkan 管线管理策略以及 Shader 管理策略。 Vulkan 管线管理策略Vulkan 包含三种管线 graphics、compute、raytracing，管线只是一种状态描述，描述了整个工作流中涉及的状态。人们经常提 OpenGL 是个状态机，OpenGL 的状态是由根据使用者的 API 调用来进行切换的，属于 high-level 的 API 设
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
-  
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2023/09/20/Paper%20Notes/GI/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes/" target="_self">
-          Real-Time Global Illumination using Precomputed Light Field Probes
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2023/09/20/Paper%20Notes/GI/Real-Time%20Global%20Illumination%20using%20Precomputed%20Light%20Field%20Probes/" target="_self">
-        <div>
-          1 Summary这篇论文提出了一种基于light probe的全局光照方法，其中包括预计算过程中probe数据的生成方式、基于probe数据的光线追踪算法以及实时渲染中的着色过程。 在预计算过程中，对场景的每个离散采样点生成以该位置为中心的probe数据，每个probe包含了球面分布的两组数据：probe中心收到每一方向上最近点的radiance、该最近点的法线以及该最近距离(radial di
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2023-09-20 23:21" pubdate>
-              2023-09-20
+            <time datetime="2024-04-12 14:18" pubdate>
+              2024-04-12
             </time>
           </div>
         
@@ -786,7 +814,7 @@
 
   <nav aria-label="navigation">
     <span class="pagination" id="pagination">
-      <a class="extend prev" rel="prev" href="/page/2/#board"><i class="iconfont icon-arrowleft"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/#board">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/#board">4</a><a class="extend next" rel="next" href="/page/4/#board"><i class="iconfont icon-arrowright"></i></a>
+      <a class="extend prev" rel="prev" href="/page/2/#board"><i class="iconfont icon-arrowleft"></i></a><a class="page-number" href="/">1</a><a class="page-number" href="/page/2/#board">2</a><span class="page-number current">3</span><a class="page-number" href="/page/4/#board">4</a><a class="page-number" href="/page/5/#board">5</a><a class="page-number" href="/page/6/#board">6</a><a class="extend next" rel="next" href="/page/4/#board"><i class="iconfont icon-arrowright"></i></a>
     </span>
   </nav>
 

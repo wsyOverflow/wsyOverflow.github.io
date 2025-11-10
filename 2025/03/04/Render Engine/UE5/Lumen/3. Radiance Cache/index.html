@@ -30,7 +30,7 @@
 <meta property="og:image" content="http://example.com/images/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/image-20250214104350600.png">
 <meta property="og:image" content="http://example.com/images/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/v2-10d3d573f85b66583a847b8653946aa8_r.jpg">
 <meta property="article:published_time" content="2025-03-04T13:54:00.076Z">
-<meta property="article:modified_time" content="2025-03-06T13:13:20.126Z">
+<meta property="article:modified_time" content="2025-04-19T14:32:48.357Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="http://example.com/images/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/image-20250214104203219.png">
@@ -226,7 +226,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          3.9k words
+          4.7k words
         
       </span>
     
@@ -237,7 +237,7 @@
         
         
         
-          33 mins
+          40 mins
         
       </span>
     
@@ -394,7 +394,7 @@
 <li>当前probe被使用到，还未被分配数据索引 (ProbeUsedMarker &#x3D;&#x3D; USED_PROBE_INDEX)。从 ProbeFreeList 中分配一个ProbeIndex</li>
 <li>否则表示，当前probe为重用probe，已有数据索引，即 ProbeIndex&#x3D;ProbeUsedMarker</li>
 <li>每帧trace更新probe的开销是有限的，因此需要评估probe的更新优先级以及trace开销<ul>
-<li>更新优先级，基于 LastTracedFrameIndex, LastUsedFrameIndex, ClipmapIndex 来划分PriorityBucketIndex，bucket越靠前优先级越高。<code>GetPriorityBucketIndex</code><ul>
+<li>更新优先级，基于 LastTracedFrameIndex, LastUsedFrameIndex, ClipmapIn&#x3D;ex 来划分PriorityBucketIndex，bucket越靠前优先级越高。<code>GetPriorityBucketIndex</code><ul>
 <li>如果probe从未trace过，返回 bucket 0</li>
 <li>否则，根据“clipmap层级越高重要性越低”、”经历越久帧未trace，优先级越高“来确定 UpdateImportance，最终得到 BucketIndex</li>
 </ul>
@@ -529,8 +529,86 @@
 <ul>
 <li>一个group负责一个trace tile</li>
 <li>获取trace tile基本信息，TraceTileIndex -&gt; ProbeTraceIndex -&gt; TraceData -&gt; ProbeIndex，得到 FRadianceCache</li>
+<li>TraceResolution &lt; RadianceCache.ProbeResolution：执行 upsample 逻辑</li>
+<li>否则执行 downsample 逻辑</li>
 </ul>
-<h2 id="3-5-采样"><a href="#3-5-采样" class="headerlink" title="3.5 采样"></a>3.5 采样</h2><p>Radiance Cache 本质上只提供稍远距离的radiance信息（可能是 radiance cache 分辨率不足提供近光会有比较明显的artifact吧，例如反射过于模糊？），这个由 probeTMin 控制。反射、screen probe 会首先尝试 trace probeTMin 范围内，如果没有近距离交点且被radiance cache覆盖，则会采样 radiance cache 得到 radiance 信息。shader 函数 <code>SampleRadianceCacheAndApply</code> 提供了采样radiance cache的功能。</p>
+<p>这里要resolve的数据包括，Radiance、HitDistance：</p>
+<ul>
+<li>upsample：一条trace光线对应一个cache区域 (UpsampleFactor x UpsampleFactor)<ul>
+<li>在该区域所有texel都填充上trace光线的 Radiance、HitDistance。</li>
+</ul>
+</li>
+<li>downsample：一个cache texel对应的一块 trace 光线区域 (DownsampleFactor x DownsampleFactor)<ul>
+<li>Radiance：trace区域取平均</li>
+<li>HitDistance：trace区域取最小。保守的遮挡判断，可避免漏光。</li>
+</ul>
+</li>
+</ul>
+<h3 id="3-4-3-Spatial-Filter"><a href="#3-4-3-Spatial-Filter" class="headerlink" title="3.4.3 Spatial Filter"></a>3.4.3 Spatial Filter</h3><p><code>FilterProbeRadianceWithGatherCS</code> 一个pass执行 3x3x3 区域的filter，每个probe算上自身共需访问 6+1 &#x3D; 7 个probe。如果每个轴向一个pass，即共3个pass，那么每个probe共需要访问9个probe。每个 work group 负责一个 trace probe。</p>
+<p>filter 权重设计：</p>
+<ul>
+<li><p>OcclusionWeight 默认为 1.0：需要测试probe能否看到neighbor，如果被遮挡则丢弃neighbor样本，以减少漏光。主要策略是 neighbor &lt;-&gt;probe 作为光线方向，查询该方向上的 neighbor visibility 信息，如果 visibility(光线hit distance) 小于 neighbor 与 probe 之间的距离，表示二者之间有遮挡。</p>
+<ul>
+<li><p>probe -&gt; neighbor 遮挡测试</p>
+<ul>
+<li>光线是从 probeTMin 后开始追踪，probeTMin 内没有visibility信息，因此需要对neighbor测试点做偏移</li>
+</ul>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> OcclusionTestOffset = <span class="hljs-number">2.0f</span> * <span class="hljs-built_in">GetRadianceProbeTMin</span>(ClipmapIndex);<br>float3 NeighborOcclusionTestPosition = NeighborWorldPosition + OcclusionTestOffset * WorldConeDirection;<br></code></pre></td></tr></table></figure>
+
+<ul>
+<li>测试方向：<code>float3 ToNeighborOcclusionPosition = NeighborOcclusionTestPosition - ProbeWorldCenter;</code><br>查询该方向上的 neighbor visibility <code>ProbeDepthForNeighborOcclusionPosition</code></li>
+<li>如果 <code>ProbeDepthForNeighborOcclusionPosition &lt; length(ToNeighborOcclusionPosition)</code>，表示中间有遮挡，OcclusionWeight &#x3D; 0.0</li>
+</ul>
+</li>
+<li><p>neighbor -&gt; probe 遮挡测试</p>
+<ul>
+<li>过程类似，这里偏移 probe 位置以及查询probe visibility。</li>
+</ul>
+</li>
+</ul>
+</li>
+<li><p>AngleWeight：基于 probe 到 neighbor hit 的方向与当前texel方向的夹角设计的权重，夹角越大权重越低，SpatialFilterMaxRadianceHitAngle 默认为 10</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-type">float</span> AngleWeight = <span class="hljs-number">1.0f</span> - <span class="hljs-built_in">saturate</span>(NeighborAngle / SpatialFilterMaxRadianceHitAngle);<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>最终权重设计为 weight &#x3D; OcclusionWeight * AngleWeight;</p>
+</li>
+</ul>
+<p>在过程中，还会将 hitDistance 与 neighbor 之间取最小，为了避免漏光。</p>
+<h3 id="3-4-4-Irradiance"><a href="#3-4-4-Irradiance" class="headerlink" title="3.4.4 Irradiance"></a>3.4.4 Irradiance</h3><p><code>CalculateProbeIrradianceCS</code></p>
+<p>这里的 irradiance 就是积分probe球面radiance。irradiance分辨率可能低于 radiance 分辨率，这里还涉及到 irradiance 分辨率与 radiance 分辨率之间的对齐。</p>
+<p>遍历球面，使用 irradiance direction 与 radiance direction 之间 cos，执行积分，就是 diffuse 渲染方程的积分。irradiance direction 对应的是查询时的着色点法线方向。</p>
+<h3 id="3-4-5-Visibility"><a href="#3-4-5-Visibility" class="headerlink" title="3.4.5 Visibility"></a>3.4.5 Visibility</h3><p><code>PrepareProbeOcclusionCS</code></p>
+<p>准备 visibility 的一阶矩、二阶矩，thread group 大小为 <code>OcclusionProbeResolution</code>，默认为 <code>GLumenIrradianceFieldProbeOcclusionResolution (16)</code></p>
+<h2 id="3-5-采样"><a href="#3-5-采样" class="headerlink" title="3.5 采样"></a>3.5 采样</h2><p>world probe 提供两种采样，一种是采样 radiance，用于 ScreenProbe&#x2F;Reflection&#x2F;Volume，这是默认的Lumen流程；一种是采样 irradiance，用于 IrradianceFieldGather。</p>
+<h3 id="3-5-1-radiance"><a href="#3-5-1-radiance" class="headerlink" title="3.5.1 radiance"></a>3.5.1 radiance</h3><p>Radiance Cache 本质上只提供稍远距离的radiance信息（可能是 radiance cache 分辨率不足提供近光会有比较明显的artifact吧，例如反射过于模糊？），这个由 probeTMin 控制。反射、screen probe 会首先尝试 trace probeTMin 范围内，如果没有近距离交点且被radiance cache覆盖，则会采样 radiance cache 得到 radiance 信息。shader 函数 <code>SampleRadianceCacheAndApply</code> 提供了采样radiance cache的功能。</p>
+<h3 id="3-5-2-irradiance"><a href="#3-5-2-irradiance" class="headerlink" title="3.5.2 irradiance"></a>3.5.2 irradiance</h3><p>由 shader 函数 <code>SampleIrradianceCacheInterpolated</code> 实现，基本上就是 DDGI 里的流程。输入着色点 WorldPosition、WorldNormal、BiaseOffset、ClipmapIndex</p>
+<p>由着色点世界坐标可以得到包括着色点的周围 8 个相邻probe，遍历周围8个相邻probe，NeighborIndex(0 -&gt; 7)：</p>
+<ol>
+<li><p>当前遍历neighbor probe在clipmap空间下的坐标 ProbeCoord</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br></pre></td><td class="code"><pre><code class="hljs c++">uint3 ProbeOffset = <span class="hljs-built_in">uint3</span>((NeighborIndex &amp; <span class="hljs-number">4</span>) &gt;&gt; <span class="hljs-number">2</span>, (NeighborIndex &amp; <span class="hljs-number">2</span>) &gt;&gt; <span class="hljs-number">1</span>, NeighborIndex &amp; <span class="hljs-number">1</span>);<br>uint3 ProbeCoord = CornerProbeCoord + ProbeOffset;<br></code></pre></td></tr></table></figure>
+</li>
+<li><p>变换 ProbeCoord 得到 ProbeWorldPosition 以及从 IndirectionTexture 中得到 ProbeIndex</p>
+</li>
+<li><p>Visibility 权重计算，基于VSM</p>
+<ul>
+<li><p>采样前对着色点做一个normal方向与view方向上的偏移 <code>SamplePosition = WorldSpacePosition + BiasOffset</code></p>
+</li>
+<li><p>采样 <code>-SamplePositionToProbe</code> 方向上的 visibility <code>MeanAndMeanSq</code></p>
+</li>
+<li><p>采样点深度为 <code>DistanceToProbe = length(SamplePositionToProbe)</code>，计算<br>$$<br>P(X&gt;t)\leq\frac{\sigma^2}{\sigma^2+(t-\mu)^2}<br>$$<br>$t &lt; \mu$ 时视为无遮挡，$t &gt;\mu$ 时，计算遮挡概率。当 DistanceToProbe &gt; MeanAndMeanSq.x 时，计算 visibility 权重。</p>
+</li>
+</ul>
+</li>
+<li><p>平面距离权重</p>
+</li>
+<li><p>三线性插值权重</p>
+</li>
+</ol>
+<p>上面过程中 BiaseOffset 定义如下，其目的是避免自遮挡。将probe类比为点光源，其visibility类比为shadow map，因此如普通shadow mapping算法一样，在normal方向加个偏移避免距离表面过近的自遮挡，在view方向加个偏移避免grazing角度下的自遮挡。</p>
+<figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-comment">// Bias 默认都为 20</span><br><span class="hljs-comment">// ProbeOcclusionNormalBias: Bias along the normal to reduce self-occlusion artifacts from Probe Occlusion</span><br><span class="hljs-comment">// ProbeOcclusionViewBias: Bias along the view direction to reduce self-occlusion artifacts from Probe Occlusion</span><br>float3 BiasOffset = Material.WorldNormal * ProbeOcclusionNormalBias + V * ProbeOcclusionViewBias;<br></code></pre></td></tr></table></figure>
+
+
+
 <h1 id="References"><a href="#References" class="headerlink" title="References"></a>References</h1><p><a name="[1]">[1]</a> Christopher C. Tanner, Christopher J. Migdal, and Michael T. Jones. 1998. The clipmap: a virtual mipmap. In Proceedings of the 25th annual conference on Computer graphics and interactive techniques (SIGGRAPH ‘98). Association for Computing Machinery, New York, NY, USA, 151–158.</p>
 
                 
@@ -557,6 +635,13 @@
     
   <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
   
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/UE5/Lumen/" class="category-chain-item">Lumen</a>
+  
+  
+
   
 
   
@@ -621,6 +706,12 @@
                 <div class="post-prevnext my-3">
                   <article class="post-prev col-6">
                     
+                    
+                      <a href="/2025/03/16/Paper%20Notes/Ray%20Tracing/ReSTIR%20GI-%20Path%20Resampling%20for%20Real-Time%20Path%20Tracing/" title="ReSTIR GI- Path Resampling for Real-Time Path Tracing">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">ReSTIR GI- Path Resampling for Real-Time Path Tracing</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
                     
                   </article>
                   <article class="post-next col-6">

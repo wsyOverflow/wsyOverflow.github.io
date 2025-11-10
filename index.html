@@ -227,15 +227,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2025/03/04/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/" target="_self">
-          3. Lumen - Radiance Cache
+        <a href="/2025/05/24/Rendering%20Blogs/Profile/Device%20Removed/" target="_self">
+          Device Removed
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/04/Render%20Engine/UE5/Lumen/3.%20Radiance%20Cache/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/05/24/Rendering%20Blogs/Profile/Device%20Removed/" target="_self">
         <div>
-          1 概述Lumen 中的 radiance cache 是基于 world probe 实现的，与 DDGI 不同，radiance cache probe 仅用于补充世界空间的 radiance 信息，例如 screen probe、reflection 的光线样本都有可能采样到 radiance cache。 LumenRadianceCache::UpdateRadianceCaches为r
+          1 SummaryDevice Removed 发生于 GPU crash、TDR (Timeout Detection and Recovery)，本文介绍一些用于debug这种情况的工具。 2 Device RemovedGPU crash 的发生过程：  OS 调度buffer至GPU执行 执行期间 GPU 发生故障（或者buffer处理超时） GPU调度器无响应持续X秒（默认2秒） OS
         </div>
       </a>
 
@@ -243,447 +243,8 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2025-03-04 21:54" pubdate>
-              2025-03-04
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
-  
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2025/03/04/Render%20Engine/UE5/Lumen/2.%20Surface%20Cache/" target="_self">
-          2. Lumen - Surface Cache
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/04/Render%20Engine/UE5/Lumen/2.%20Surface%20Cache/" target="_self">
-        <div>
-          1 概述直接光照只需要关注相机看到的部分，而间接光照需要处理次级光线及之后的光照信息，也就是不依赖于相机的全局信息。每帧来计算光线交点信息对于大场景是不现实的，而 surface cache 的作用就是缓存次级表面信息，供光追采样。 surface cache 可以粗略理解为定义在 texture space 上的cache，而texture space描述的是物体表面空间，不随相机而改变。整个场
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2025-03-04 21:54" pubdate>
-              2025-03-04
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
-  
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2025/03/04/Render%20Engine/UE5/Lumen/1.%20Introdution/" target="_self">
-          1. Lumen - Introduction
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/04/Render%20Engine/UE5/Lumen/1.%20Introdution/" target="_self">
-        <div>
-          1 Summary本系列是作者基于对 UE5 Lumen 源码以及网上资料的学习，而形成对 Lumen 实现原理的介绍。Lumen 是UE5的实时全局光照解决方案，其中包含了众多技术的工程化，本文先总体介绍 UE5 Lumen 的组成部分，之后再对各组成部分详细描述。 2 Global Illumination老生常谈，全局光照在实时渲染性能的限制下，最多只能达到 1&#x2F;2 spp的光线开
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2025-03-04 21:54" pubdate>
-              2025-03-04
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
-  
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2025/03/04/Render%20Engine/UE5/Mesh%20Drawing%20Pipeline/" target="_self">
-          
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2025/03/04/Render%20Engine/UE5/Mesh%20Drawing%20Pipeline/" target="_self">
-        <div>
-          
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2025-03-04 21:54" pubdate>
-              2025-03-04
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2024/12/07/Rendering%20Blogs/Graphics%20Basis/Importance%20Sample%20BRDF/" target="_self">
-          Importance Sample BRDF
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/12/07/Rendering%20Blogs/Graphics%20Basis/Importance%20Sample%20BRDF/" target="_self">
-        <div>
-          1 Summary本文主要介绍微表面模型的 BRDF 的重要性采样过程，即使用重要性采样来计算渲染方程的积分。 2 Background假设如下图所示的反射过程：    Fig 1: 微表面反射图示  有渲染方程$$L_o(P, \boldsymbol{v})&#x3D;L_e(P, \boldsymbol{v})+\int_{\Omega^+}L_i(\boldsymbol{l})f(\bold
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2024-12-07 15:28" pubdate>
-              2024-12-07
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Rendering-Blogs/Graphics/PBR/" class="category-chain-item">PBR</a>
-  
-  
-
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2024/12/07/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination/" target="_self">
-          Radiance Caching with On-Surface Caches for Real-Time Global Illumination
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/12/07/Paper%20Notes/Cloud%20Rendering/Radiance%20Caching%20with%20On-Surface%20Caches%20for%20Real-Time%20Global%20Illumination/" target="_self">
-        <div>
-          1 Summary本文提出了在 On-Surface Caches 管线下的两种类型radiance cache，以及基于这两种radiance cache的GI方法。定义在texture space下的radiance cache相较于probe或者hash grid等方案，有更好的时序一致性、直接位于表面之上的避免漏光等优点，以及可以在multi-viewer下共享radiance信息。 两种
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2024-12-07 14:12" pubdate>
-              2024-12-07
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Paper-Notes/Cloud-Rendering/" class="category-chain-item">Cloud Rendering</a>
-  
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2024/11/28/Paper%20Notes/Render%20Pipeline/Virtual%20Texture/" target="_self">
-          Virtual Texture
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/11/28/Paper%20Notes/Render%20Pipeline/Virtual%20Texture/" target="_self">
-        <div>
-          GPU Pro7
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2024-11-28 13:58" pubdate>
-              2024-11-28
-            </time>
-          </div>
-        
-        
-          <div class="post-meta mr-3 d-flex align-items-center">
-            <i class="iconfont icon-category"></i>
-            
-
-<span class="category-chains">
-  
-  
-    
-      <span class="category-chain">
-        
-  <a href="/categories/Paper-Notes/" class="category-chain-item">Paper Notes</a>
-  
-  
-    <span>></span>
-    
-  <a href="/categories/Paper-Notes/Render-Pipeline/" class="category-chain-item">Render Pipeline</a>
-  
-  
-
-  
-
-      </span>
-    
-  
-</span>
-
-          </div>
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2024/11/24/Rendering%20Blogs/Profile/Structured%20Buffer%20Performance/" target="_self">
-          
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/11/24/Rendering%20Blogs/Profile/Structured%20Buffer%20Performance/" target="_self">
-        <div>
-          1 对齐问题 [1]structured buffer 为在 GPU 上表示除了颜色或4分量之外的数据结构提供了一个非常便利的解决方案，非常适用于如 tile-based deferred shading 等技术。 structured buffer 的内存是紧密排列的（与C++的默认对齐似乎是一样的），例如以下代码会生成步幅20字节的缓冲区 123456struct Foo&#123;    f
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2024-11-24 14:48" pubdate>
-              2024-11-24
-            </time>
-          </div>
-        
-        
-        
-      </div>
-    </article>
-  </div>
-
-  <div class="row mx-auto index-card">
-    
-    
-    <article class="col-12 col-md-12 mx-auto index-info">
-      <h2 class="index-header">
-        
-        <a href="/2024/11/22/Rendering%20Blogs/Profile/GPU%20Logic/" target="_self">
-          GPU Logic
-        </a>
-      </h2>
-
-      
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/11/22/Rendering%20Blogs/Profile/GPU%20Logic/" target="_self">
-        <div>
-          1 Life of triangle [1]  1.1 GPUs are super parallel work distributors为什么需要这些复杂性？在图形渲染中，我们需要处理数据扩展 (data amplification) 的问题，这会带来大量不确定的工作负载。每个 draw call 可能生成不同数量的三角形。裁剪后的顶点数量可能与最初的三角形数量不同。在背面剔除和深度剔除之后，不
-        </div>
-      </a>
-
-      <div class="index-btm post-metas">
-        
-          <div class="post-meta mr-3">
-            <i class="iconfont icon-date"></i>
-            <time datetime="2024-11-22 10:26" pubdate>
-              2024-11-22
+            <time datetime="2025-05-24 20:30" pubdate>
+              2025-05-24
             </time>
           </div>
         
@@ -727,15 +288,15 @@
     <article class="col-12 col-md-12 mx-auto index-info">
       <h2 class="index-header">
         
-        <a href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Disney%20Principled%20BRDF/" target="_self">
-          Disney BRDF
+        <a href="/2025/04/29/Rendering%20Blogs/Graphics%20Algorithm/3.%20FSR/" target="_self">
+          
         </a>
       </h2>
 
       
-      <a class="index-excerpt index-excerpt__noimg" href="/2024/10/14/Rendering%20Blogs/Graphics%20Basis/Disney%20Principled%20BRDF/" target="_self">
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/29/Rendering%20Blogs/Graphics%20Algorithm/3.%20FSR/" target="_self">
         <div>
-          1 SummaryDisney Principled BRDF 是迪士尼动画工作室在 SIGGRAPH 2012 的 Physically-based shading at Disney [1] 提出。该工作室通过分析 MERL BRDF 材质库，总结出对 microfacet Cook-Torrance BRDF 的各项的观察，如 diffuse、specular D F G等四项。基于观察结论
+          https://zhuanlan.zhihu.com/p/401030221
         </div>
       </a>
 
@@ -743,8 +304,41 @@
         
           <div class="post-meta mr-3">
             <i class="iconfont icon-date"></i>
-            <time datetime="2024-10-14 14:13" pubdate>
-              2024-10-14
+            <time datetime="2025-04-29 14:02" pubdate>
+              2025-04-29
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/27/Render%20Engine/UE5/Lumen/4.%20Screen%20Probe/" target="_self">
+          3. Lumen - Radiance Cache
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/27/Render%20Engine/UE5/Lumen/4.%20Screen%20Probe/" target="_self">
+        <div>
+          1 概述2 宏观逻辑3 实现screen probe 的更新逻辑入口 RenderLumenScreenProbeGather 3.1 放置3.2 重要性采样重要性采样的入口函数 GenerateImportanceSamplingRays， 3.2.1 PDF 估计基于上一帧radiance的重要性采样 3.2.2 采样光线样本具体实现在 shader ScreenProbeGenerateRa
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-27 15:23" pubdate>
+              2025-04-27
             </time>
           </div>
         
@@ -759,20 +353,335 @@
     
       <span class="category-chain">
         
-  <a href="/categories/Rendering-Blogs/" class="category-chain-item">Rendering Blogs</a>
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
   
   
     <span>></span>
     
-  <a href="/categories/Rendering-Blogs/Graphics/" class="category-chain-item">Graphics</a>
+  <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
   
   
     <span>></span>
     
-  <a href="/categories/Rendering-Blogs/Graphics/PBR/" class="category-chain-item">PBR</a>
+  <a href="/categories/Render-Engine/UE5/Lumen/" class="category-chain-item">Lumen</a>
   
   
 
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/21/Rendering%20Blogs/Graphics%20Basis/Spherical%20Harmonic/" target="_self">
+          
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/21/Rendering%20Blogs/Graphics%20Basis/Spherical%20Harmonic/" target="_self">
+        <div>
+          [1] 球谐光照——球谐函数
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-21 15:41" pubdate>
+              2025-04-21
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/20/Rendering%20Blogs/PBR/%E6%9D%90%E8%B4%A8/" target="_self">
+          
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/20/Rendering%20Blogs/PBR/%E6%9D%90%E8%B4%A8/" target="_self">
+        <div>
+          
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-20 22:39" pubdate>
+              2025-04-20
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/19/Render%20Engine/Mobile/%E7%A7%BB%E5%8A%A8%E7%AB%AFGI/" target="_self">
+          移动端GI
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/19/Render%20Engine/Mobile/%E7%A7%BB%E5%8A%A8%E7%AB%AFGI/" target="_self">
+        <div>
+          1 Summary2 Background基于传播的实时全局光照方法 2.1 Reflective Shadow Map(RSM) [4]RSM 是借鉴 shadow map 的思想来近似计算间接光照的算法，这里的间接光照只考虑一次弹射情况。RSM 的核心思想是把直接光照照亮的像素作为次级光源(虚拟点光源)，这些虚拟点光源区域收到直接光照，经过弹射到达着色点则得到一次反射的间接光。这里 RSM 再
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-19 23:50" pubdate>
+              2025-04-19
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/Mobile/" class="category-chain-item">Mobile</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/09/Render%20Engine/Large%20World%20Technique/Shadow/" target="_self">
+          
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/09/Render%20Engine/Large%20World%20Technique/Shadow/" target="_self">
+        <div>
+          1 Virtual Shadow Map [1][1] 游戏引擎随笔 0x22：UE5 Virtual Shadow Maps 源码解析之 Nanite 篇 [2] UE5中VirtualShadowMap的简易实现原理（一） [3] UE5 Virtual Shadow Map之SMRT算法 [4] UE5中VirtualShadowMap的简易实现原理（二）
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-09 14:24" pubdate>
+              2025-04-09
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/08/Render%20Engine/Large%20World%20Technique/%E5%9C%BA%E6%99%AF/" target="_self">
+          
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/08/Render%20Engine/Large%20World%20Technique/%E5%9C%BA%E6%99%AF/" target="_self">
+        <div>
+          1 NaniteHLOD: https://zhuanlan.zhihu.com/p/400736239 https://docs.google.com/document/d/1OPYDNpwGFpkBorZ3GCpL9Z4ck-6qRRD1tzelUQ0UvFc/edit?tab=t.0#heading=h.kcsddwbeir6p nanite 性能优化 https://zhuanlan.zh
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-08 23:58" pubdate>
+              2025-04-08
+            </time>
+          </div>
+        
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/08/Render%20Engine/Large%20World%20Technique/Virtual%20Texture/" target="_self">
+          Virtual Texture
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/08/Render%20Engine/Large%20World%20Technique/Virtual%20Texture/" target="_self">
+        <div>
+          1 Summary2 Virtual Texture 技术2.1 Software Virtual Texture [2]2.1.1 地址映射如何把 virtual page 中的 virtual address 转换为 physical page 中的 physical address？  virtual address 是描述 virtual texture space 的，比如将材质贴图放到
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-08 21:47" pubdate>
+              2025-04-08
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/Large-World/" class="category-chain-item">Large World</a>
+  
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+          </div>
+        
+        
+      </div>
+    </article>
+  </div>
+
+  <div class="row mx-auto index-card">
+    
+    
+    <article class="col-12 col-md-12 mx-auto index-info">
+      <h2 class="index-header">
+        
+        <a href="/2025/04/05/Render%20Engine/PBRT/13%20Light%20Transport/" target="_self">
+          13 Light Transport
+        </a>
+      </h2>
+
+      
+      <a class="index-excerpt index-excerpt__noimg" href="/2025/04/05/Render%20Engine/PBRT/13%20Light%20Transport/" target="_self">
+        <div>
+          1 Light Transport EquationLTE (Light Transport Equation) 的核心原理是能量守恒。  宏观尺度上：功率守恒。物体出射功率 $\Phi_o$ 与入射功率 $\Phi_i$ 的差值等于其发射功率 $\Phi_e$ 与吸收功率 $\Phi_a$ 的差值$$\Phi_o - \Phi_i &#x3D; \Phi_e - \Phi_a$$  微观尺度上：
+        </div>
+      </a>
+
+      <div class="index-btm post-metas">
+        
+          <div class="post-meta mr-3">
+            <i class="iconfont icon-date"></i>
+            <time datetime="2025-04-05 19:49" pubdate>
+              2025-04-05
+            </time>
+          </div>
+        
+        
+          <div class="post-meta mr-3 d-flex align-items-center">
+            <i class="iconfont icon-category"></i>
+            
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/PBRT/" class="category-chain-item">PBRT</a>
+  
   
 
   
@@ -793,7 +702,7 @@
 
   <nav aria-label="navigation">
     <span class="pagination" id="pagination">
-      <span class="page-number current">1</span><a class="page-number" href="/page/2/#board">2</a><a class="page-number" href="/page/3/#board">3</a><a class="page-number" href="/page/4/#board">4</a><a class="extend next" rel="next" href="/page/2/#board"><i class="iconfont icon-arrowright"></i></a>
+      <span class="page-number current">1</span><a class="page-number" href="/page/2/#board">2</a><a class="page-number" href="/page/3/#board">3</a><span class="space">&hellip;</span><a class="page-number" href="/page/6/#board">6</a><a class="extend next" rel="next" href="/page/2/#board"><i class="iconfont icon-arrowright"></i></a>
     </span>
   </nav>
 

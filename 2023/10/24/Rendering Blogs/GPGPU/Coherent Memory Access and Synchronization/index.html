@@ -40,7 +40,7 @@
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024203351835.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access%20and%20Synchronization.assets/image-20231024203440579.png">
 <meta property="article:published_time" content="2023-10-24T06:04:13.780Z">
-<meta property="article:modified_time" content="2025-03-07T02:25:49.084Z">
+<meta property="article:modified_time" content="2025-04-01T14:34:20.146Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
 <meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/GPGPU/Coherent%20Memory%20Access.assets/image-20231024143243815.png">
@@ -335,7 +335,7 @@
 <li><p>threads block：对应work group</p>
 <p>运行在一个SM上，因此 threads block 内的线程可以有轻量级地同步与数据交换。</p>
 <ul>
-<li>同一个SM共享一个L2 cache，因此可以仅使用shared memory，要快于buffer、image这类global memory。</li>
+<li>同一个SM共享一个L1 cache，因此可以仅使用shared memory，要快于buffer、image这类global memory。</li>
 <li>同一个warp线程也可以使用warp内的数据同步（更快）</li>
 </ul>
 <p>当一个threads block被调度到某一个SM上时，就只会在这个SM上执行 (中间可能会有hide latency导致的换入换出)，否则L2 cache就无法保证是同一个。</p>

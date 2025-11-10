@@ -1,0 +1,847 @@
+
+
+<!DOCTYPE html>
+<html lang="en" data-default-color-scheme=auto>
+
+
+
+<head>
+  <meta charset="UTF-8">
+
+  <link rel="apple-touch-icon" sizes="76x76" href="/img/fluid.png">
+  <link rel="icon" href="/img/fluid.png">
+  
+
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, shrink-to-fit=no">
+  <meta http-equiv="x-ua-compatible" content="ie=edge">
+  
+  <meta name="theme-color" content="#2f4154">
+  <meta name="author" content="John Doe">
+  <meta name="keywords" content="Render Engine, UE5">
+  
+    <meta name="description" content="1 Summarycluster：提高顶点重用 gpu-driven：CPU只需要提交场景变化，而GPU完成遮挡剔除，组织绘制指令，减少CPU提交绘制指令开销以及同步开销 LOD：传统的LOD是根据物体到相机距离切换，容易出现跳变。基于有向无环图的LOD的生成过程以 cluster group 为单位，即模型的一小部分。切换LOD也是以 cluster group 为单位。  先预处理场景几何，切">
+<meta property="og:type" content="article">
+<meta property="og:title" content="1. Nanite - Introduction">
+<meta property="og:url" content="http://example.com/2025/03/27/Render%20Engine/UE5/Nanite/1.%20Introduction/index.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="1 Summarycluster：提高顶点重用 gpu-driven：CPU只需要提交场景变化，而GPU完成遮挡剔除，组织绘制指令，减少CPU提交绘制指令开销以及同步开销 LOD：传统的LOD是根据物体到相机距离切换，容易出现跳变。基于有向无环图的LOD的生成过程以 cluster group 为单位，即模型的一小部分。切换LOD也是以 cluster group 为单位。  先预处理场景几何，切">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Render%20Engine/UE5/Nanite/1.%20Introduction.assets/image-20250409234055136.png">
+<meta property="og:image" content="http://example.com/images/Render%20Engine/UE5/Nanite/1.%20Introduction.assets/image-20250410002203834.png">
+<meta property="og:image" content="http://example.com/images/Render%20Engine/UE5/Nanite/1.%20Introduction.assets/image-20250410100346141.png">
+<meta property="og:image" content="http://example.com/images/Render%20Engine/UE5/Nanite/1.%20Introduction.assets/image-20250328144352795.png">
+<meta property="og:image" content="http://example.com/images/Render%20Engine/UE5/Nanite/1.%20Introduction.assets/image-20250410103210223.png">
+<meta property="article:published_time" content="2025-03-27T13:45:58.426Z">
+<meta property="article:modified_time" content="2025-04-27T06:36:12.311Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary_large_image">
+<meta name="twitter:image" content="http://example.com/images/Render%20Engine/UE5/Nanite/1.%20Introduction.assets/image-20250409234055136.png">
+  
+  
+  
+  <title>1. Nanite - Introduction - Hexo</title>
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/twitter-bootstrap/4.6.1/css/bootstrap.min.css" />
+
+
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/github-markdown-css/4.0.0/github-markdown.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/hint.css/2.7.0/hint.min.css" />
+
+  <link  rel="stylesheet" href="https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.css" />
+
+
+
+<!-- 主题依赖的图标库，不要自行修改 -->
+<!-- Do not modify the link that theme dependent icons -->
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1749284_5i9bdhy70f8.css">
+
+
+
+<link rel="stylesheet" href="//at.alicdn.com/t/c/font_1736178_k526ubmyhba.css">
+
+
+<link  rel="stylesheet" href="/css/main.css" />
+
+
+  <link id="highlight-css" rel="stylesheet" href="/css/highlight.css" />
+  
+    <link id="highlight-css-dark" rel="stylesheet" href="/css/highlight-dark.css" />
+  
+
+
+
+
+  <script id="fluid-configs">
+    var Fluid = window.Fluid || {};
+    Fluid.ctx = Object.assign({}, Fluid.ctx)
+    var CONFIG = {"hostname":"example.com","root":"/","version":"1.9.8","typing":{"enable":true,"typeSpeed":70,"cursorChar":"_","loop":false,"scope":[]},"anchorjs":{"enable":true,"element":"h1,h2,h3,h4,h5,h6","placement":"left","visible":"hover","icon":""},"progressbar":{"enable":true,"height_px":3,"color":"#29d","options":{"showSpinner":false,"trickleSpeed":100}},"code_language":{"enable":true,"default":"TEXT"},"copy_btn":true,"image_caption":{"enable":true},"image_zoom":{"enable":true,"img_url_replace":["",""]},"toc":{"enable":true,"placement":"right","headingSelector":"h1,h2,h3,h4,h5,h6","collapseDepth":0},"lazyload":{"enable":true,"loading_img":"/img/loading.gif","onlypost":false,"offset_factor":2},"web_analytics":{"enable":false,"follow_dnt":true,"baidu":null,"google":{"measurement_id":null},"tencent":{"sid":null,"cid":null},"leancloud":{"app_id":null,"app_key":null,"server_url":null,"path":"window.location.pathname","ignore_local":false},"umami":{"src":null,"website_id":null,"domains":null,"start_time":"2024-01-01T00:00:00.000Z","token":null,"api_server":null}},"search_path":"/local-search.xml","include_content_in_search":true};
+
+    if (CONFIG.web_analytics.follow_dnt) {
+      var dntVal = navigator.doNotTrack || window.doNotTrack || navigator.msDoNotTrack;
+      Fluid.ctx.dnt = dntVal && (dntVal.startsWith('1') || dntVal.startsWith('yes') || dntVal.startsWith('on'));
+    }
+  </script>
+  <script  src="/js/utils.js" ></script>
+  <script  src="/js/color-schema.js" ></script>
+  
+
+
+  
+<meta name="generator" content="Hexo 7.3.0"></head>
+
+
+<body>
+  
+
+  <header>
+    
+
+<div class="header-inner" style="height: 70vh;">
+  <nav id="navbar" class="navbar fixed-top  navbar-expand-lg navbar-dark scrolling-navbar">
+  <div class="container">
+    <a class="navbar-brand" href="/">
+      <strong>Fluid</strong>
+    </a>
+
+    <button id="navbar-toggler-btn" class="navbar-toggler" type="button" data-toggle="collapse"
+            data-target="#navbarSupportedContent"
+            aria-controls="navbarSupportedContent" aria-expanded="false" aria-label="Toggle navigation">
+      <div class="animated-icon"><span></span><span></span><span></span></div>
+    </button>
+
+    <!-- Collapsible content -->
+    <div class="collapse navbar-collapse" id="navbarSupportedContent">
+      <ul class="navbar-nav ml-auto text-center">
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/" target="_self">
+                <i class="iconfont icon-home-fill"></i>
+                <span>Home</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/archives/" target="_self">
+                <i class="iconfont icon-archive-fill"></i>
+                <span>Archives</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/categories/" target="_self">
+                <i class="iconfont icon-category-fill"></i>
+                <span>Categories</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/tags/" target="_self">
+                <i class="iconfont icon-tags-fill"></i>
+                <span>Tags</span>
+              </a>
+            </li>
+          
+        
+          
+          
+          
+          
+            <li class="nav-item">
+              <a class="nav-link" href="/about/" target="_self">
+                <i class="iconfont icon-user-fill"></i>
+                <span>About</span>
+              </a>
+            </li>
+          
+        
+        
+          <li class="nav-item" id="search-btn">
+            <a class="nav-link" target="_self" href="javascript:;" data-toggle="modal" data-target="#modalSearch" aria-label="Search">
+              <i class="iconfont icon-search"></i>
+            </a>
+          </li>
+          
+        
+        
+          <li class="nav-item" id="color-toggle-btn">
+            <a class="nav-link" target="_self" href="javascript:;" aria-label="Color Toggle">
+              <i class="iconfont icon-dark" id="color-toggle-icon"></i>
+            </a>
+          </li>
+        
+      </ul>
+    </div>
+  </div>
+</nav>
+
+  
+
+<div id="banner" class="banner" parallax=true
+     style="background: url('/img/default.png') no-repeat center center; background-size: cover;">
+  <div class="full-bg-img">
+    <div class="mask flex-center" style="background-color: rgba(0, 0, 0, 0.3)">
+      <div class="banner-text text-center fade-in-up">
+        <div class="h2">
+          
+            <span id="subtitle" data-typed-text="1. Nanite - Introduction"></span>
+          
+        </div>
+
+        
+          
+  <div class="mt-3">
+    
+    
+      <span class="post-meta">
+        <i class="iconfont icon-date-fill" aria-hidden="true"></i>
+        <time datetime="2025-03-27 21:45" pubdate>
+          March 27, 2025 pm
+        </time>
+      </span>
+    
+  </div>
+
+  <div class="mt-1">
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-chart"></i>
+        
+          2.8k words
+        
+      </span>
+    
+
+    
+      <span class="post-meta mr-2">
+        <i class="iconfont icon-clock-fill"></i>
+        
+        
+        
+          24 mins
+        
+      </span>
+    
+
+    
+    
+  </div>
+
+
+        
+      </div>
+
+      
+    </div>
+  </div>
+</div>
+
+</div>
+
+  </header>
+
+  <main>
+    
+      
+
+<div class="container-fluid nopadding-x">
+  <div class="row nomargin-x">
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+
+    </div>
+
+    <div class="col-lg-8 nopadding-x-md">
+      <div class="container nopadding-x-md" id="board-ctn">
+        <div id="board">
+          <article class="post-content mx-auto">
+            <h1 id="seo-header">1. Nanite - Introduction</h1>
+            
+            
+              <div class="markdown-body">
+                
+                <h1 id="1-Summary"><a href="#1-Summary" class="headerlink" title="1 Summary"></a>1 Summary</h1><p>cluster：提高顶点重用</p>
+<p>gpu-driven：CPU只需要提交场景变化，而GPU完成遮挡剔除，组织绘制指令，减少CPU提交绘制指令开销以及同步开销</p>
+<p>LOD：传统的LOD是根据物体到相机距离切换，容易出现跳变。基于有向无环图的LOD的生成过程以 cluster group 为单位，即模型的一小部分。切换LOD也是以 cluster group 为单位。</p>
+<ul>
+<li>先预处理场景几何，切分为cluster单位。</li>
+<li>再将一定数量的相邻cluster合并为cluster group</li>
+<li>对 cluster group 简化，生成高LOD的cluster。简化过程需要锁边界，保证简化后，cluster group之间不会出现空隙。</li>
+</ul>
+<h1 id="除"><a href="#除" class="headerlink" title="除"></a>除</h1><h2 id="2-1-视锥剔除"><a href="#2-1-视锥剔除" class="headerlink" title="2.1 视锥剔除"></a>2.1 视锥剔除</h2><p>判断物体的包围盒与视锥体的关系。将物体包围盒投影到NDC空间，判断是否与视锥有交集</p>
+<h2 id="2-2-遮挡剔除"><a href="#2-2-遮挡剔除" class="headerlink" title="2.2 遮挡剔除"></a>2.2 遮挡剔除</h2><p>用于剔除被更近的不透明物体遮挡的物体。对物体的遮挡剔除同样使用其包围盒，投影到NDC空间，通过查询 depth buffer 判断是否被遮挡。</p>
+<p>物体的包围盒投影到NDC空间，会形成一个区域，如果对区域内每个像素进行深度测试，会比较费。常见做法是，depth buffer 生成 HZB，高层级存储低层级对应4个像素中最远的深度。同时，基于包围盒投影的区域来选择要查询的层级，包围盒在该层级会投影为一个点。此时选择比较投影点bilinear 区域的4个像素，这样就能保守地包括住整个包围盒。</p>
+<h1 id="3-LOD"><a href="#3-LOD" class="headerlink" title="3 LOD"></a>3 LOD</h1><h2 id="3-1-基于-DAG-的-LOD-选择"><a href="#3-1-基于-DAG-的-LOD-选择" class="headerlink" title="3.1 基于 DAG 的 LOD 选择"></a>3.1 基于 DAG 的 LOD 选择</h2><p>给定相机位置和参数，如何对某个可见实例对应的网格进行 LOD 选择 ，以选出合适的三角形簇进行渲染 ？</p>
+<ol>
+<li>要保证模型上不会有空隙、不会有重叠<ul>
+<li>不出现重叠：本质上是要求DAG从叶节点到根节点的每条路径上至多有一个节点被选中。只要叶节点向上的路径，误差是单调不减。</li>
+<li>不出现空隙：本质上是要求DAG从叶节点到根节点的每条路径上至少有一个节点选中。令叶节点误差为0，根节点误差为无穷，一定会选中一个节点</li>
+</ul>
+</li>
+<li>在满足最大误差阈值条件下，尽可能选择高层次LOD<ul>
+<li>使用简化误差作为LOD误差，同时根据cluster的包围球在屏幕上的投影，估计最大屏幕误差</li>
+<li>既满足误差阈值又要尽可能高层次LOD，即其parent不满足误差要求，而其自身满足误差要求的cluster<br><code>self_error &lt;= threshold &amp;&amp; parent_error &gt; threshold</code></li>
+</ul>
+</li>
+<li>算法性能要求，要能在GPU上并行地判断每个 cluster 是否被选中<ul>
+<li>在cluster中同时记录parent的误差与包围球，这样各个cluster之间就可以并行评估<br>一个cluster的所有parent的误差与包围球都应该一样，因此只需要记录一个。这是在生成DAG时保证的</li>
+</ul>
+</li>
+</ol>
+<img src="/images/Render Engine/UE5/Nanite/1. Introduction.assets/image-20250409234055136.png" srcset="/img/loading.gif" lazyload alt="image-20250409234055136" style="zoom:50%;">
+
+<p>在生成LOD时需要为每个cluster维护：</p>
+<ul>
+<li>LOD 误差：叶节点为0；LOD 包围球：对于叶节点而言，LOD包围球就是真实包围球，而父节点的LOD包围球是子节点的并集</li>
+<li>真实包围球：用于cluster的遮挡剔除。父节点的包围球与LOD包围球是两个东西，LOD包围球比真实包围球大很多</li>
+<li>parent LOD 包围球</li>
+<li>parent LOD误差：｛组内所有child cluster的lod误差，简化引入的误差｝中的最大值</li>
+</ul>
+<h2 id="3-2-LOD-生成"><a href="#3-2-LOD-生成" class="headerlink" title="3.2 LOD 生成"></a>3.2 LOD 生成</h2><h3 id="3-2-1-cluster-生成"><a href="#3-2-1-cluster-生成" class="headerlink" title="3.2.1 cluster 生成"></a>3.2.1 cluster 生成</h3><p>cluster 生成其实是对mesh中的三角形进行聚类，划分 N 个三角形为一个cluster，但为了最大化顶点重用，需要考虑到三角形之间的邻接关系。主要做法是，采用图思想，图的顶点表示一个三角形，边表示三角形之间的邻接关系。划分cluster过程就是对图划分子图过程，目标是 cluster的所有三角形尽可能的相邻。具体做法如下：</p>
+<ol>
+<li>构建mesh的图结构。</li>
+</ol>
+<h2 id="3-3-基于层次细节的虚拟几何"><a href="#3-3-基于层次细节的虚拟几何" class="headerlink" title="3.3 基于层次细节的虚拟几何"></a>3.3 基于层次细节的虚拟几何</h2><p>虽然虚拟几何与虚拟纹理很相似，但需要特别注意以下不同之处：</p>
+<ul>
+<li>虚拟几何在加载、卸载几何数据时，需要确保几何数据是完整的，即不会导致模型出现空缺。<br>对于基于DAG的虚拟几何，则需要保证GPU上存在的一定是DAG的有效子图，即包含根节点的上层子图</li>
+<li>几何是不固定大小的，如何组织几何数据？<ul>
+<li>如果以 cluster group 为单位，会导致page空间浪费。cluster group的cluster数量不固定，只是最多32个</li>
+<li>以cluster为单位，将cluster group划分为多个连续子组，这样可以将一个cluster group存到不同的页中</li>
+</ul>
+</li>
+</ul>
+<p>会分配几个不参与加载、卸载的常驻页，用来存放根节点cluster以及更多顶部节点cluster。</p>
+<img src="/images/Render Engine/UE5/Nanite/1. Introduction.assets/image-20250410002203834.png" srcset="/img/loading.gif" lazyload alt="image-20250410002203834" style="zoom:50%;">
+
+<h3 id="3-3-1-页分配"><a href="#3-3-1-页分配" class="headerlink" title="3.3.1 页分配"></a>3.3.1 页分配</h3><h4 id="3-3-1-1-cluster-排序"><a href="#3-3-1-1-cluster-排序" class="headerlink" title="3.3.1.1 cluster 排序"></a>3.3.1.1 cluster 排序</h4><p>为了能够提高页内数据的空间局部性，需要对生成的cluster group（应该指层级选择到的）进行排序：</p>
+<ul>
+<li>LOD为第一优先级：从高到低</li>
+<li>莫顿码为第二优先级：cluster group包围盒中心生成的莫顿码。空间邻近的cluster group在页内也相邻</li>
+</ul>
+<p>此外，cluster group内的cluster使用其包围盒中心生成的莫顿码进行排序，空间邻近的cluster在页内也相邻</p>
+<h4 id="3-3-1-2-页分配算法"><a href="#3-3-1-2-页分配算法" class="headerlink" title="3.3.1.2 页分配算法"></a>3.3.1.2 页分配算法</h4><h1 id="4-层级加速结构"><a href="#4-层级加速结构" class="headerlink" title="4 层级加速结构"></a>4 层级加速结构</h1><p>当模型较大时，对 DAG 中的每个cluster都进行判断开销很高。而大场景渲染中，大部分模型都距相机较远，这种情况下，DAG中的大部分cluster都过于精细。</p>
+<p>对每个cluster的 LOD 判断仅仅依赖其自身的误差和其parent的误差，因此我们可以使用cluster的局部数据构建BVH。</p>
+<h2 id="4-1-BVH-叶节点"><a href="#4-1-BVH-叶节点" class="headerlink" title="4.1 BVH 叶节点"></a>4.1 BVH 叶节点</h2><p>BVH叶节点：使用group part作为叶节点。</p>
+<ul>
+<li>由于一个cluster group共享parent数据，理论上BVH叶节点可以是cluster group。然而为了页分配，前面将cluster group切分为了更小单元，因此BVH使用group part作为叶节点。这里层级不区分LOD</li>
+</ul>
+<h2 id="4-2-BVH-存储的数据"><a href="#4-2-BVH-存储的数据" class="headerlink" title="4.2 BVH 存储的数据"></a>4.2 BVH 存储的数据</h2><p>BVH 需要存储的数据：</p>
+<ul>
+<li>parent的 LOD 误差和parent的 LOD 包围球。<br>建立 BVH 的目标是要剔除太过精细的 cluster，即其parent误差已经满足误差阈值</li>
+<li>叶节点表示的group part包围盒<br>用于视锥剔除与遮挡剔除</li>
+<li>page request<br>某个叶节点通过LOD选择时，其几何数据可能未被加载到 GPU 上，因此需要向 CPU 请求对应的几何数据。叶节点应请求其所在cluster group的所有页，这些被请求页的信息也要存储在叶节点中。</li>
+</ul>
+<h2 id="4-3-BVH-结构"><a href="#4-3-BVH-结构" class="headerlink" title="4.3 BVH 结构"></a>4.3 BVH 结构</h2><p>BVH 结构：使用数组表示的四叉 BVH</p>
+<ul>
+<li>数组的每个元素为层次节点（Hierarchy_Node），其分为叶节点和非叶节点，两种节点采用相同的数据结构。<ul>
+<li>叶节点代表一个三角形簇组切片，通过叶节点能够访问到其对应的组切片中包含的三角形簇的实际数据</li>
+<li>非叶节点则包含其子节点在层次结构缓冲中的索引，由于采用的是四叉 BVH，其子节点数目不超过 4</li>
+</ul>
+</li>
+<li>对每个 LOD 级别建立一棵 BVH，而后以每个 LOD 级别的 BVH 的根节点作为叶节点，建立一棵能够索引所有 LOD 级别的 BVH<ul>
+<li>单个LOD的BVH构建<ol>
+<li>每个 group part 作为一个叶节点</li>
+<li>按照叶节点包围盒，使用轴排序分割算法，均匀分为4份，这样递归构建</li>
+</ol>
+</li>
+<li>包含所有LOD的BVH构建<ul>
+<li>各级LOD根节点的包围盒基本相同，因此这里将LOD BVH均匀分为四份，这样递归构建</li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+<img src="/images/Render Engine/UE5/Nanite/1. Introduction.assets/image-20250410100346141.png" srcset="/img/loading.gif" lazyload alt="image-20250410100346141" style="zoom: 33%;">
+
+
+
+<h1 id="5-多层次剔除"><a href="#5-多层次剔除" class="headerlink" title="5 多层次剔除"></a>5 多层次剔除</h1><p>instance culling，hierarchy culling，cluster culling</p>
+<h2 id="4-1-Instance-Culling"><a href="#4-1-Instance-Culling" class="headerlink" title="4.1 Instance Culling"></a>4.1 Instance Culling</h2><p>instance buffer 包含了每个 instance 相关信息，使用 instance id 索引，具体数据有：mesh_id, material_id, 以及一些变换</p>
+<p>实例剔除使用compute shader实现，一个线程负责一个实例，使用模型包围盒加上实例变换执行：</p>
+<ol>
+<li>执行视锥剔除</li>
+<li>如果视锥剔除通过，再执行遮挡剔除</li>
+</ol>
+<p>如果过程中，实例被剔除，则加入 occluded instance queue；如果剔除都通过，实例ID加入待处理层次节点队列</p>
+<h2 id="4-2-层次结构剔除"><a href="#4-2-层次结构剔除" class="headerlink" title="4.2 层次结构剔除"></a>4.2 层次结构剔除</h2><p>先在层次加速结构中执行视锥剔除、遮挡剔除以及<strong>剔除过于精细的cluster</strong>。下面是层次加速结构，本质上是两级加速结构，最外层是每个 LOD 层级BVH树组成的节点，内层每个LOD层级的BVH树的叶节点是连续clusters（cluster group的一部分）。整个加速结构使用包围盒管理。</p>
+<img src="/images/Render Engine/UE5/Nanite/1. Introduction.assets/image-20250328144352795.png" srcset="/img/loading.gif" lazyload alt="image-20250328144352795" style="zoom: 33%;">
+
+<p>剔除过程包括：</p>
+<ul>
+<li>对层次节点的包围盒执行视锥剔除</li>
+<li>若视锥剔除通过，再执行 LOD 剔除，剔除掉过于精细的cluster，即 parent &lt; threshold时，子节点可以全部剔除</li>
+<li>LOD剔除通过，再执行遮挡剔除</li>
+</ul>
+<p>剔除通过的层次节点如果不是叶节点，则需要加入待处理队列，等待再次处理；若为叶节点，如果还未加载，则向叶节点写入page request，如果已加载则将叶节点的cluster数组加入待处理cluster队列。</p>
+<p>剔除未通过的层次节点加入被遮挡待处理层次节点</p>
+<h2 id="4-3-cluster-剔除"><a href="#4-3-cluster-剔除" class="headerlink" title="4.3 cluster 剔除"></a>4.3 cluster 剔除</h2><p>对前面过程生成的待处理cluster队列中的每个cluster执行：</p>
+<ul>
+<li>视锥剔除</li>
+<li>遮挡剔除</li>
+</ul>
+<p>剔除都通过放入可见cluster队列；否则放入被遮挡待处理cluster队列中</p>
+<h2 id="4-4-细节层级剔除"><a href="#4-4-细节层级剔除" class="headerlink" title="4.4 细节层级剔除"></a>4.4 细节层级剔除</h2><p>在进行 LOD 选择时，需要对 LOD 误差投影到屏幕上的最大投影误差进行估计，并根据投影误差与阈值误差的关系来决定是否满足误差要求。</p>
+<h3 id="4-4-1-投影误差计算"><a href="#4-4-1-投影误差计算" class="headerlink" title="4.4.1 投影误差计算"></a>4.4.1 投影误差计算</h3><h2 id="5-5-双阶段剔除"><a href="#5-5-双阶段剔除" class="headerlink" title="5.5 双阶段剔除"></a>5.5 双阶段剔除</h2><p>遮挡剔除使用深度缓存，而遮挡剔除发生在光栅化之前。在许多遮挡剔除算法中，会使用上一帧depth buffer，但由于相机&#x2F;物体的移动，在上一帧中被遮挡的物体在当前帧未必会被遮挡，因此会造成一定的绘制错误。这里使用双阶段遮挡剔除：</p>
+<ul>
+<li>主剔除阶段：<ul>
+<li>使用上一帧HZB、上一帧的相机与实例变换，通过剔除可以得到在上一帧可见cluster与被遮挡物体。</li>
+<li>使用当前帧相机与实例变换对可见cluster光栅化得到当前帧部分 depth buffer</li>
+</ul>
+</li>
+<li>补充剔除阶段：<ul>
+<li>使用当前帧的部分 HZB与当前帧相机&#x2F;实例变换，对主剔除阶段中记录的被遮挡实例、层次节点、cluster，使用当前帧HZB执行遮挡剔除。这样便得到了在上一帧中不可见，但在当前帧中可见的三角形簇。</li>
+</ul>
+</li>
+<li>注意：<ul>
+<li>在主剔除阶段的多层次剔除模块中，视锥剔除和 LOD 剔除正常进行，且遮挡剔除只有在上述两种剔除通过后才进行。</li>
+<li>而在补充剔除阶段的多层次剔除模块中，由于只处理在上一帧中被遮挡的实例和三角形簇，因此无需再对它们进行视锥剔除和 LOD 剔除，只进行遮挡剔除即可。</li>
+</ul>
+</li>
+</ul>
+<img src="/images/Render Engine/UE5/Nanite/1. Introduction.assets/image-20250410103210223.png" srcset="/img/loading.gif" lazyload alt="image-20250410103210223" style="zoom: 67%;">
+
+                
+              </div>
+            
+            <hr/>
+            <div>
+              <div class="post-metas my-3">
+  
+    <div class="post-meta mr-3 d-flex align-items-center">
+      <i class="iconfont icon-category"></i>
+      
+
+<span class="category-chains">
+  
+  
+    
+      <span class="category-chain">
+        
+  <a href="/categories/Render-Engine/" class="category-chain-item">Render Engine</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/UE5/" class="category-chain-item">UE5</a>
+  
+  
+    <span>></span>
+    
+  <a href="/categories/Render-Engine/UE5/Nanite/" class="category-chain-item">Nanite</a>
+  
+  
+
+  
+
+  
+
+      </span>
+    
+  
+</span>
+
+    </div>
+  
+  
+</div>
+
+
+              
+  
+
+  <div class="license-box my-3">
+    <div class="license-title">
+      <div>1. Nanite - Introduction</div>
+      <div>http://example.com/2025/03/27/Render Engine/UE5/Nanite/1. Introduction/</div>
+    </div>
+    <div class="license-meta">
+      
+        <div class="license-meta-item">
+          <div>Author</div>
+          <div>John Doe</div>
+        </div>
+      
+      
+        <div class="license-meta-item license-meta-date">
+          <div>Posted on</div>
+          <div>March 27, 2025</div>
+        </div>
+      
+      
+      
+        <div class="license-meta-item">
+          <div>Licensed under</div>
+          <div>
+            
+              
+              
+                <a class="print-no-link" target="_blank" href="https://creativecommons.org/licenses/by/4.0/">
+                  <span class="hint--top hint--rounded" aria-label="BY - Attribution">
+                    <i class="iconfont icon-cc-by"></i>
+                  </span>
+                </a>
+              
+            
+          </div>
+        </div>
+      
+    </div>
+    <div class="license-icon iconfont"></div>
+  </div>
+
+
+
+              
+                <div class="post-prevnext my-3">
+                  <article class="post-prev col-6">
+                    
+                    
+                      <a href="/2025/03/27/Rendering%20Blogs/Graphics%20GPU/Mesh%20Shader/" title="Mesh Shader">
+                        <i class="iconfont icon-arrowleft"></i>
+                        <span class="hidden-mobile">Mesh Shader</span>
+                        <span class="visible-mobile">Previous</span>
+                      </a>
+                    
+                  </article>
+                  <article class="post-next col-6">
+                    
+                    
+                      <a href="/2025/03/16/Paper%20Notes/Ray%20Tracing/ReSTIR%20GI-%20Path%20Resampling%20for%20Real-Time%20Path%20Tracing/" title="ReSTIR GI- Path Resampling for Real-Time Path Tracing">
+                        <span class="hidden-mobile">ReSTIR GI- Path Resampling for Real-Time Path Tracing</span>
+                        <span class="visible-mobile">Next</span>
+                        <i class="iconfont icon-arrowright"></i>
+                      </a>
+                    
+                  </article>
+                </div>
+              
+            </div>
+
+            
+          </article>
+        </div>
+      </div>
+    </div>
+
+    <div class="side-col d-none d-lg-block col-lg-2">
+      
+  <aside class="sidebar" style="margin-left: -1rem">
+    <div id="toc">
+  <p class="toc-header">
+    <i class="iconfont icon-list"></i>
+    <span>Table of Contents</span>
+  </p>
+  <div class="toc-body" id="toc-body"></div>
+</div>
+
+
+
+  </aside>
+
+
+    </div>
+  </div>
+</div>
+
+
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+
+  
+
+
+  
+  
+
+
+
+
+
+
+
+
+
+    
+
+    
+      <a id="scroll-top-button" aria-label="TOP" href="#" role="button">
+        <i class="iconfont icon-arrowup" aria-hidden="true"></i>
+      </a>
+    
+
+    
+      <div class="modal fade" id="modalSearch" tabindex="-1" role="dialog" aria-labelledby="ModalLabel"
+     aria-hidden="true">
+  <div class="modal-dialog modal-dialog-scrollable modal-lg" role="document">
+    <div class="modal-content">
+      <div class="modal-header text-center">
+        <h4 class="modal-title w-100 font-weight-bold">Search</h4>
+        <button type="button" id="local-search-close" class="close" data-dismiss="modal" aria-label="Close">
+          <span aria-hidden="true">&times;</span>
+        </button>
+      </div>
+      <div class="modal-body mx-3">
+        <div class="md-form mb-5">
+          <input type="text" id="local-search-input" class="form-control validate">
+          <label data-error="x" data-success="v" for="local-search-input">Keyword</label>
+        </div>
+        <div class="list-group" id="local-search-result"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    
+
+    
+  </main>
+
+  <footer>
+    <div class="footer-inner">
+  
+    <div class="footer-content">
+       <a href="https://hexo.io" target="_blank" rel="nofollow noopener"><span>Hexo</span></a> <i class="iconfont icon-love"></i> <a href="https://github.com/fluid-dev/hexo-theme-fluid" target="_blank" rel="nofollow noopener"><span>Fluid</span></a> 
+    </div>
+  
+  
+  
+</div>
+
+  </footer>
+
+  <!-- Scripts -->
+  
+  <script  src="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.js" ></script>
+  <link  rel="stylesheet" href="https://lib.baomitu.com/nprogress/0.2.0/nprogress.min.css" />
+
+  <script>
+    NProgress.configure({"showSpinner":false,"trickleSpeed":100})
+    NProgress.start()
+    window.addEventListener('load', function() {
+      NProgress.done();
+    })
+  </script>
+
+
+<script  src="https://lib.baomitu.com/jquery/3.6.4/jquery.min.js" ></script>
+<script  src="https://lib.baomitu.com/twitter-bootstrap/4.6.1/js/bootstrap.min.js" ></script>
+<script  src="/js/events.js" ></script>
+<script  src="/js/plugins.js" ></script>
+
+
+  <script  src="https://lib.baomitu.com/typed.js/2.0.12/typed.min.js" ></script>
+  <script>
+    (function (window, document) {
+      var typing = Fluid.plugins.typing;
+      var subtitle = document.getElementById('subtitle');
+      if (!subtitle || !typing) {
+        return;
+      }
+      var text = subtitle.getAttribute('data-typed-text');
+      
+        typing(text);
+      
+    })(window, document);
+  </script>
+
+
+
+
+  
+    <script  src="/js/img-lazyload.js" ></script>
+  
+
+
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/tocbot/4.20.1/tocbot.min.js', function() {
+    var toc = jQuery('#toc');
+    if (toc.length === 0 || !window.tocbot) { return; }
+    var boardCtn = jQuery('#board-ctn');
+    var boardTop = boardCtn.offset().top;
+
+    window.tocbot.init(Object.assign({
+      tocSelector     : '#toc-body',
+      contentSelector : '.markdown-body',
+      linkClass       : 'tocbot-link',
+      activeLinkClass : 'tocbot-active-link',
+      listClass       : 'tocbot-list',
+      isCollapsedClass: 'tocbot-is-collapsed',
+      collapsibleClass: 'tocbot-is-collapsible',
+      scrollSmooth    : true,
+      includeTitleTags: true,
+      headingsOffset  : -boardTop,
+    }, CONFIG.toc));
+    if (toc.find('.toc-list-item').length > 0) {
+      toc.css('visibility', 'visible');
+    }
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('tocbot' in window) {
+        tocbot.refresh();
+        var toc = jQuery('#toc');
+        if (toc.length === 0 || !tocbot) {
+          return;
+        }
+        if (toc.find('.toc-list-item').length > 0) {
+          toc.css('visibility', 'visible');
+        }
+      }
+    });
+  });
+</script>
+
+
+  <script src=https://lib.baomitu.com/clipboard.js/2.0.11/clipboard.min.js></script>
+
+  <script>Fluid.plugins.codeWidget();</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/anchor-js/5.0.0/anchor.min.js', function() {
+    window.anchors.options = {
+      placement: CONFIG.anchorjs.placement,
+      visible  : CONFIG.anchorjs.visible
+    };
+    if (CONFIG.anchorjs.icon) {
+      window.anchors.options.icon = CONFIG.anchorjs.icon;
+    }
+    var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+    var res = [];
+    for (var item of el) {
+      res.push('.markdown-body > ' + item.trim());
+    }
+    if (CONFIG.anchorjs.placement === 'left') {
+      window.anchors.options.class = 'anchorjs-link-left';
+    }
+    window.anchors.add(res.join(', '));
+
+    Fluid.events.registerRefreshCallback(function() {
+      if ('anchors' in window) {
+        anchors.removeAll();
+        var el = (CONFIG.anchorjs.element || 'h1,h2,h3,h4,h5,h6').split(',');
+        var res = [];
+        for (var item of el) {
+          res.push('.markdown-body > ' + item.trim());
+        }
+        if (CONFIG.anchorjs.placement === 'left') {
+          anchors.options.class = 'anchorjs-link-left';
+        }
+        anchors.add(res.join(', '));
+      }
+    });
+  });
+</script>
+
+
+  
+<script>
+  Fluid.utils.createScript('https://lib.baomitu.com/fancybox/3.5.7/jquery.fancybox.min.js', function() {
+    Fluid.plugins.fancyBox();
+  });
+</script>
+
+
+  <script>Fluid.plugins.imageCaption();</script>
+
+  
+      <script>
+        if (!window.MathJax) {
+          window.MathJax = {
+            tex    : {
+              inlineMath: { '[+]': [['$', '$']] }
+            },
+            loader : {
+              load: ['ui/lazy']
+            },
+            options: {
+              renderActions: {
+                insertedScript: [200, () => {
+                  document.querySelectorAll('mjx-container').forEach(node => {
+                    let target = node.parentNode;
+                    if (target.nodeName.toLowerCase() === 'li') {
+                      target.parentNode.classList.add('has-jax');
+                    }
+                  });
+                }, '', false]
+              }
+            }
+          };
+        } else {
+          MathJax.startup.document.state(0);
+          MathJax.texReset();
+          MathJax.typeset();
+          MathJax.typesetPromise();
+        }
+
+        Fluid.events.registerRefreshCallback(function() {
+          if ('MathJax' in window && MathJax.startup.document && typeof MathJax.startup.document.state === 'function') {
+            MathJax.startup.document.state(0);
+            MathJax.texReset();
+            MathJax.typeset();
+            MathJax.typesetPromise();
+          }
+        });
+      </script>
+    
+
+  <script  src="https://lib.baomitu.com/mathjax/3.2.2/es5/tex-mml-chtml.js" ></script>
+
+  <script  src="/js/local-search.js" ></script>
+
+
+
+
+
+<!-- 主题的启动项，将它保持在最底部 -->
+<!-- the boot of the theme, keep it at the bottom -->
+<script  src="/js/boot.js" ></script>
+
+
+  
+
+  <noscript>
+    <div class="noscript-warning">Blog works best with JavaScript enabled</div>
+  </noscript>
+</body>
+</html>
