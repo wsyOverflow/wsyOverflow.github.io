@@ -26,14 +26,14 @@
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="1 SummaryDevice Removed 发生于 GPU crash、TDR (Timeout Detection and Recovery)，本文介绍一些用于debug这种情况的工具。 2 Device RemovedGPU crash 的发生过程：  OS 调度buffer至GPU执行 执行期间 GPU 发生故障（或者buffer处理超时） GPU调度器无响应持续X秒（默认2秒） OS">
 <meta property="og:locale" content="en_US">
-<meta property="og:image" content="http://example.com/.com//Rendering%20Blogs/Profile/Device%20Removed.assets/image-20250608140712956.png">
-<meta property="og:image" content="http://example.com/.com//Rendering%20Blogs/Profile/Device%20Removed.assets/image-20250608155032225.png">
-<meta property="og:image" content="http://example.com/.com//Rendering%20Blogs/Profile/Device%20Removed.assets/image-20250608154810016.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/Device%20Removed.assets/image-20250608140712956.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/Device%20Removed.assets/image-20250608155032225.png">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Profile/Device%20Removed.assets/image-20250608154810016.png">
 <meta property="article:published_time" content="2025-05-24T12:30:24.671Z">
-<meta property="article:modified_time" content="2025-06-08T08:37:09.859Z">
+<meta property="article:modified_time" content="2025-11-11T15:10:13.189Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/.com//Rendering%20Blogs/Profile/Device%20Removed.assets/image-20250608140712956.png">
+<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Profile/Device%20Removed.assets/image-20250608140712956.png">
   
   
   
@@ -294,7 +294,7 @@
 <li>崩溃发生于最近N帧GPU命令队列执行期间</li>
 <li>此时的CPU调用栈很可能是无关线索</li>
 </ul>
-<img src="/.com//Rendering Blogs/Profile/Device Removed.assets/image-20250608140712956.png" srcset="/img/loading.gif" lazyload alt="image-20250608140712956" style="zoom: 50%;">
+<img src="/images/Rendering Blogs/Profile/Device Removed.assets/image-20250608140712956.png" srcset="/img/loading.gif" lazyload alt="image-20250608140712956" style="zoom: 50%;">
 
 <h1 id="3-debug-工具"><a href="#3-debug-工具" class="headerlink" title="3 debug 工具"></a>3 debug 工具</h1><h2 id="3-1-Aftermath"><a href="#3-1-Aftermath" class="headerlink" title="3.1 Aftermath"></a>3.1 Aftermath</h2><p>NVIDIA 推出的事后崩溃debug工具，用于分析GPU crash，可集成至游戏中，捕获真实运行场景中的崩溃。</p>
 <h3 id="3-1-1-GPU-崩溃原因"><a href="#3-1-1-GPU-崩溃原因" class="headerlink" title="3.1.1 GPU 崩溃原因"></a>3.1.1 GPU 崩溃原因</h3><p>（1）TIME-OUT</p>
@@ -326,7 +326,7 @@
 <li>在 0x12 地址上发生页错误</li>
 <li>最后占用该地址的是 ‘Buf(C)’</li>
 </ol>
-<p><img src="/.com//Rendering Blogs/Profile/Device Removed.assets/image-20250608155032225.png" srcset="/img/loading.gif" lazyload alt="image-20250608155032225" style="zoom:50%;"><img src="/.com//Rendering Blogs/Profile/Device Removed.assets/image-20250608154810016.png" srcset="/img/loading.gif" lazyload alt="image-20250608154810016" style="zoom: 67%;"></p>
+<p><img src="/images/Rendering Blogs/Profile/Device Removed.assets/image-20250608155032225.png" srcset="/img/loading.gif" lazyload alt="image-20250608155032225" style="zoom:50%;"><img src="/images/Rendering Blogs/Profile/Device Removed.assets/image-20250608154810016.png" srcset="/img/loading.gif" lazyload alt="image-20250608154810016" style="zoom: 67%;"></p>
 <p>当发生页错误与device removed之后，调用</p>
 <figure class="highlight c++"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><code class="hljs c++"><span class="hljs-built_in">GFSDK_Aftermath_GetPageFaultInformation</span>(GFSDK_Aftermath_PageFaultInfo* pOutPageFaultInfo);<br></code></pre></td></tr></table></figure>
 

@@ -26,13 +26,14 @@
 <meta property="og:site_name" content="Hexo">
 <meta property="og:description" content="1 传统的 Geometry Stage1.1 Geometry Pipeline在图元送入rasterizer之前，会经过下图所示几何管线，其中包括4种着色器：  vertex shader：变换vertex buffer中的输入数据为适合光栅化的形式，每个 vertex shader 仅能处理单个顶点 hull shader：作用于高阶控制面片 (control patch) 的控制顶点 do">
 <meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20GPU/Mesh%20Shader.assets/image-20250328101543275.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20GPU/Mesh%20Shader.assets/image-20250327235134084.png">
 <meta property="og:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20GPU/Mesh%20Shader.assets/image-20250328000759681.png">
 <meta property="article:published_time" content="2025-03-27T15:46:10.695Z">
-<meta property="article:modified_time" content="2025-03-28T03:01:19.736Z">
+<meta property="article:modified_time" content="2025-11-11T15:07:47.927Z">
 <meta property="article:author" content="John Doe">
 <meta name="twitter:card" content="summary_large_image">
-<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20GPU/Mesh%20Shader.assets/image-20250327235134084.png">
+<meta name="twitter:image" content="http://example.com/images/Rendering%20Blogs/Graphics%20GPU/Mesh%20Shader.assets/image-20250328101543275.png">
   
   
   
@@ -225,7 +226,7 @@
       <span class="post-meta mr-2">
         <i class="iconfont icon-chart"></i>
         
-          495 words
+          480 words
         
       </span>
     
@@ -285,7 +286,8 @@
 <li>domain shader：处理一维或二维域中的采样点，与hullshader共同构成硬件曲面细分 (tessellation) 的可编程阶段</li>
 <li>geometry shader：处理点、线或三角面片图元，并能生成一个或多个新图元</li>
 </ul>
-<p>![image-20250328101543275](&#x2F;images&#x2F;Rendering Blogs&#x2F;Graphics GPU&#x2F;Mesh Shader.assets&#x2F;image-20250328101543275.png)</p>
+<img src="/images/Rendering Blogs/Graphics GPU/Mesh Shader.assets/image-20250328101543275.png" srcset="/img/loading.gif" lazyload alt="image-20250328101543275">
+
 <p>以 index buffer&#x2F;vertex buffer 组成的几何数据为例，vertex shader 需要为 IB 中引用的每个顶点执行，这样就导致同一个顶点被重复执行多次 vertex shader。在Next Generation Geometry (NGG) 技术中，引入了顶点重用机制。</p>
 <h2 id="1-2-NGG-Primitive-Subgroup"><a href="#1-2-NGG-Primitive-Subgroup" class="headerlink" title="1.2 NGG &amp; Primitive Subgroup"></a>1.2 NGG &amp; Primitive Subgroup</h2><p>Vertex Shader 的发起不是对每个顶点执行，而是以 primitive subgroup 为单位，geometry engine会扫描其中三角形的顶点索引，并生成唯一顶点索引列表 (Unique Vertices)，最后再对唯一列表中的顶点执行vertex shader。在 primitive subgroup 中的同一顶点仅会发出一次vertex shader。</p>
 <img src="/images/Rendering Blogs/Graphics GPU/Mesh Shader.assets/image-20250327235134084.png" srcset="/img/loading.gif" lazyload alt="image-20250327235134084" style="zoom:50%;">
